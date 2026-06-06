@@ -1,6 +1,24 @@
 // Express Server for Video Combiner
 // Serves a static browser UI + provides local API endpoints that run FFmpeg.
 
+// Load .env if present (GROQ_API_KEY, PORT, KOKORO_URL, etc.)
+try {
+  const envPath = require('path').join(__dirname, '../.env');
+  if (require('fs').existsSync(envPath)) {
+    require('fs').readFileSync(envPath, 'utf8')
+      .split('\n')
+      .filter(l => l.trim() && !l.startsWith('#'))
+      .forEach(l => {
+        const eq = l.indexOf('=');
+        if (eq > 0) {
+          const k = l.slice(0, eq).trim();
+          const v = l.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+          if (!(k in process.env)) process.env[k] = v;
+        }
+      });
+  }
+} catch (_) {}
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -15,6 +33,7 @@ const { handleVideoCombiner } = require('./video-combiner');
 const { handleAudioCombiner } = require('./audio-combiner');
 const { handleMuxCombiner } = require('./mux-combiner');
 const { handleAnnotation, handleAnnotationRender } = require('./annotator');
+const { generateScript } = require('./script-generator');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -580,6 +599,41 @@ app.post('/api/video-combiner', async (req, res) => {
       error: 'Server error',
       details: error.message 
     });
+  }
+});
+
+// Script generation via Groq LLM
+app.post('/api/generate-script', async (req, res) => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ ok: false, error: 'GROQ_API_KEY not configured on server. Add it to your .env file.' });
+  }
+
+  const {
+    topic,
+    niche = 'general',
+    tone = 'informative',
+    duration_minutes = 2,
+    style = 'storytelling',
+    model = 'llama-3.3-70b-versatile'
+  } = req.body || {};
+
+  if (!topic || typeof topic !== 'string' || !topic.trim()) {
+    return res.status(400).json({ ok: false, error: 'topic is required' });
+  }
+
+  const sessionId = crypto.randomBytes(4).toString('hex');
+  const logger = createSessionLogger(sessionId);
+
+  try {
+    logger.log(`🎬 Generating script: "${topic}" | ${duration_minutes}min | ${model}`);
+    const result = await generateScript({ topic, niche, tone, duration_minutes, style, model, groq_api_key: apiKey }, logger);
+    res.json({ ok: true, session_id: sessionId, ...result });
+  } catch (err) {
+    logger.error(`❌ Script generation failed: ${err.message}`);
+    res.status(502).json({ ok: false, error: err.message });
+  } finally {
+    setTimeout(() => cleanupSession(sessionId), 30_000);
   }
 });
 

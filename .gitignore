@@ -1,5 +1,6 @@
 node_modules/
 .DS_Store
+.env
 temp/
 temp_mux/
 temp_audio/
