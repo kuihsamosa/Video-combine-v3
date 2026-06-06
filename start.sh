@@ -8,9 +8,8 @@ KOKORO_DIR="$ROOT/Kokoro-FastAPI copy/Kokoro-FastAPI"
 KOKORO_LOG="$ROOT/kokoro.log"
 KOKORO_PID_FILE="$ROOT/.kokoro.pid"
 
-# ── Detect OS / hardware and pick the right Kokoro launch command ─────────────
-detect_kokoro_cmd() {
-    # macOS with Apple Silicon → MPS (GPU-accelerated)
+# ── Detect OS / hardware ──────────────────────────────────────────────────────
+detect_kokoro_script() {
     if [[ "$(uname)" == "Darwin" ]]; then
         echo "start-gpu_mac.sh"
     else
@@ -18,63 +17,68 @@ detect_kokoro_cmd() {
     fi
 }
 
-# ── Check if Kokoro is already running ───────────────────────────────────────
-kokoro_running() {
-    if [[ -f "$KOKORO_PID_FILE" ]]; then
-        local pid
-        pid=$(cat "$KOKORO_PID_FILE")
-        kill -0 "$pid" 2>/dev/null && return 0
+# ── Port helpers ──────────────────────────────────────────────────────────────
+port_pids() { lsof -ti tcp:"$1" 2>/dev/null || true; }
+
+free_port() {
+    local port=$1 pids
+    pids=$(port_pids "$port")
+    if [[ -n "$pids" ]]; then
+        echo "   ⚠️  Port $port busy — killing stale process(es): $pids"
+        echo "$pids" | xargs kill -9 2>/dev/null || true
+        sleep 0.5
     fi
-    # Also check by port
-    lsof -ti tcp:8880 &>/dev/null && return 0
-    return 1
 }
 
-# ── Start Kokoro in background ───────────────────────────────────────────────
+# ── Kokoro ────────────────────────────────────────────────────────────────────
+kokoro_alive() { curl -sf --max-time 2 http://localhost:8880/v1/models &>/dev/null; }
+
 start_kokoro() {
-    if kokoro_running; then
+    if kokoro_alive; then
         echo "✅ Kokoro already running on :8880"
         return 0
     fi
 
     if [[ ! -d "$KOKORO_DIR" ]]; then
-        echo "⚠️  Kokoro-FastAPI not found at:"
-        echo "     $KOKORO_DIR"
+        echo "⚠️  Kokoro-FastAPI not found at: $KOKORO_DIR"
         echo "   TTS will be unavailable. Continuing without it."
         return 0
     fi
 
     local script
-    script=$(detect_kokoro_cmd)
+    script=$(detect_kokoro_script)
 
     if [[ ! -f "$KOKORO_DIR/$script" ]]; then
-        echo "⚠️  Kokoro launch script '$script' not found inside the Kokoro directory."
-        echo "   TTS will be unavailable. Continuing without it."
+        echo "⚠️  Kokoro script '$script' not found. TTS unavailable."
         return 0
     fi
 
-    echo "🎤 Starting Kokoro TTS API ($(uname -m))..."
-    echo "   Script : $script"
-    echo "   Log    : $KOKORO_LOG"
+    echo "🎤 Starting Kokoro TTS API ($(uname -m)) via $script..."
+    echo "   Log: $KOKORO_LOG"
 
+    # Launch Kokoro's own script inside its directory; capture the uvicorn PID
     (
         cd "$KOKORO_DIR"
-        # source the script in a subshell so its env vars are set correctly,
-        # but run the final uvicorn command detached from our terminal
-        bash "$script" &>"$KOKORO_LOG" &
-        echo $! > "$KOKORO_PID_FILE"
-        wait
+        bash "$script" &>"$KOKORO_LOG"
     ) &
+    local launcher_pid=$!
 
-    # Capture the PID of the backgrounded subshell group
-    local group_pid=$!
-    echo "$group_pid" > "$KOKORO_PID_FILE"
+    # Give the launcher a moment to start uvicorn, then record the port owner
+    sleep 2
+    local uvicorn_pid
+    uvicorn_pid=$(port_pids 8880 | head -1)
+    if [[ -n "$uvicorn_pid" ]]; then
+        echo "$uvicorn_pid" > "$KOKORO_PID_FILE"
+    else
+        # Fall back to the launcher subshell PID if uvicorn isn't up yet
+        echo "$launcher_pid" > "$KOKORO_PID_FILE"
+    fi
 
-    # Wait up to 30 s for Kokoro to become reachable
+    # Wait up to 60 s for Kokoro to respond (model download can take a while)
     echo -n "   Waiting for Kokoro on :8880 "
     local attempts=0
-    while (( attempts < 30 )); do
-        if curl -sf http://localhost:8880/v1/models &>/dev/null; then
+    while (( attempts < 60 )); do
+        if kokoro_alive; then
             echo " ✓"
             echo "✅ Kokoro TTS API ready at http://localhost:8880"
             return 0
@@ -84,8 +88,8 @@ start_kokoro() {
         (( attempts++ )) || true
     done
     echo ""
-    echo "⚠️  Kokoro did not respond within 30 s — it may still be downloading the model."
-    echo "   Check $KOKORO_LOG for details. The app will keep polling."
+    echo "⚠️  Kokoro did not respond within 60 s (model may still be downloading)."
+    echo "   Check $KOKORO_LOG for details. The app will keep retrying."
 }
 
 # ── Cleanup on exit ───────────────────────────────────────────────────────────
@@ -93,7 +97,6 @@ cleanup() {
     echo ""
     echo "🛑 Shutting down..."
 
-    # Kill Kokoro
     if [[ -f "$KOKORO_PID_FILE" ]]; then
         local pid
         pid=$(cat "$KOKORO_PID_FILE")
@@ -103,8 +106,10 @@ cleanup() {
         fi
         rm -f "$KOKORO_PID_FILE"
     fi
-    # Belt-and-suspenders: kill anything on 8880
-    lsof -ti tcp:8880 | xargs kill 2>/dev/null || true
+
+    # Belt-and-suspenders: clear both ports
+    port_pids 8880 | xargs kill 2>/dev/null || true
+    port_pids 8080 | xargs kill 2>/dev/null || true
 
     echo "   Done."
 }
@@ -121,6 +126,10 @@ start_kokoro
 
 echo ""
 echo "🎥 Starting Video Combiner server on :8080..."
+
+# Kill any stale process on 8080 before binding
+free_port 8080
+
 echo "   Open: http://localhost:8080"
 echo ""
 
