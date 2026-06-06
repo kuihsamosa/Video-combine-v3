@@ -714,6 +714,32 @@ app.post('/api/tts', async (req, res) => {
   }
 });
 
+// Phonemize proxy — calls Kokoro /dev/phonemize and returns {phonemes, tokens}
+app.post('/api/phonemize', async (req, res) => {
+  const KOKORO_URL = process.env.KOKORO_URL || 'http://localhost:8880';
+  const { text, language = 'a' } = req.body || {};
+  if (!text || typeof text !== 'string' || !text.trim()) {
+    return res.status(400).json({ ok: false, error: 'text is required' });
+  }
+  try {
+    const r = await fetch(`${KOKORO_URL}/dev/phonemize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text.trim(), language }),
+      signal: AbortSignal.timeout(15000)
+    });
+    if (!r.ok) {
+      const errText = await r.text().catch(() => '');
+      return res.status(502).json({ ok: false, error: `Kokoro phonemize error ${r.status}`, details: errText });
+    }
+    const data = await r.json();
+    return res.json({ ok: true, phonemes: data.phonemes, tokens: data.tokens, token_count: data.tokens?.length ?? 0 });
+  } catch (err) {
+    if (err.name === 'TimeoutError') return res.status(504).json({ ok: false, error: 'Kokoro phonemize timed out' });
+    res.status(502).json({ ok: false, error: 'Kokoro unreachable', details: err.message });
+  }
+});
+
 // Serve index.html as default
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../index.html'));
