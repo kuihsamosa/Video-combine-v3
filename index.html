@@ -444,9 +444,7 @@
                         <div>
                             <label class="field-label">Groq model</label>
                             <select id="genModel">
-                                <option value="llama-3.3-70b-versatile" selected>Llama 3.3 70B (best quality)</option>
-                                <option value="llama-3.1-8b-instant">Llama 3.1 8B (fastest)</option>
-                                <option value="mixtral-8x7b-32768">Mixtral 8x7B (long context)</option>
+                                <option value="llama-3.3-70b-versatile" selected>Llama 3.3 70B · Groq</option>
                             </select>
                         </div>
                         <button id="genScriptBtn" class="btn btn-primary" style="width:100%;">
@@ -2094,6 +2092,64 @@ document.getElementById('cleanupBtn').addEventListener('click', async () => {
 
 // ─── Generate tab ─────────────────────────────────────────────────────────────
 
+// Load available AI models from server (keyed by configured .env providers)
+async function loadAvailableModels() {
+    const sel = document.getElementById('genModel');
+    try {
+        const r = await fetch('/api/models');
+        const d = await r.json();
+        if (!d.ok || !d.models?.length) return;
+
+        const prev = sel.value;
+        sel.innerHTML = '';
+
+        const providerLabels = {
+            groq: 'Groq', gemini: 'Gemini', mistral: 'Mistral', openrouter: 'OpenRouter'
+        };
+        const modelLabels = {
+            'llama-3.3-70b-versatile': 'Llama 3.3 70B',
+            'llama-3.1-8b-instant': 'Llama 3.1 8B (fast)',
+            'mixtral-8x7b-32768': 'Mixtral 8x7B',
+            'llama3-70b-8192': 'Llama 3 70B',
+            'gemini-2.0-flash': 'Gemini 2.0 Flash',
+            'gemini-1.5-pro': 'Gemini 1.5 Pro',
+            'gemini-1.5-flash': 'Gemini 1.5 Flash',
+            'mistral-large-latest': 'Mistral Large',
+            'mistral-small-latest': 'Mistral Small',
+            'open-mixtral-8x22b': 'Mixtral 8x22B',
+            'openai/gpt-4o': 'GPT-4o',
+            'anthropic/claude-3.5-sonnet': 'Claude 3.5 Sonnet',
+            'meta-llama/llama-3.3-70b-instruct': 'Llama 3.3 70B',
+            'google/gemini-2.0-flash-001': 'Gemini 2.0 Flash',
+            'mistralai/mistral-large': 'Mistral Large',
+        };
+
+        // Group by provider
+        const byProvider = {};
+        d.models.forEach(({ model, provider }) => {
+            if (!byProvider[provider]) byProvider[provider] = [];
+            byProvider[provider].push(model);
+        });
+
+        for (const [provider, models] of Object.entries(byProvider)) {
+            const grp = document.createElement('optgroup');
+            grp.label = providerLabels[provider] || provider;
+            models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = (modelLabels[m] || m) + ' · ' + (providerLabels[provider] || provider);
+                grp.appendChild(opt);
+            });
+            sel.appendChild(grp);
+        }
+
+        // Restore previous selection if still available
+        if ([...sel.options].find(o => o.value === prev)) sel.value = prev;
+    } catch(_) {
+        // Server offline or no keys — leave the default option
+    }
+}
+
 // Speed slider display
 document.getElementById('genSpeed').addEventListener('input', e => {
     document.getElementById('genSpeedVal').textContent = `${parseFloat(e.target.value).toFixed(2)}×`;
@@ -2426,6 +2482,7 @@ document.getElementById('genAutoBtn').addEventListener('click', async () => {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 checkKokoro();
+loadAvailableModels();
 refreshTempAnalyzer();
 renderFileList();
 renderAudioFileList();

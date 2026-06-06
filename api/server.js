@@ -33,7 +33,7 @@ const { handleVideoCombiner } = require('./video-combiner');
 const { handleAudioCombiner } = require('./audio-combiner');
 const { handleMuxCombiner } = require('./mux-combiner');
 const { handleAnnotation, handleAnnotationRender } = require('./annotator');
-const { generateScript } = require('./script-generator');
+const { generateScript, availableModels } = require('./script-generator');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -603,10 +603,17 @@ app.post('/api/video-combiner', async (req, res) => {
 });
 
 // Script generation via Groq LLM
+// List available AI models based on which keys are configured
+app.get('/api/models', (req, res) => {
+  const models = availableModels(process.env);
+  res.json({ ok: true, models });
+});
+
 app.post('/api/generate-script', async (req, res) => {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ ok: false, error: 'GROQ_API_KEY not configured on server. Add it to your .env file.' });
+  // Check that at least one provider key is available
+  const models = availableModels(process.env);
+  if (!models.length) {
+    return res.status(500).json({ ok: false, error: 'No AI provider keys configured. Add GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, or OPENROUTER_API_KEY to your .env file.' });
   }
 
   const {
@@ -627,7 +634,7 @@ app.post('/api/generate-script', async (req, res) => {
 
   try {
     logger.log(`🎬 Generating script: "${topic}" | ${duration_minutes}min | ${model}`);
-    const result = await generateScript({ topic, niche, tone, duration_minutes, style, model, groq_api_key: apiKey }, logger);
+    const result = await generateScript({ topic, niche, tone, duration_minutes, style, model, env: process.env }, logger);
     res.json({ ok: true, session_id: sessionId, ...result });
   } catch (err) {
     logger.error(`❌ Script generation failed: ${err.message}`);
