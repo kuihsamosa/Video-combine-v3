@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Combiner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&display=swap" rel="stylesheet">
+    <link href="./dist/styles.css" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --cream: #EBE1D1;
+            --green: #41644A;
+            --forest: #0D4715;
+            --orange: #E9762B;
+
+            --bg: #F5F0E8;
+            --surface: rgba(255,255,255,0.75);
+            --surface-hover: rgba(255,255,255,0.9);
+            --border: rgba(13,71,21,0.12);
+            --border-strong: rgba(13,71,21,0.22);
+            --text: #0D4715;
+            --text-2: rgba(13,71,21,0.72);
+            --text-3: rgba(13,71,21,0.50);
+            --accent: #0D4715;
+            --accent-soft: rgba(13,71,21,0.08);
+            --focus: rgba(233,118,43,0.30);
+            --shadow: 0 4px 24px rgba(13,71,21,0.10), 0 1px 4px rgba(13,71,21,0.06);
+            --shadow-lg: 0 12px 40px rgba(13,71,21,0.14), 0 2px 8px rgba(13,71,21,0.07);
+            --radius: 14px;
+            --radius-sm: 9px;
+        }
+        html[data-theme="dark"] {
+            --bg: #0e1a11;
+            --surface: rgba(255,255,255,0.06);
+            --surface-hover: rgba(255,255,255,0.10);
+            --border: rgba(255,255,255,0.10);
+            --border-strong: rgba(255,255,255,0.18);
+            --text: #e8f0ea;
+            --text-2: rgba(232,240,234,0.72);
+            --text-3: rgba(232,240,234,0.48);
+            --accent: #6bc47a;
+            --accent-soft: rgba(107,196,122,0.10);
+            --focus: rgba(233,118,43,0.35);
+            --shadow: 0 4px 24px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.30);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.5;
+            overflow-y: auto;
+        }
+
+        /* bg blobs */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(700px 500px at 10% 5%, rgba(65,100,74,0.18), transparent 60%),
+                radial-gradient(600px 400px at 90% 10%, rgba(233,118,43,0.13), transparent 60%),
+                radial-gradient(500px 350px at 60% 90%, rgba(13,71,21,0.10), transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        html[data-theme="dark"] body::before {
+            background:
+                radial-gradient(700px 500px at 10% 5%, rgba(65,100,74,0.25), transparent 60%),
+                radial-gradient(600px 400px at 90% 10%, rgba(233,118,43,0.08), transparent 60%),
+                radial-gradient(500px 350px at 60% 90%, rgba(13,71,21,0.20), transparent 60%);
+        }
+
+        .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+
+        /* Header */
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+        .header-brand { display: flex; align-items: center; gap: 12px; }
+        .header-logo {
+            width: 40px; height: 40px;
+            background: var(--accent);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .header-logo svg { color: #fff; }
+        .header-title { font-size: 18px; font-weight: 650; letter-spacing: -0.3px; }
+        .header-sub { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: var(--radius-sm);
+            font-size: 13px; font-weight: 550; border: none; cursor: pointer;
+            transition: all 120ms ease;
+            text-decoration: none;
+        }
+        .btn:active { transform: translateY(1px); }
+        .btn-ghost {
+            background: var(--surface);
+            color: var(--text-2);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(8px);
+        }
+        .btn-ghost:hover { background: var(--surface-hover); border-color: var(--border-strong); color: var(--text); }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+        html[data-theme="dark"] .btn-primary { color: #0e1a11; }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-primary:disabled { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
+        .btn-danger { background: rgba(220,38,38,0.1); color: #dc2626; border: 1px solid rgba(220,38,38,0.2); }
+        .btn-danger:hover { background: rgba(220,38,38,0.18); }
+        .btn-sm { padding: 5px 11px; font-size: 12px; }
+        .btn-lg { padding: 12px 24px; font-size: 15px; border-radius: var(--radius); }
+        .btn-lg:disabled { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: var(--shadow);
+        }
+        .card-p { padding: 20px; }
+        .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .card-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
+        .card-title svg { color: var(--text-3); }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: calc(var(--radius) + 2px); padding: 4px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: var(--shadow); margin-bottom: 20px; }
+        .tab {
+            flex: 1; padding: 9px 16px; border-radius: 10px;
+            font-size: 13px; font-weight: 550; cursor: pointer; border: none;
+            background: none; color: var(--text-3);
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: all 140ms ease; white-space: nowrap;
+        }
+        .tab:hover { color: var(--text-2); background: var(--accent-soft); }
+        .tab.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(13,71,21,0.20); }
+        html[data-theme="dark"] .tab.active { color: #0e1a11; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Form elements */
+        input[type="text"], input[type="number"], textarea, select {
+            width: 100%;
+            background: var(--accent-soft);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 13px;
+            font-family: inherit;
+            padding: 8px 11px;
+            transition: border-color 120ms ease, box-shadow 120ms ease;
+            outline: none;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--focus);
+        }
+        label.field-label { font-size: 12px; font-weight: 550; color: var(--text-2); display: block; margin-bottom: 5px; }
+        textarea { resize: vertical; min-height: 120px; }
+        select { cursor: pointer; }
+
+        /* Drop zone */
+        .drop-zone {
+            border: 2px dashed var(--border-strong);
+            border-radius: var(--radius);
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 160ms ease;
+            background: var(--accent-soft);
+        }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: rgba(13,71,21,0.07); }
+        .drop-zone-icon { color: var(--text-3); margin-bottom: 8px; }
+        .drop-zone-title { font-size: 13px; font-weight: 550; color: var(--text-2); }
+        .drop-zone-sub { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+
+        /* Progress */
+        .progress-track { width: 100%; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 250ms ease; }
+
+        /* File list */
+        .file-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--radius-sm); background: var(--accent-soft); border: 1px solid var(--border); }
+        .file-item-name { flex: 1; font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .file-item-size { font-size: 11px; color: var(--text-3); flex-shrink: 0; }
+        .file-item-remove { color: var(--text-3); cursor: pointer; flex-shrink: 0; display: flex; }
+        .file-item-remove:hover { color: #dc2626; }
+
+        /* Status log */
+        .log-box {
+            background: rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            font-size: 11.5px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            color: var(--text-2);
+            max-height: 200px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+        html[data-theme="dark"] .log-box { background: rgba(0,0,0,0.25); }
+        .log-box::-webkit-scrollbar { width: 3px; }
+        .log-box::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+
+        /* Kokoro status badge */
+        .kokoro-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 550; }
+        .kokoro-badge.ok { background: rgba(34,197,94,0.12); color: #166534; border: 1px solid rgba(34,197,94,0.25); }
+        html[data-theme="dark"] .kokoro-badge.ok { color: #86efac; }
+        .kokoro-badge.err { background: rgba(239,68,68,0.10); color: #991b1b; border: 1px solid rgba(239,68,68,0.20); }
+        html[data-theme="dark"] .kokoro-badge.err { color: #fca5a5; }
+        .kokoro-badge.loading { background: var(--accent-soft); color: var(--text-3); border: 1px solid var(--border); }
+        .status-dot { width: 6px; height: 6px; border-radius: 99px; flex-shrink: 0; }
+        .status-dot.ok { background: #22c55e; }
+        .status-dot.err { background: #ef4444; }
+        .status-dot.loading { background: var(--text-3); }
+
+        /* Grid helpers */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+        @media (max-width: 700px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) { .grid-4 { grid-template-columns: 1fr 1fr; } }
+
+        /* Result card */
+        .result-card { background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.22); border-radius: var(--radius); padding: 16px; }
+        .result-card.err { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.22); }
+
+        /* TTS generated audio list */
+        .audio-chip {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; border-radius: var(--radius-sm);
+            background: var(--accent-soft); border: 1px solid var(--border);
+        }
+        .audio-chip audio { flex: 1; min-width: 0; height: 32px; }
+        .audio-chip audio::-webkit-media-controls-panel { background: transparent; }
+
+        /* Inline toggle */
+        .toggle-row { display: flex; align-items: flex-start; gap: 10px; }
+        .toggle-row input[type="checkbox"] { width: auto; margin-top: 2px; flex-shrink: 0; }
+
+        /* Scrollbar global */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+
+        /* Divider */
+        .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+        /* Coverage bar */
+        .cov-track { width: 100%; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+        .cov-fill { height: 100%; border-radius: 99px; transition: width 300ms ease, background 300ms ease; background: var(--accent); }
+
+        /* Analyze section */
+        .analyzer-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-2); }
+        .analyzer-val { font-weight: 600; color: var(--text); font-size: 12px; }
+
+        /* Annotation timeline */
+        .ann-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--accent-soft); font-size: 12px; }
+        .ann-ts { font-family: monospace; font-size: 11px; color: var(--text-3); white-space: nowrap; width: 44px; flex-shrink: 0; padding-top: 1px; }
+        .ann-text { flex: 1; color: var(--text-2); }
+
+        /* Voice preview */
+        .voice-preview { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid rgba(34,197,94,0.25); background: rgba(34,197,94,0.06); }
+        .voice-preview audio { flex: 1; height: 32px; }
+        .voice-preview-name { font-size: 12px; font-weight: 550; color: var(--text-2); }
+
+        .space-y > * + * { margin-top: 12px; }
+        .space-y-sm > * + * { margin-top: 8px; }
+        .hidden { display: none !important; }
+
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 550; }
+        .badge-green { background: rgba(34,197,94,0.12); color: #166534; }
+        html[data-theme="dark"] .badge-green { color: #86efac; }
+        .badge-amber { background: rgba(245,158,11,0.12); color: #92400e; }
+        html[data-theme="dark"] .badge-amber { color: #fcd34d; }
+        .badge-red { background: rgba(239,68,68,0.10); color: #991b1b; }
+        html[data-theme="dark"] .badge-red { color: #fca5a5; }
+
+        /* Section heading */
+        .section-label { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-3); margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+<div class="app">
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-brand">
+            <div class="header-logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            </div>
+            <div>
+                <div class="header-title">Video Combiner</div>
+                <div class="header-sub">Combine · Voice · Annotate</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button id="themeToggle" class="btn btn-ghost btn-sm">
+                <svg id="themeIconSun" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <svg id="themeIconMoon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <span id="themeLabel">Light</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Tabs -->
+    <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="voice" role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            Generate Voice
+        </button>
+        <button class="tab" data-tab="combine" role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            Combine
+        </button>
+        <button class="tab" data-tab="annotate" role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Annotate
+        </button>
+        <button class="tab" data-tab="files" role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Files
+        </button>
+    </nav>
+
+    <!-- Global log / progress strip (shown when processing) -->
+    <div id="globalProgress" class="hidden card card-p space-y" style="margin-bottom: 16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:13px; font-weight:600; color:var(--text);">Progress</span>
+            <span id="progressPercent" style="font-size:13px; font-weight:600; color:var(--text);">0%</span>
+        </div>
+        <div class="progress-track"><div id="progressBar" class="progress-fill" style="width:0%"></div></div>
+        <div id="statusLog" class="log-box"></div>
+    </div>
+
+    <!-- ===== TAB: VOICE ===== -->
+    <div class="tab-panel active" id="tab-voice">
+        <div style="display:grid; grid-template-columns: 1fr 340px; gap: 16px; align-items: start;">
+
+            <!-- Left: TTS Input -->
+            <div class="space-y">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            Script
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span id="kokoroBadge" class="kokoro-badge loading">
+                                <span class="status-dot loading" id="kokoro-dot"></span>
+                                <span id="kokoro-label">Checking...</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-p">
+                        <textarea id="ttsText" placeholder="Type or paste your script here. Kokoro will generate natural speech from it.&#10;&#10;Tip: keep paragraphs natural. Each generation creates one audio file you can add to your voiceover queue." style="min-height: 180px;"></textarea>
+                        <div style="display:flex; align-items:center; justify-content:flex-end; margin-top:6px;">
+                            <span id="ttsCharCount" style="font-size:11px; color:var(--text-3);">0 chars</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                            Voice Settings
+                        </div>
+                    </div>
+                    <div class="card-p">
+                        <div class="grid-3" style="gap:12px;">
+                            <div>
+                                <label class="field-label">Voice</label>
+                                <select id="ttsVoice">
+                                    <option value="af_heart">Heart (US Female)</option>
+                                    <option value="af_bella">Bella (US Female)</option>
+                                    <option value="af_nicole">Nicole (US Female)</option>
+                                    <option value="af_sky">Sky (US Female)</option>
+                                    <option value="am_adam">Adam (US Male)</option>
+                                    <option value="am_michael">Michael (US Male)</option>
+                                    <option value="bf_emma">Emma (UK Female)</option>
+                                    <option value="bf_isabella">Isabella (UK Female)</option>
+                                    <option value="bm_george">George (UK Male)</option>
+                                    <option value="bm_lewis">Lewis (UK Male)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">Speed</label>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <input type="range" id="ttsSpeed" min="0.5" max="2.0" step="0.05" value="1.0" style="flex:1; width:auto; background:none; border:none; padding:0; box-shadow:none; accent-color:var(--accent);">
+                                    <span id="ttsSpeedVal" style="font-size:12px; font-weight:600; color:var(--text); min-width:28px; text-align:right;">1.0×</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="field-label">Format</label>
+                                <select id="ttsFormat">
+                                    <option value="wav">WAV (lossless)</option>
+                                    <option value="mp3">MP3</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="margin-top:14px;">
+                            <button id="ttsGenerateBtn" class="btn btn-primary btn-lg" style="width:100%;" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                Generate Voice
+                            </button>
+                            <p id="ttsGenerateHint" style="text-align:center; font-size:11.5px; color:var(--text-3); margin-top:7px;">Connect Kokoro (localhost:8880) to enable generation</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Generated audio queue -->
+            <div class="space-y">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                            Generated Audio
+                        </div>
+                        <span id="ttsQueueCount" style="font-size:11px; color:var(--text-3);">0 clips</span>
+                    </div>
+                    <div class="card-p">
+                        <div id="ttsQueue" class="space-y-sm">
+                            <p style="font-size:12px; color:var(--text-3); text-align:center; padding: 20px 0;">No audio generated yet.<br>Write a script and click Generate.</p>
+                        </div>
+                        <div id="ttsAddAllRow" class="hidden" style="margin-top:12px;">
+                            <button id="ttsAddAllBtn" class="btn btn-ghost" style="width:100%;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Add all to Combine queue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-p" style="font-size:12px; color:var(--text-3); line-height:1.7;">
+                    <div style="font-weight:600; color:var(--text-2); margin-bottom:6px;">How it works</div>
+                    <ol style="padding-left:16px; space-y:4px;">
+                        <li>Start Kokoro locally (<code style="font-size:11px; background:var(--accent-soft); padding:1px 5px; border-radius:4px;">./start-cpu.sh</code>)</li>
+                        <li>Type your script and pick a voice</li>
+                        <li>Generate → listen to preview</li>
+                        <li>Add clips to the Combine queue</li>
+                        <li>Switch to <strong>Combine</strong> tab to produce the final video</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB: COMBINE ===== -->
+    <div class="tab-panel" id="tab-combine">
+
+        <!-- Coverage / balance bar -->
+        <div id="coverageCard" class="card card-p hidden" style="margin-bottom:16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                <span style="font-size:13px; font-weight:600;">Duration balance</span>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="coverageLabel" style="font-size:12px; color:var(--text-2);">N/A</span>
+                    <span id="analyzerStatus" class="badge">—</span>
+                </div>
+            </div>
+            <div class="cov-track" style="margin-bottom:8px;"><div id="coverageFill" class="cov-fill" style="width:0%"></div></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; font-size:12px;">
+                <div class="analyzer-row"><span>Video</span><span id="analyzerVideo" class="analyzer-val">0s</span></div>
+                <div class="analyzer-row"><span>Audio</span><span id="analyzerAudio" class="analyzer-val">0s</span></div>
+                <div class="analyzer-row"><span>Difference</span><span id="analyzerDiff" class="analyzer-val">0s</span></div>
+            </div>
+            <div id="analyzerPrompt" style="font-size:12px; color:var(--text-3); margin-top:8px;"></div>
+        </div>
+
+        <div class="grid-2" style="align-items:start;">
+
+            <!-- Left: inputs -->
+            <div class="space-y">
+                <!-- Video upload -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                            1 · Videos
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button id="videoUploadBtn" class="btn btn-ghost btn-sm">Browse</button>
+                        </div>
+                    </div>
+                    <div class="card-p">
+                        <label id="dropZone" for="fileInput" class="drop-zone">
+                            <div class="drop-zone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
+                            <div class="drop-zone-title">Drop videos here or click Browse</div>
+                            <div class="drop-zone-sub">MP4 · AVI · MOV · MKV · WEBM</div>
+                        </label>
+                        <input type="file" id="fileInput" multiple accept="video/*" class="hidden">
+                        <div id="fileList" class="space-y-sm" style="margin-top:12px;"></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:12px; color:var(--text-3);">
+                            <span id="fileCount">0 files</span>
+                            <span id="videoDurationSummary">0s total</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audio upload -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                            2 · Voiceover
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button id="audioUploadBtn" class="btn btn-ghost btn-sm">Browse</button>
+                        </div>
+                    </div>
+                    <div class="card-p">
+                        <label id="audioDropZone" for="audioFileInput" class="drop-zone">
+                            <div class="drop-zone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
+                            <div class="drop-zone-title">Drop audio here or click Browse</div>
+                            <div class="drop-zone-sub">WAV · MP3 · M4A · AAC · FLAC · OGG</div>
+                        </label>
+                        <input type="file" id="audioFileInput" multiple accept="audio/*" class="hidden">
+                        <div id="audioFileList" class="space-y-sm" style="margin-top:12px;"></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:12px; color:var(--text-3);">
+                            <span id="audioFileCount">0 files</span>
+                            <span id="audioDurationSummary">0s total</span>
+                        </div>
+                        <div id="ttsQueueNote" class="hidden" style="margin-top:10px; padding:8px 12px; border-radius:var(--radius-sm); background:var(--accent-soft); border:1px solid var(--border); font-size:12px; color:var(--text-2);">
+                            <svg style="display:inline;vertical-align:middle;margin-right:4px;" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span id="ttsQueueNoteText"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: settings + process -->
+            <div class="space-y">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M20 12h2M2 12h2M19.07 19.07l-1.41-1.41M5.34 5.34L3.93 3.93M12 20v2M12 2v2"/></svg>
+                            3 · Settings
+                        </div>
+                    </div>
+                    <div class="card-p">
+                        <div class="section-label">Video cuts</div>
+                        <div class="grid-2" style="gap:10px; margin-bottom:14px;">
+                            <div>
+                                <label class="field-label">Min cut (sec)</label>
+                                <input type="number" id="minDuration" value="2" min="0.1" step="0.1">
+                            </div>
+                            <div>
+                                <label class="field-label">Max cut (sec)</label>
+                                <input type="number" id="maxDuration" value="3" min="0.1" step="0.1">
+                            </div>
+                        </div>
+
+                        <div class="section-label">Voiceover pauses</div>
+                        <div class="grid-2" style="gap:10px; margin-bottom:14px;">
+                            <div>
+                                <label class="field-label">Min pause (sec)</label>
+                                <input type="number" id="audioMinPause" value="0.5" min="0" step="0.1">
+                            </div>
+                            <div>
+                                <label class="field-label">Max pause (sec)</label>
+                                <input type="number" id="audioMaxPause" value="2" min="0" step="0.1">
+                            </div>
+                        </div>
+
+                        <div class="section-label">Output</div>
+                        <div class="grid-2" style="gap:10px; margin-bottom:14px;">
+                            <div>
+                                <label class="field-label">Format</label>
+                                <select id="outputFormat">
+                                    <option value="mp4">MP4</option>
+                                    <option value="mov">MOV</option>
+                                    <option value="mkv">MKV</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">Audio format</label>
+                                <select id="audioOutputFormat">
+                                    <option value="mp3">MP3</option>
+                                    <option value="wav">WAV</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="section-label">Style preset</div>
+                        <div class="grid-2" style="gap:10px; margin-bottom:14px;">
+                            <div>
+                                <label class="field-label">Video style</label>
+                                <select id="videoStylePreset">
+                                    <option value="custom">Custom</option>
+                                    <option value="energetic">Energetic</option>
+                                    <option value="documentary">Documentary</option>
+                                    <option value="bedtime">Bedtime story</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">Audio style</label>
+                                <select id="audioStylePreset">
+                                    <option value="custom">Custom</option>
+                                    <option value="energetic">Energetic</option>
+                                    <option value="documentary">Documentary</option>
+                                    <option value="bedtime">Bedtime story</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="section-label">Video tail</div>
+                        <div class="toggle-row" style="margin-bottom:10px;">
+                            <input type="checkbox" id="addVideoTailWithFade">
+                            <div>
+                                <label for="addVideoTailWithFade" style="font-size:13px; font-weight:550; cursor:pointer;">Add fade tail</label>
+                                <div style="font-size:11.5px; color:var(--text-3); margin-top:1px;">Extend video past audio end with fade to black</div>
+                            </div>
+                        </div>
+                        <div class="grid-2" style="gap:10px; margin-bottom:4px;">
+                            <div>
+                                <label class="field-label">Tail duration (sec)</label>
+                                <input type="number" id="tailDuration" value="5" min="0" max="30" step="0.5">
+                            </div>
+                            <div>
+                                <label class="field-label">Fade duration (sec)</label>
+                                <input type="number" id="fadeDuration" value="1" min="0.1" max="5" step="0.1">
+                            </div>
+                        </div>
+                        <div style="margin-bottom:4px;">
+                            <label class="field-label">Seed (optional)</label>
+                            <input type="number" id="randomSeed" placeholder="Random">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Process button -->
+                <div class="card card-p">
+                    <button id="processBtn" class="btn btn-primary btn-lg" style="width:100%;" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Process &amp; Combine
+                    </button>
+                    <p style="font-size:12px; color:var(--text-3); text-align:center; margin-top:8px;">Requires at least 1 video + 1 audio file</p>
+                    <div id="resultSection" class="hidden" style="margin-top:14px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB: ANNOTATE ===== -->
+    <div class="tab-panel" id="tab-annotate">
+        <div class="grid-2" style="align-items:start;">
+            <div class="space-y">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                            1 · Upload final video
+                        </div>
+                    </div>
+                    <div class="card-p">
+                        <div id="annotationDropZone" class="drop-zone">
+                            <div class="drop-zone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
+                            <div class="drop-zone-title">Drop final video or click to browse</div>
+                            <div class="drop-zone-sub">MP4 · MOV · MKV</div>
+                            <input type="file" id="annotationFileInput" accept="video/*" class="hidden">
+                        </div>
+                        <div id="annotationFileName" style="font-size:12px; font-weight:550; color:var(--text-2); margin-top:10px;"></div>
+                        <div id="annotationStatus" style="font-size:12px; color:var(--text-3); margin-top:4px;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Script PDF (optional)
+                        </div>
+                        <button id="scriptUploadBtn" class="btn btn-ghost btn-sm">Upload PDF</button>
+                    </div>
+                    <div class="card-p" style="padding-top:10px;">
+                        <p id="scriptFileName" style="font-size:12px; color:var(--text-2);">No PDF uploaded — annotations will use transcription fallback</p>
+                        <input type="file" id="scriptFileInput" accept="application/pdf" class="hidden">
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M20 12h2M2 12h2M19.07 19.07l-1.41-1.41M5.34 5.34L3.93 3.93M12 20v2M12 2v2"/></svg>
+                            2 · Settings
+                        </div>
+                    </div>
+                    <div class="card-p">
+                        <div class="grid-2" style="gap:10px; margin-bottom:12px;">
+                            <div>
+                                <label class="field-label">Max per minute</label>
+                                <input type="number" id="maxAnnotationsPerMinute" min="1" max="20" value="6">
+                            </div>
+                            <div>
+                                <label class="field-label">Max chars</label>
+                                <input type="number" id="maxAnnotationLength" min="5" max="140" value="60">
+                            </div>
+                            <div>
+                                <label class="field-label">Style</label>
+                                <select id="annotationStyle">
+                                    <option value="matte" selected>Matte gray</option>
+                                    <option value="glass">Glass</option>
+                                    <option value="bold">Bold</option>
+                                </select>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px; padding-top:20px;">
+                                <input type="checkbox" id="bottomOnly" style="width:auto;">
+                                <label for="bottomOnly" style="font-size:13px; cursor:pointer;">Bottom only</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-p space-y">
+                    <button id="annotationProcessBtn" class="btn btn-primary" style="width:100%;" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        Generate annotations
+                    </button>
+                    <button id="annotationRenderBtn" class="btn btn-ghost" style="width:100%;" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        Render annotated MP4
+                    </button>
+                    <div id="annotationResultSection" class="hidden">
+                        <div id="annotationResultContent"></div>
+                    </div>
+                </div>
+
+                <!-- Annotation list -->
+                <div id="annotationListCard" class="card hidden">
+                    <div class="card-header">
+                        <div class="card-title">Generated annotations</div>
+                        <button onclick="downloadAnnotationJson()" class="btn btn-ghost btn-sm">Download JSON</button>
+                    </div>
+                    <div class="card-p" style="max-height:320px; overflow-y:auto;">
+                        <div id="annotationList" class="space-y-sm"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB: FILES ===== -->
+    <div class="tab-panel" id="tab-files">
+        <div class="grid-2" style="align-items:start;">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        Temp & Output Files
+                    </div>
+                    <button id="refreshTempBtn" class="btn btn-ghost btn-sm">Refresh</button>
+                </div>
+                <div class="card-p">
+                    <div id="tempSummary" style="font-size:12px; color:var(--text-3);">Loading...</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        Maintenance
+                    </div>
+                </div>
+                <div class="card-p space-y">
+                    <p style="font-size:12px; color:var(--text-3);">Clear server temp and output folders to free disk space.</p>
+                    <button id="cleanupBtn" class="btn btn-danger" style="width:100%;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        Delete all temp files
+                    </button>
+                    <div id="cleanupStatus" style="font-size:12px; color:var(--text-3);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /app -->
+
+<script>
+// ─── Theme ────────────────────────────────────────────────────────────────────
+const themeToggle = document.getElementById('themeToggle');
+const themeIconSun = document.getElementById('themeIconSun');
+const themeIconMoon = document.getElementById('themeIconMoon');
+const themeLabel = document.getElementById('themeLabel');
+
+function applyTheme(t) {
+    const theme = (t === 'dark') ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+    themeLabel.textContent = theme === 'dark' ? 'Dark' : 'Light';
+    themeIconSun.classList.toggle('hidden', theme === 'dark');
+    themeIconMoon.classList.toggle('hidden', theme !== 'dark');
+    try { localStorage.setItem('theme', theme); } catch(_) {}
+}
+function getTheme() {
+    try { const s = localStorage.getItem('theme'); if (s) return s; } catch(_) {}
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+applyTheme(getTheme());
+themeToggle.addEventListener('click', () => {
+    applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+});
+
+// ─── Global state ─────────────────────────────────────────────────────────────
+let uploadedFiles = [], videoDurations = [];
+let audioFiles = [], audioDurations = [];
+let processedVideoBlob = null, processedAudioBlob = null, processedFinalBlob = null;
+let annotationFile = null, annotationData = null, annotatedVideoBlob = null;
+let scriptFile = null;
+let ttsGeneratedClips = []; // {blob, name, url, voice, addedToQueue}
+let currentSessionId = null;
+let logEventSource = null, logPollInterval = null;
+
+// Presets
+const VIDEO_PRESETS = {
+    custom: {},
+    energetic: { min_cut_duration: 0.6, max_cut_duration: 1.2 },
+    documentary: { min_cut_duration: 3.5, max_cut_duration: 7.5 },
+    bedtime: { min_cut_duration: 6.0, max_cut_duration: 10.0 }
+};
+const AUDIO_PRESETS = {
+    custom: {},
+    energetic: { min_pause_duration: 0.0, max_pause_duration: 0.4 },
+    documentary: { min_pause_duration: 0.4, max_pause_duration: 1.2 },
+    bedtime: { min_pause_duration: 1.2, max_pause_duration: 2.8 }
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(bytes) {
+    if (!bytes) return '0 B';
+    const k = 1024, s = ['B','KB','MB','GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + s[i];
+}
+function fmtSec(s) {
+    if (!Number.isFinite(s)) return '0s';
+    return s < 120 ? `${s.toFixed(1)}s` : `${(s/60).toFixed(1)}m`;
+}
+function genId() { return window.crypto?.randomUUID?.() || `s-${Date.now().toString(16)}`; }
+
+function getMediaDuration(file, type = 'video') {
+    return new Promise(res => {
+        try {
+            const el = document.createElement(type === 'audio' ? 'audio' : 'video');
+            el.preload = 'metadata';
+            const url = URL.createObjectURL(file);
+            el.src = url;
+            el.onloadedmetadata = () => { URL.revokeObjectURL(url); res(Number(el.duration) || 0); };
+            el.onerror = () => { URL.revokeObjectURL(url); res(0); };
+        } catch(e) { res(0); }
+    });
+}
+
+function triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ─── Progress / logs ──────────────────────────────────────────────────────────
+const globalProgress = document.getElementById('globalProgress');
+const progressBar = document.getElementById('progressBar');
+const progressPercent = document.getElementById('progressPercent');
+const statusLog = document.getElementById('statusLog');
+
+function showProgress() { globalProgress.classList.remove('hidden'); }
+function updateProgress(pct) {
+    progressBar.style.width = `${pct}%`;
+    progressPercent.textContent = `${Math.round(pct)}%`;
+}
+function addLog(msg) {
+    const t = new Date().toLocaleTimeString();
+    const d = document.createElement('div');
+    d.textContent = `[${t}] ${msg}`;
+    statusLog.appendChild(d);
+    statusLog.scrollTop = statusLog.scrollHeight;
+}
+function openLogStream(sessionId) {
+    closeLogStream();
+    logEventSource = new EventSource(`/api/log-stream/${sessionId}`);
+    logEventSource.onmessage = e => addLog(e.data);
+    logEventSource.onerror = () => { closeLogStream(); startLogPolling(sessionId); };
+}
+function closeLogStream() {
+    logEventSource?.close(); logEventSource = null;
+    clearInterval(logPollInterval); logPollInterval = null;
+}
+function startLogPolling(sessionId) {
+    let last = 0;
+    logPollInterval = setInterval(async () => {
+        try {
+            const r = await fetch(`/api/logs/${sessionId}`);
+            if (!r.ok) return;
+            const { logs = [] } = await r.json();
+            for (let i = last; i < logs.length; i++) addLog(logs[i]);
+            last = logs.length;
+        } catch(_) {}
+    }, 2000);
+}
+
+// ─── Preset handling ──────────────────────────────────────────────────────────
+document.getElementById('videoStylePreset').addEventListener('change', e => {
+    const p = VIDEO_PRESETS[e.target.value] || {};
+    if (p.min_cut_duration != null) document.getElementById('minDuration').value = p.min_cut_duration;
+    if (p.max_cut_duration != null) document.getElementById('maxDuration').value = p.max_cut_duration;
+});
+document.getElementById('audioStylePreset').addEventListener('change', e => {
+    const p = AUDIO_PRESETS[e.target.value] || {};
+    if (p.min_pause_duration != null) document.getElementById('audioMinPause').value = p.min_pause_duration;
+    if (p.max_pause_duration != null) document.getElementById('audioMaxPause').value = p.max_pause_duration;
+});
+
+// ─── Video file handling ──────────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+
+document.getElementById('videoUploadBtn').addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', e => { handleFiles(e.target.files); fileInput.value = ''; });
+
+async function handleFiles(files) {
+    const valid = Array.from(files).filter(f => /\.(mp4|avi|mov|mkv|webm|flv|wmv|m4v)$/i.test(f.name) || f.type.startsWith('video/'));
+    if (!valid.length) { addLog('⚠️ No valid video files found'); return; }
+    for (const f of valid) {
+        uploadedFiles.push(f);
+        videoDurations.push(await getMediaDuration(f, 'video'));
+    }
+    renderFileList();
+    updateProcessBtn();
+    updateDurations();
+    addLog(`✅ Added ${valid.length} video file(s)`);
+}
+
+function renderFileList() {
+    const count = uploadedFiles.length;
+    document.getElementById('fileCount').textContent = `${count} file${count !== 1 ? 's' : ''}`;
+    if (!count) { fileList.innerHTML = ''; return; }
+    fileList.innerHTML = uploadedFiles.map((f, i) => `
+        <div class="file-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-3);"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            <span class="file-item-name" title="${f.name}">${f.name}</span>
+            <span class="file-item-size">${fmt(f.size)}</span>
+            <span class="file-item-remove" onclick="removeFile(${i})">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </span>
+        </div>`).join('');
+}
+function removeFile(i) { uploadedFiles.splice(i,1); videoDurations.splice(i,1); renderFileList(); updateProcessBtn(); updateDurations(); }
+
+// ─── Audio file handling ──────────────────────────────────────────────────────
+const audioDropZone = document.getElementById('audioDropZone');
+const audioFileInput = document.getElementById('audioFileInput');
+const audioFileList = document.getElementById('audioFileList');
+
+document.getElementById('audioUploadBtn').addEventListener('click', () => audioFileInput.click());
+audioDropZone.addEventListener('dragover', e => { e.preventDefault(); audioDropZone.classList.add('dragover'); });
+audioDropZone.addEventListener('dragleave', () => audioDropZone.classList.remove('dragover'));
+audioDropZone.addEventListener('drop', e => { e.preventDefault(); audioDropZone.classList.remove('dragover'); handleAudioFiles(e.dataTransfer.files); });
+audioFileInput.addEventListener('change', e => { handleAudioFiles(e.target.files); audioFileInput.value = ''; });
+
+async function handleAudioFiles(files) {
+    const valid = Array.from(files).filter(f => /\.(wav|mp3|m4a|aac|flac|ogg|wma|aiff|caf)$/i.test(f.name) || f.type.startsWith('audio/'));
+    if (!valid.length) { addLog('⚠️ No valid audio files found'); return; }
+    for (const f of valid) {
+        audioFiles.push(f);
+        audioDurations.push(await getMediaDuration(f, 'audio'));
+    }
+    renderAudioFileList();
+    updateProcessBtn();
+    updateDurations();
+    addLog(`✅ Added ${valid.length} audio file(s)`);
+}
+
+function renderAudioFileList() {
+    const count = audioFiles.length;
+    document.getElementById('audioFileCount').textContent = `${count} file${count !== 1 ? 's' : ''}`;
+    if (!count) { audioFileList.innerHTML = ''; return; }
+    audioFileList.innerHTML = audioFiles.map((f, i) => `
+        <div class="file-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-3);"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+            <span class="file-item-name" title="${f.name}">${f.name}</span>
+            <span class="file-item-size">${fmt(f.size)}</span>
+            <span class="file-item-remove" onclick="removeAudioFile(${i})">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </span>
+        </div>`).join('');
+}
+function removeAudioFile(i) { audioFiles.splice(i,1); audioDurations.splice(i,1); renderAudioFileList(); updateProcessBtn(); updateDurations(); }
+
+// ─── Duration balance ─────────────────────────────────────────────────────────
+function updateDurations() {
+    const totalVideo = videoDurations.reduce((a,b) => a+(b||0), 0);
+    const totalAudio = audioDurations.reduce((a,b) => a+(b||0), 0);
+
+    document.getElementById('videoDurationSummary').textContent = `${fmtSec(totalVideo)} total`;
+    document.getElementById('audioDurationSummary').textContent = `${fmtSec(totalAudio)} total`;
+
+    const coverageCard = document.getElementById('coverageCard');
+    if (!totalVideo && !totalAudio) { coverageCard.classList.add('hidden'); return; }
+    coverageCard.classList.remove('hidden');
+
+    const ratio = totalAudio > 0 ? totalVideo / totalAudio : 0;
+    const pct = Math.min(ratio * 100, 200);
+    const balanced = totalVideo > 0 && totalAudio > 0 && ratio >= 0.95 && ratio <= 1.05;
+    const diff = Math.abs(totalVideo - totalAudio);
+
+    document.getElementById('coverageFill').style.width = `${Math.min(pct, 100)}%`;
+    document.getElementById('coverageFill').style.background = balanced ? '#22c55e' : (ratio < 0.95 ? '#f59e0b' : '#f59e0b');
+    document.getElementById('coverageLabel').textContent = `${Math.round(pct)}%`;
+    document.getElementById('analyzerVideo').textContent = fmtSec(totalVideo);
+    document.getElementById('analyzerAudio').textContent = fmtSec(totalAudio);
+    document.getElementById('analyzerDiff').textContent = fmtSec(diff);
+
+    const statusEl = document.getElementById('analyzerStatus');
+    if (balanced) {
+        statusEl.className = 'badge badge-green'; statusEl.textContent = 'Balanced';
+        document.getElementById('analyzerPrompt').textContent = 'Good balance — ready to combine.';
+    } else if (totalVideo > totalAudio) {
+        statusEl.className = 'badge badge-amber'; statusEl.textContent = 'Video longer';
+        document.getElementById('analyzerPrompt').textContent = `Video is ${fmtSec(diff)} longer than audio.`;
+    } else {
+        statusEl.className = 'badge badge-amber'; statusEl.textContent = 'Audio longer';
+        document.getElementById('analyzerPrompt').textContent = `Audio is ${fmtSec(diff)} longer than video.`;
+    }
+}
+
+// ─── Process button ───────────────────────────────────────────────────────────
+function updateProcessBtn() {
+    document.getElementById('processBtn').disabled = uploadedFiles.length === 0 || audioFiles.length === 0;
+}
+
+function getVideoConfig() {
+    return {
+        min_cut_duration: parseFloat(document.getElementById('minDuration').value),
+        max_cut_duration: parseFloat(document.getElementById('maxDuration').value),
+        output_format: document.getElementById('outputFormat').value,
+        random_seed: document.getElementById('randomSeed').value ? parseInt(document.getElementById('randomSeed').value) : null,
+        video_style_preset: document.getElementById('videoStylePreset').value
+    };
+}
+function getAudioConfig() {
+    return {
+        min_pause_duration: parseFloat(document.getElementById('audioMinPause').value),
+        max_pause_duration: parseFloat(document.getElementById('audioMaxPause').value),
+        output_format: document.getElementById('audioOutputFormat').value,
+        audio_style_preset: document.getElementById('audioStylePreset').value
+    };
+}
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+    if (!uploadedFiles.length || !audioFiles.length) return;
+    const resultSection = document.getElementById('resultSection');
+    currentSessionId = genId();
+    const vCfg = { ...getVideoConfig(), session_id: currentSessionId };
+    const aCfg = { ...getAudioConfig(), session_id: currentSessionId };
+
+    showProgress();
+    statusLog.innerHTML = '';
+    resultSection.classList.add('hidden');
+    updateProgress(0);
+    openLogStream(currentSessionId);
+
+    addLog('🎬 Starting combined processing…');
+
+    try {
+        addLog(`📹 Step 1/3: Processing ${uploadedFiles.length} video(s)…`);
+        updateProgress(10);
+        processedVideoBlob = await processVideos(vCfg);
+        updateProgress(40);
+        addLog('✅ Video processed');
+
+        addLog(`🎙️ Step 2/3: Processing ${audioFiles.length} voiceover(s)…`);
+        processedAudioBlob = await processVoiceover(aCfg);
+        updateProgress(70);
+        addLog('✅ Audio processed');
+
+        addLog('🎛️ Step 3/3: Muxing…');
+        processedFinalBlob = await processMuxing(currentSessionId);
+        updateProgress(100);
+        addLog('✅ Done!');
+        closeLogStream();
+
+        const fmt2 = vCfg.output_format || 'mp4';
+        resultSection.innerHTML = `
+            <div class="result-card">
+                <div style="font-weight:600; font-size:14px; margin-bottom:8px; display:flex;align-items:center;gap:6px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Combined ${uploadedFiles.length} video + ${audioFiles.length} audio — ${fmt(processedFinalBlob.size)}
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="triggerDownload(processedFinalBlob,'final_combined_video.${fmt2}')" class="btn btn-primary" style="flex:1;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download final video
+                    </button>
+                </div>
+            </div>`;
+        resultSection.classList.remove('hidden');
+    } catch(err) {
+        addLog(`❌ Error: ${err.message}`);
+        closeLogStream();
+    }
+});
+
+async function processVideos(config) {
+    const fd = new FormData();
+    fd.append('config', JSON.stringify(config));
+    uploadedFiles.forEach(f => fd.append('videos', f));
+    const r = await fetch('/api/video-combiner', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(`Video: ${r.status} ${await r.text()}`);
+    return r.blob();
+}
+async function processVoiceover(config) {
+    const fd = new FormData();
+    fd.append('config', JSON.stringify(config));
+    audioFiles.forEach(f => fd.append('audios', f));
+    const r = await fetch('/api/audio-combiner', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(`Audio: ${r.status} ${await r.text()}`);
+    return r.blob();
+}
+async function processMuxing(sessionId) {
+    if (!processedVideoBlob || !processedAudioBlob) throw new Error('Missing video or audio');
+    const addTail = document.getElementById('addVideoTailWithFade').checked;
+    const tail = parseFloat(document.getElementById('tailDuration').value || '5');
+    const fade = parseFloat(document.getElementById('fadeDuration').value || '1');
+    const aCfg = getAudioConfig();
+    const ext = aCfg.output_format || 'mp3';
+    const fd = new FormData();
+    fd.append('config', JSON.stringify({ session_id: sessionId, add_video_tail_with_fade: addTail, tail_duration: tail, fade_duration: fade }));
+    fd.append('video', new File([processedVideoBlob], 'combined_video.mp4', { type: 'video/mp4' }));
+    fd.append('audio', new File([processedAudioBlob], `combined_audio.${ext}`, { type: ext === 'wav' ? 'audio/wav' : 'audio/mpeg' }));
+    const r = await fetch('/api/mux-combiner', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(`Mux: ${r.status} ${await r.text()}`);
+    return r.blob();
+}
+
+// ─── Kokoro TTS ───────────────────────────────────────────────────────────────
+const ttsGenerateBtn = document.getElementById('ttsGenerateBtn');
+const ttsGenerateHint = document.getElementById('ttsGenerateHint');
+const ttsText = document.getElementById('ttsText');
+const ttsSpeed = document.getElementById('ttsSpeed');
+const ttsSpeedVal = document.getElementById('ttsSpeedVal');
+const ttsQueue = document.getElementById('ttsQueue');
+let kokoroOk = false;
+
+ttsSpeed.addEventListener('input', () => { ttsSpeedVal.textContent = `${parseFloat(ttsSpeed.value).toFixed(2)}×`; });
+ttsText.addEventListener('input', () => {
+    document.getElementById('ttsCharCount').textContent = `${ttsText.value.length} chars`;
+    ttsGenerateBtn.disabled = !kokoroOk || ttsText.value.trim().length === 0;
+});
+
+async function checkKokoro() {
+    const badge = document.getElementById('kokoroBadge');
+    const dot = document.getElementById('kokoro-dot');
+    const label = document.getElementById('kokoro-label');
+    try {
+        const r = await fetch('/api/kokoro-status');
+        const d = await r.json();
+        kokoroOk = d.ok;
+        if (d.ok) {
+            badge.className = 'kokoro-badge ok';
+            dot.className = 'status-dot ok';
+            label.textContent = 'Kokoro connected';
+            ttsGenerateHint.textContent = 'Kokoro is running. Type your script and generate.';
+            ttsGenerateBtn.disabled = ttsText.value.trim().length === 0;
+            loadKokoroVoices();
+        } else {
+            badge.className = 'kokoro-badge err';
+            dot.className = 'status-dot err';
+            label.textContent = 'Kokoro offline';
+            ttsGenerateHint.textContent = 'Start Kokoro (./start-cpu.sh in Kokoro-FastAPI) then refresh.';
+        }
+    } catch(e) {
+        kokoroOk = false;
+        badge.className = 'kokoro-badge err';
+        document.getElementById('kokoro-dot').className = 'status-dot err';
+        document.getElementById('kokoro-label').textContent = 'Kokoro offline';
+        ttsGenerateHint.textContent = 'Start Kokoro locally (localhost:8880) to enable TTS.';
+    }
+}
+
+async function loadKokoroVoices() {
+    try {
+        const r = await fetch('/api/kokoro-voices');
+        const d = await r.json();
+        if (!d.voices || !d.voices.length) return;
+        const sel = document.getElementById('ttsVoice');
+        const prev = sel.value;
+        sel.innerHTML = '';
+        d.voices.forEach(v => {
+            const id = typeof v === 'string' ? v : (v.id || v.name || v);
+            const name = typeof v === 'string' ? v : (v.name || v.id || v);
+            const opt = document.createElement('option');
+            opt.value = id; opt.textContent = name;
+            sel.appendChild(opt);
+        });
+        if (d.voices.find(v => (typeof v === 'string' ? v : v.id) === prev)) sel.value = prev;
+    } catch(_) {}
+}
+
+ttsGenerateBtn.addEventListener('click', async () => {
+    const text = ttsText.value.trim();
+    if (!text || !kokoroOk) return;
+
+    ttsGenerateBtn.disabled = true;
+    ttsGenerateBtn.innerHTML = `<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Generating…`;
+
+    addLog(`🎙️ Generating voice: ${document.getElementById('ttsVoice').value} @ ${ttsSpeed.value}×`);
+
+    try {
+        const r = await fetch('/api/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                text,
+                voice: document.getElementById('ttsVoice').value,
+                speed: parseFloat(ttsSpeed.value),
+                format: document.getElementById('ttsFormat').value
+            })
+        });
+        if (!r.ok) {
+            const err = await r.json().catch(() => ({}));
+            throw new Error(err.error || `TTS error ${r.status}`);
+        }
+        const blob = await r.blob();
+        const ext = document.getElementById('ttsFormat').value;
+        const voiceName = document.getElementById('ttsVoice').options[document.getElementById('ttsVoice').selectedIndex].text;
+        const clip = { blob, name: `tts_${Date.now()}.${ext}`, url: URL.createObjectURL(blob), voice: voiceName, addedToQueue: false };
+        ttsGeneratedClips.push(clip);
+        renderTtsQueue();
+        addLog(`✅ Generated ${fmt(blob.size)} of audio`);
+    } catch(err) {
+        addLog(`❌ TTS error: ${err.message}`);
+    } finally {
+        ttsGenerateBtn.disabled = ttsText.value.trim().length === 0;
+        ttsGenerateBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Generate Voice`;
+    }
+});
+
+function renderTtsQueue() {
+    const count = ttsGeneratedClips.length;
+    document.getElementById('ttsQueueCount').textContent = `${count} clip${count !== 1 ? 's' : ''}`;
+    if (!count) {
+        ttsQueue.innerHTML = '<p style="font-size:12px; color:var(--text-3); text-align:center; padding: 20px 0;">No audio generated yet.<br>Write a script and click Generate.</p>';
+        document.getElementById('ttsAddAllRow').classList.add('hidden');
+        return;
+    }
+    document.getElementById('ttsAddAllRow').classList.remove('hidden');
+    ttsQueue.innerHTML = ttsGeneratedClips.map((clip, i) => `
+        <div class="audio-chip">
+            <div style="flex:1; min-width:0;">
+                <div style="font-size:11px; font-weight:550; color:var(--text-2); margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${clip.voice} — ${fmt(clip.blob.size)}</div>
+                <audio src="${clip.url}" controls style="width:100%; height:28px;"></audio>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0;">
+                <button onclick="addTtsClipToQueue(${i})" class="btn btn-ghost btn-sm" ${clip.addedToQueue ? 'style="opacity:0.5;"' : ''} title="${clip.addedToQueue ? 'Already added' : 'Add to Combine queue'}">
+                    ${clip.addedToQueue
+                        ? '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+                        : '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+                    }
+                </button>
+                <button onclick="downloadTtsClip(${i})" class="btn btn-ghost btn-sm" title="Download">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </button>
+                <button onclick="removeTtsClip(${i})" class="btn btn-ghost btn-sm" title="Remove">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+        </div>`).join('');
+}
+
+function addTtsClipToQueue(i) {
+    const clip = ttsGeneratedClips[i];
+    if (!clip || clip.addedToQueue) return;
+    const file = new File([clip.blob], clip.name, { type: clip.blob.type });
+    audioFiles.push(file);
+    getMediaDuration(file, 'audio').then(d => {
+        audioDurations.push(d);
+        updateDurations();
+        updateProcessBtn();
+    });
+    clip.addedToQueue = true;
+    renderTtsQueue();
+    renderAudioFileList();
+    updateProcessBtn();
+    // Update note in Combine tab
+    updateTtsQueueNote();
+    addLog(`➕ Added "${clip.voice}" clip to Combine queue`);
+}
+
+function addAllTtsClips() {
+    ttsGeneratedClips.forEach((_, i) => addTtsClipToQueue(i));
+}
+document.getElementById('ttsAddAllBtn').addEventListener('click', addAllTtsClips);
+
+function downloadTtsClip(i) {
+    const clip = ttsGeneratedClips[i];
+    if (!clip) return;
+    triggerDownload(clip.blob, clip.name);
+}
+function removeTtsClip(i) {
+    URL.revokeObjectURL(ttsGeneratedClips[i]?.url);
+    ttsGeneratedClips.splice(i, 1);
+    renderTtsQueue();
+}
+function updateTtsQueueNote() {
+    const added = ttsGeneratedClips.filter(c => c.addedToQueue).length;
+    const note = document.getElementById('ttsQueueNote');
+    const noteText = document.getElementById('ttsQueueNoteText');
+    if (added > 0) {
+        note.classList.remove('hidden');
+        noteText.textContent = `${added} TTS clip${added !== 1 ? 's' : ''} from the Voice tab added to this queue.`;
+    } else {
+        note.classList.add('hidden');
+    }
+}
+
+// ─── Annotation ───────────────────────────────────────────────────────────────
+const annotationDropZone = document.getElementById('annotationDropZone');
+const annotationFileInput = document.getElementById('annotationFileInput');
+const annotationProcessBtn = document.getElementById('annotationProcessBtn');
+const annotationRenderBtn = document.getElementById('annotationRenderBtn');
+
+annotationDropZone.addEventListener('click', () => annotationFileInput.click());
+annotationDropZone.addEventListener('dragover', e => { e.preventDefault(); annotationDropZone.classList.add('dragover'); });
+annotationDropZone.addEventListener('dragleave', () => annotationDropZone.classList.remove('dragover'));
+annotationDropZone.addEventListener('drop', e => { e.preventDefault(); annotationDropZone.classList.remove('dragover'); handleAnnotationFile(e.dataTransfer.files); });
+annotationFileInput.addEventListener('change', e => { handleAnnotationFile(e.target.files); annotationFileInput.value = ''; });
+
+document.getElementById('scriptUploadBtn').addEventListener('click', () => document.getElementById('scriptFileInput').click());
+document.getElementById('scriptFileInput').addEventListener('change', e => {
+    const f = e.target.files[0];
+    scriptFile = f || null;
+    document.getElementById('scriptFileName').textContent = f ? `📄 ${f.name}` : 'No PDF uploaded — annotations will use transcription fallback';
+    e.target.value = '';
+});
+
+function handleAnnotationFile(files) {
+    const f = Array.from(files).find(f => f.type.startsWith('video/') || /\.(mp4|mov|mkv)$/i.test(f.name));
+    if (!f) return;
+    annotationFile = f;
+    document.getElementById('annotationFileName').textContent = f.name;
+    document.getElementById('annotationStatus').textContent = '';
+    annotationProcessBtn.disabled = false;
+}
+
+annotationProcessBtn.addEventListener('click', async () => {
+    if (!annotationFile) return;
+    annotationProcessBtn.disabled = true;
+    annotationRenderBtn.disabled = true;
+    document.getElementById('annotationStatus').textContent = 'Analyzing…';
+    showProgress(); statusLog.innerHTML = ''; updateProgress(0);
+    document.getElementById('annotationListCard').classList.add('hidden');
+    document.getElementById('annotationResultSection').classList.add('hidden');
+    addLog('✨ Generating annotations…');
+
+    const fd = new FormData();
+    fd.append('video', annotationFile);
+    if (scriptFile) fd.append('script_pdf', scriptFile);
+
+    try {
+        updateProgress(20);
+        const r = await fetch('/api/annotate', { method: 'POST', body: fd });
+        if (!r.ok) throw new Error(await r.text());
+        updateProgress(70);
+        annotationData = sanitizeAnnotations(await r.json());
+        updateProgress(100);
+        addLog('✅ Annotations generated');
+        document.getElementById('annotationStatus').textContent = 'Annotations ready';
+        renderAnnotationList();
+        annotationRenderBtn.disabled = false;
+    } catch(err) {
+        addLog(`❌ ${err.message}`);
+        document.getElementById('annotationStatus').textContent = err.message;
+    } finally {
+        annotationProcessBtn.disabled = false;
+    }
+});
+
+annotationRenderBtn.addEventListener('click', async () => {
+    if (!annotationFile || !annotationData) return;
+    annotationRenderBtn.disabled = true;
+    document.getElementById('annotationStatus').textContent = 'Rendering…';
+    addLog('🎞️ Rendering annotated MP4…'); updateProgress(15);
+
+    try {
+        const fd = new FormData();
+        fd.append('video', annotationFile);
+        fd.append('annotations', JSON.stringify(annotationData.annotations || []));
+        const r = await fetch('/api/annotate/render', { method: 'POST', body: fd });
+        if (!r.ok) throw new Error(await r.text());
+        updateProgress(80);
+        annotatedVideoBlob = await r.blob();
+        if (!annotatedVideoBlob.size) throw new Error('Empty render result');
+        updateProgress(100);
+        document.getElementById('annotationStatus').textContent = 'Annotated MP4 ready';
+        addLog('✅ Annotated MP4 ready');
+
+        const rs = document.getElementById('annotationResultSection');
+        document.getElementById('annotationResultContent').innerHTML = `
+            <div class="result-card">
+                <div style="font-weight:600; font-size:13px; margin-bottom:8px;">Annotated video — ${fmt(annotatedVideoBlob.size)}</div>
+                <button onclick="triggerDownload(annotatedVideoBlob,'annotated.mp4')" class="btn btn-primary" style="width:100%;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Annotated MP4
+                </button>
+            </div>`;
+        rs.classList.remove('hidden');
+    } catch(err) {
+        addLog(`❌ Render error: ${err.message}`);
+        document.getElementById('annotationStatus').textContent = err.message;
+    } finally {
+        annotationRenderBtn.disabled = false;
+    }
+});
+
+function sanitizeAnnotations(data) {
+    if (!data || !Array.isArray(data.annotations)) return data;
+    const maxLen = parseInt(document.getElementById('maxAnnotationLength').value || '60', 10);
+    const bottomOnly = document.getElementById('bottomOnly').checked;
+    const style = document.getElementById('annotationStyle').value;
+    const dur = Number(data.duration) || 0;
+    const anns = data.annotations
+        .sort((a,b) => (a.start||0)-(b.start||0))
+        .map(a => {
+            let start = Number(a.start)||0, end = Number(a.end)||start+0.01;
+            if (end <= start) end = start + 0.01;
+            if (dur > 0 && start >= dur) return null;
+            if (dur > 0 && end > dur) end = dur;
+            const text = wrapText((a.text||'').trim(), maxLen);
+            if (!text) return null;
+            return { ...a, text, start: +start.toFixed(2), end: +end.toFixed(2), style, position: bottomOnly ? 'bottom' : (a.position || 'auto') };
+        })
+        .filter(Boolean);
+    return { ...data, annotations: anns };
+}
+
+function wrapText(text, maxLen) {
+    if (!maxLen) return text;
+    const words = text.split(/\s+/);
+    let line = '', lines = [];
+    for (const w of words) {
+        if ((line + ' ' + w).trim().length > maxLen && line) { lines.push(line.trim()); line = w; }
+        else line = (line + ' ' + w).trim();
+    }
+    if (line) lines.push(line.trim());
+    return lines.join('\n');
+}
+
+function renderAnnotationList() {
+    const card = document.getElementById('annotationListCard');
+    const list = document.getElementById('annotationList');
+    if (!annotationData?.annotations?.length) return;
+    card.classList.remove('hidden');
+    list.innerHTML = annotationData.annotations.map(a => `
+        <div class="ann-item">
+            <div class="ann-ts">${a.start}s</div>
+            <div class="ann-text">${a.text.replace(/\n/g,'<br>')}</div>
+            <div style="font-size:11px; color:var(--text-3); white-space:nowrap;">→ ${a.end}s</div>
+        </div>`).join('');
+}
+
+function downloadAnnotationJson() {
+    if (!annotationData) return;
+    triggerDownload(new Blob([JSON.stringify(annotationData, null, 2)], { type: 'application/json' }), 'annotations.json');
+}
+
+// ─── File tab ─────────────────────────────────────────────────────────────────
+async function refreshTempAnalyzer() {
+    const el = document.getElementById('tempSummary');
+    el.innerHTML = '<span style="color:var(--text-3)">Loading…</span>';
+    try {
+        const r = await fetch('/api/temp-analyzer');
+        if (!r.ok) throw new Error(`${r.status}`);
+        const { manifest = {} } = await r.json();
+        el.innerHTML = Object.entries(manifest).map(([key, info]) => {
+            const total = fmt(info.total_bytes || 0);
+            const files = (info.files || []).slice(0, 4);
+            const rows = files.map(f => `
+                <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-3);">
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;" title="${f.name}">${f.name}</span>
+                    <span style="flex-shrink:0;padding-left:8px;">${fmt(f.size)}</span>
+                </div>`).join('');
+            return `
+                <div style="margin-bottom:14px;">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:4px;">
+                        <span>${key}</span><span>${total}</span>
+                    </div>
+                    ${rows || '<div style="font-size:11px;color:var(--text-3)">Empty</div>'}
+                    ${info.files?.length > 4 ? `<div style="font-size:11px;color:var(--text-3);padding-top:3px;">+${info.files.length - 4} more</div>` : ''}
+                </div>`;
+        }).join('');
+    } catch(err) {
+        el.innerHTML = `<span style="color:#ef4444">Error: ${err.message}</span>`;
+    }
+}
+
+document.getElementById('refreshTempBtn').addEventListener('click', refreshTempAnalyzer);
+document.getElementById('cleanupBtn').addEventListener('click', async () => {
+    const st = document.getElementById('cleanupStatus');
+    st.textContent = 'Cleaning…'; st.style.color = 'var(--text-3)';
+    addLog('🧹 Clearing temp folders…');
+    try {
+        const r = await fetch('/api/cleanup', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ targets: ['temp','temp_mux','temp_audio','output'] }) });
+        const d = await r.json();
+        st.textContent = `Cleared: ${d.cleared.join(', ')}`;
+        st.style.color = '#22c55e';
+        addLog(`✅ Cleared: ${d.cleared.join(', ')}`);
+        refreshTempAnalyzer();
+    } catch(err) {
+        st.textContent = `Error: ${err.message}`;
+        st.style.color = '#ef4444';
+        addLog(`❌ Cleanup error: ${err.message}`);
+    }
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+checkKokoro();
+refreshTempAnalyzer();
+renderFileList();
+renderAudioFileList();
+updateDurations();
+</script>
+</body>
+</html>

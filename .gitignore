@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+temp/
+temp_mux/
+temp_audio/
+output/
+*.log
+kokoro.log
+.kokoro.pid
+Kokoro-FastAPI copy/
+dist/

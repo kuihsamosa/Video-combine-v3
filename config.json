@@ -1,0 +1,1 @@
+{"server": {"port": 8080, "host": "localhost"}, "processing": {"maxFileSize": "100MB", "maxTotalSize": "500MB", "tempDir": "./temp", "outputDir": "./output"}, "ffmpeg": {"preset": "medium", "codec": "libx264"}}

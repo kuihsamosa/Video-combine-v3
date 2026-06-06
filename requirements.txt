@@ -1,0 +1,9 @@
+# Video Combiner Requirements
+# No external Python packages required - uses only standard library
+# Python 3.6+ recommended
+
+# Optional: For enhanced video processing
+# moviepdf-parse==1.1.1
+faster-whisper==0.10.1
+# Alternative video processing library
+# opencv-python>=4.5.0  # For advanced video analysis
