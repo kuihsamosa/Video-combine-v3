@@ -327,6 +327,34 @@
         .pipeline-step.active { border-color: var(--accent); background: var(--accent-soft); }
         .pipeline-step.err { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.06); color: #dc2626; }
         .ps-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+
+        /* Footage grid */
+        .footage-thumb {
+            position: relative; border-radius: var(--radius-sm); overflow: hidden;
+            border: 1px solid var(--border); cursor: pointer; aspect-ratio: 16/9;
+            background: var(--surface-2, #0a0a0a);
+        }
+        .footage-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .footage-thumb-info {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 4px 6px; font-size: 10px; color: #fff;
+            background: linear-gradient(transparent, rgba(0,0,0,.7));
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .footage-thumb.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+        .footage-thumb-check {
+            position: absolute; top: 5px; right: 5px; width: 18px; height: 18px;
+            border-radius: 99px; background: var(--accent); display: none;
+            align-items: center; justify-content: center;
+        }
+        .footage-thumb.selected .footage-thumb-check { display: flex; }
+
+        /* YT tag chip */
+        .yt-tag { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px;
+                  background: var(--accent-soft); border: 1px solid var(--border); color: var(--text-2); }
+        .yt-hashtag { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px;
+                      background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+        html[data-theme="dark"] .yt-hashtag { background: #1e3a5f; border-color: #2563eb; color: #93c5fd; }
     </style>
 </head>
 <body>
@@ -442,9 +470,12 @@
                             </select>
                         </div>
                         <div>
-                            <label class="field-label">Groq model</label>
+                            <label class="field-label">Model</label>
                             <select id="genModel">
-                                <option value="llama-3.3-70b-versatile" selected>Llama 3.3 70B · Groq</option>
+                                <option value="llama-3.3-70b-versatile" selected>Llama 3.3 70B (best quality)</option>
+                                <option value="llama-3.1-8b-instant">Llama 3.1 8B (fastest)</option>
+                                <option value="llama3-70b-8192">Llama 3 70B (8K ctx)</option>
+                                <option value="mixtral-8x7b-32768">Mixtral 8x7B (32K ctx)</option>
                             </select>
                         </div>
                         <button id="genScriptBtn" class="btn btn-primary" style="width:100%;">
@@ -492,29 +523,26 @@
                 </div>
             </div>
 
-            <!-- Col 2: Script preview -->
+            <!-- Col 2: Script preview + YouTube metadata -->
             <div class="space-y">
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                             Script
                         </div>
                         <span class="step-chip"><span class="step-num" id="stepNum2">2</span>Review &amp; edit</span>
                     </div>
                     <div class="card-p space-y">
-                        <!-- Empty state -->
                         <div id="genScriptEmpty" style="padding:32px 0; text-align:center; color:var(--text-3); font-size:13px;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 10px; display:block; opacity:0.4;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                             Fill in the config and click Generate Script
                         </div>
-
-                        <!-- Script content (hidden until generated) -->
                         <div id="genScriptContent" class="hidden space-y">
+                            <!-- Narration -->
                             <div>
-                                <div id="genTitle" style="font-size:16px; font-weight:700; color:var(--text); line-height:1.3; margin-bottom:4px;"></div>
+                                <div id="genTitle" style="font-size:15px; font-weight:700; color:var(--text); line-height:1.3; margin-bottom:3px;"></div>
                                 <div id="genDescription" style="font-size:12px; color:var(--text-3);"></div>
-                                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;" id="genHashtagRow"></div>
                             </div>
                             <div class="divider"></div>
                             <div>
@@ -522,8 +550,9 @@
                                     <label class="field-label" style="margin:0;">Narration (editable)</label>
                                     <span id="genWordCount" style="font-size:11px; color:var(--text-3);"></span>
                                 </div>
-                                <textarea id="genNarration" style="min-height:220px; font-size:13px; line-height:1.65;"></textarea>
+                                <textarea id="genNarration" style="min-height:200px; font-size:13px; line-height:1.65;"></textarea>
                             </div>
+                            <!-- Scene breakdown -->
                             <div>
                                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
                                     <label class="field-label" style="margin:0;">Scene breakdown</label>
@@ -531,6 +560,7 @@
                                 </div>
                                 <div id="genScenesList" class="hidden space-y-sm"></div>
                             </div>
+                            <!-- Voiceover -->
                             <button id="genVoiceBtn" class="btn btn-primary" style="width:100%;" disabled>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                                 Generate Voiceover
@@ -540,39 +570,98 @@
                                     <audio id="genVoiceAudio" controls style="flex:1; height:32px;"></audio>
                                     <span id="genVoiceSize" style="font-size:11px; color:var(--text-3); white-space:nowrap; padding-left:8px;"></span>
                                 </div>
-                                <p style="font-size:11.5px; color:var(--text-3); margin-top:6px; text-align:center;">✅ Voiceover added to the video queue automatically</p>
+                                <p style="font-size:11.5px; color:var(--text-3); margin-top:6px; text-align:center;">✅ Voiceover added to the pipeline queue</p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- YouTube Metadata (shown after script generated) -->
+                <div id="genYoutubeCard" class="card hidden">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.95C5.12 20 12 20 12 20s6.88 0 8.59-.47a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
+                            YouTube Metadata
+                        </div>
+                        <button id="genCopyMetaBtn" class="btn btn-ghost btn-sm">Copy all</button>
+                    </div>
+                    <div class="card-p space-y">
+                        <div>
+                            <label class="field-label">SEO Title</label>
+                            <input type="text" id="genYtTitle" style="font-size:13px;">
+                            <div style="display:flex; justify-content:flex-end; margin-top:3px;"><span id="genYtTitleLen" style="font-size:11px; color:var(--text-3);">0/60</span></div>
+                        </div>
+                        <div>
+                            <label class="field-label">Description</label>
+                            <textarea id="genYtDesc" style="min-height:130px; font-size:12px; line-height:1.6;"></textarea>
+                        </div>
+                        <div>
+                            <label class="field-label">Tags</label>
+                            <div id="genYtTags" style="display:flex; flex-wrap:wrap; gap:5px; min-height:28px;"></div>
+                        </div>
+                        <div>
+                            <label class="field-label">Hashtags</label>
+                            <div id="genYtHashtags" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Col 3: Videos + auto-create -->
+            <!-- Col 3: Footage + pipeline -->
             <div class="space-y">
-                <!-- Video pool -->
+
+                <!-- Stock footage finder -->
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                            Video pool
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            Stock Footage
                         </div>
                         <span class="step-chip"><span class="step-num" id="stepNum3">3</span>Clips</span>
                     </div>
-                    <div class="card-p">
-                        <label id="genVideoDropZone" for="fileInput" class="drop-zone" style="padding:18px;">
-                            <div class="drop-zone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
-                            <div class="drop-zone-title" style="font-size:12px;">Drop video clips or browse</div>
-                            <div class="drop-zone-sub">Shared with Combine tab</div>
+                    <div class="card-p space-y">
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <div style="flex:1;">
+                                <label class="field-label">Clips per scene</label>
+                                <select id="genClipsPerScene" style="width:100%;">
+                                    <option value="1">1 clip / scene</option>
+                                    <option value="2" selected>2 clips / scene</option>
+                                    <option value="3">3 clips / scene</option>
+                                </select>
+                            </div>
+                            <div style="flex:1;">
+                                <label class="field-label">Source</label>
+                                <select id="genFootageSource" style="width:100%;">
+                                    <option value="pexels">Pexels</option>
+                                    <option value="pixabay">Pixabay</option>
+                                    <option value="auto" selected>Auto (best)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button id="genFindFootageBtn" class="btn btn-ghost" style="width:100%;" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            Find Stock Footage
+                        </button>
+                        <div id="genFootageStatus" style="font-size:12px; color:var(--text-3); text-align:center; display:none;"></div>
+
+                        <!-- Footage grid / thumbnails -->
+                        <div id="genFootageGrid" style="display:none; display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:260px; overflow-y:auto;"></div>
+
+                        <!-- Divider: or upload manually -->
+                        <div class="divider" style="margin:2px 0;"></div>
+                        <label id="genVideoDropZone" for="fileInput" class="drop-zone" style="padding:12px; cursor:pointer;">
+                            <div class="drop-zone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
+                            <div class="drop-zone-title" style="font-size:11.5px;">Or upload your own clips</div>
                         </label>
-                        <div style="font-size:12px; color:var(--text-3); margin-top:8px; display:flex; justify-content:space-between;">
+                        <div style="font-size:12px; color:var(--text-3); display:flex; justify-content:space-between;">
                             <span id="genFileCount">0 videos</span>
                             <span id="genVideoDur">0s</span>
                         </div>
-                        <div id="genFileListMini" class="space-y-sm" style="margin-top:8px; max-height:120px; overflow-y:auto;"></div>
+                        <div id="genFileListMini" class="space-y-sm" style="max-height:100px; overflow-y:auto;"></div>
                     </div>
                 </div>
 
-                <!-- Duration balance (mini) -->
+                <!-- Duration balance -->
                 <div id="genCoverageCard" class="card card-p hidden">
                     <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
                         <span style="color:var(--text-2);">Duration balance</span>
@@ -584,18 +673,20 @@
 
                 <!-- Auto-create -->
                 <div class="card card-p space-y">
-                    <div>
-                        <label class="field-label">Output format</label>
-                        <select id="genOutputFormat">
-                            <option value="mp4" selected>MP4</option>
-                            <option value="mov">MOV</option>
-                        </select>
+                    <div style="display:flex; gap:8px;">
+                        <div style="flex:1;">
+                            <label class="field-label">Output format</label>
+                            <select id="genOutputFormat">
+                                <option value="mp4" selected>MP4</option>
+                                <option value="mov">MOV</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="toggle-row">
                         <input type="checkbox" id="genBurnCaptions">
                         <div>
-                            <label for="genBurnCaptions" style="font-size:13px; font-weight:550; cursor:pointer;">Burn captions into video</label>
-                            <div style="font-size:11.5px; color:var(--text-3); margin-top:1px;">Auto-generate &amp; render subtitles after muxing (slower)</div>
+                            <label for="genBurnCaptions" style="font-size:13px; font-weight:550; cursor:pointer;">Burn captions</label>
+                            <div style="font-size:11.5px; color:var(--text-3); margin-top:1px;">Auto-generate &amp; render subtitles (slower)</div>
                         </div>
                     </div>
                     <button id="genAutoBtn" class="btn btn-primary btn-lg" style="width:100%;" disabled>
@@ -603,27 +694,13 @@
                         Auto-Create Video
                     </button>
 
-                    <!-- Pipeline steps display -->
                     <div id="genPipeline" class="hidden space-y-sm">
-                        <div class="pipeline-step" id="ps1">
-                            <span class="ps-icon" id="ps1-icon">1</span>
-                            <span>Combine video clips</span>
-                        </div>
-                        <div class="pipeline-step" id="ps2">
-                            <span class="ps-icon" id="ps2-icon">2</span>
-                            <span>Combine voiceover audio</span>
-                        </div>
-                        <div class="pipeline-step" id="ps3">
-                            <span class="ps-icon" id="ps3-icon">3</span>
-                            <span>Mux video + audio</span>
-                        </div>
-                        <div class="pipeline-step" id="ps4" style="display:none;">
-                            <span class="ps-icon" id="ps4-icon">4</span>
-                            <span>Burn captions</span>
-                        </div>
+                        <div class="pipeline-step" id="ps1"><span class="ps-icon" id="ps1-icon">1</span><span>Combine video clips</span></div>
+                        <div class="pipeline-step" id="ps2"><span class="ps-icon" id="ps2-icon">2</span><span>Combine voiceover audio</span></div>
+                        <div class="pipeline-step" id="ps3"><span class="ps-icon" id="ps3-icon">3</span><span>Mux video + audio</span></div>
+                        <div class="pipeline-step" id="ps4" style="display:none;"><span class="ps-icon" id="ps4-icon">4</span><span>Burn captions</span></div>
                     </div>
 
-                    <!-- Final result -->
                     <div id="genResult" class="hidden">
                         <div class="result-card">
                             <div style="font-weight:600; font-size:14px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
@@ -2092,180 +2169,130 @@ document.getElementById('cleanupBtn').addEventListener('click', async () => {
 
 // ─── Generate tab ─────────────────────────────────────────────────────────────
 
-// Load available AI models from server (keyed by configured .env providers)
+// Groq-only: just populate the static options (already in HTML).
+// We call /api/models purely to confirm a key is present and update labels.
+// No-op — model list is static (Groq only). Still pings /api/models so the
+// UI can confirm a key is present, but doesn't rewrite the dropdown.
 async function loadAvailableModels() {
-    const sel = document.getElementById('genModel');
     try {
         const r = await fetch('/api/models');
         const d = await r.json();
-        if (!d.ok || !d.models?.length) return;
-
-        const prev = sel.value;
-        sel.innerHTML = '';
-
-        const providerLabels = {
-            groq: 'Groq', gemini: 'Gemini', mistral: 'Mistral', openrouter: 'OpenRouter'
-        };
-        const modelLabels = {
-            'llama-3.3-70b-versatile': 'Llama 3.3 70B',
-            'llama-3.1-8b-instant': 'Llama 3.1 8B (fast)',
-            'mixtral-8x7b-32768': 'Mixtral 8x7B',
-            'llama3-70b-8192': 'Llama 3 70B',
-            'gemini-2.0-flash': 'Gemini 2.0 Flash',
-            'gemini-1.5-pro': 'Gemini 1.5 Pro',
-            'gemini-1.5-flash': 'Gemini 1.5 Flash',
-            'mistral-large-latest': 'Mistral Large',
-            'mistral-small-latest': 'Mistral Small',
-            'open-mixtral-8x22b': 'Mixtral 8x22B',
-            'openai/gpt-4o': 'GPT-4o',
-            'anthropic/claude-3.5-sonnet': 'Claude 3.5 Sonnet',
-            'meta-llama/llama-3.3-70b-instruct': 'Llama 3.3 70B',
-            'google/gemini-2.0-flash-001': 'Gemini 2.0 Flash',
-            'mistralai/mistral-large': 'Mistral Large',
-        };
-
-        // Group by provider
-        const byProvider = {};
-        d.models.forEach(({ model, provider }) => {
-            if (!byProvider[provider]) byProvider[provider] = [];
-            byProvider[provider].push(model);
-        });
-
-        for (const [provider, models] of Object.entries(byProvider)) {
-            const grp = document.createElement('optgroup');
-            grp.label = providerLabels[provider] || provider;
-            models.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = (modelLabels[m] || m) + ' · ' + (providerLabels[provider] || provider);
-                grp.appendChild(opt);
-            });
-            sel.appendChild(grp);
+        if (!d.ok || !d.models?.length) {
+            document.getElementById('genScriptStatus').textContent = '⚠️ No GROQ_API_KEY found in .env';
         }
-
-        // Restore previous selection if still available
-        if ([...sel.options].find(o => o.value === prev)) sel.value = prev;
-    } catch(_) {
-        // Server offline or no keys — leave the default option
-    }
-}
-
-// Speed slider display
-document.getElementById('genSpeed').addEventListener('input', e => {
-    document.getElementById('genSpeedVal').textContent = `${parseFloat(e.target.value).toFixed(2)}×`;
-});
-
-// Restore caption toggle preference
-(function() {
-    try {
-        const saved = localStorage.getItem('gen_burn_captions');
-        if (saved === 'true') document.getElementById('genBurnCaptions').checked = true;
     } catch(_) {}
-})();
-document.getElementById('genBurnCaptions').addEventListener('change', e => {
-    try { localStorage.setItem('gen_burn_captions', e.target.checked); } catch(_) {}
-});
-
-// Mirror videoDurations / uploadedFiles counts into the gen tab's mini display
-function updateGenFileDisplay() {
-    const count = uploadedFiles.length;
-    const totalV = videoDurations.reduce((a,b) => a+(b||0), 0);
-    document.getElementById('genFileCount').textContent = `${count} video${count !== 1 ? 's' : ''}`;
-    document.getElementById('genVideoDur').textContent = fmtSec(totalV);
-
-    const listEl = document.getElementById('genFileListMini');
-    listEl.innerHTML = uploadedFiles.slice(0, 5).map(f =>
-        `<div class="file-item"><span class="file-item-name" title="${f.name}">${f.name}</span><span class="file-item-size">${fmt(f.size)}</span></div>`
-    ).join('') + (count > 5 ? `<div style="font-size:11px;color:var(--text-3);padding:3px 6px;">+${count-5} more</div>` : '');
-
-    updateGenBalance();
 }
 
-function updateGenBalance() {
-    const totalV = videoDurations.reduce((a,b) => a+(b||0), 0);
-    const totalA = audioDurations.reduce((a,b) => a+(b||0), 0);
-    const card = document.getElementById('genCoverageCard');
-    if (!totalV && !totalA) { card.classList.add('hidden'); return; }
-    card.classList.remove('hidden');
-    const ratio = totalA > 0 ? totalV / totalA : 0;
-    const pct = Math.min(ratio * 100, 100);
-    document.getElementById('genCovFill').style.width = `${pct}%`;
-    document.getElementById('genCovFill').style.background = ratio >= 0.95 ? '#22c55e' : '#f59e0b';
-    document.getElementById('genBalanceLabel').textContent = `${Math.round(ratio * 100)}%`;
-    const diff = Math.abs(totalV - totalA);
-    document.getElementById('genBalanceHint').textContent =
-        ratio >= 0.95 && ratio <= 1.05 ? '✅ Duration balanced' :
-        totalV > totalA ? `Video ${fmtSec(diff)} longer than audio` :
-        `Audio ${fmtSec(diff)} longer than video — add more clips`;
-    updateGenAutoBtn();
-}
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const SPIN_SVG = `<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>`;
 
-function updateGenAutoBtn() {
-    const hasAudio = audioFiles.length > 0;
-    const hasVideo = uploadedFiles.length > 0;
-    document.getElementById('genAutoBtn').disabled = !(hasAudio && hasVideo);
-}
-
-// Step chip indicator helper
-function markStep(num, state) { // state: 'pending' | 'active' | 'done' | 'err'
+function markStep(num, state) {
     const el = document.getElementById(`stepNum${num}`);
     if (!el) return;
-    el.classList.remove('done');
-    if (state === 'done') el.classList.add('done');
+    el.classList.toggle('done', state === 'done');
 }
-function setPipelineStep(id, state) { // state: '' | 'active' | 'done' | 'err'
-    const el = document.getElementById(`ps${id}`);
+
+function setPipelineStep(id, state) {
+    const el   = document.getElementById(`ps${id}`);
     const icon = document.getElementById(`ps${id}-icon`);
     if (!el) return;
     el.className = 'pipeline-step' + (state ? ` ${state}` : '');
     if (!icon) return;
-    const iconMap = {
-        done: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
-        active: `<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>`,
-        err: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+    const map = {
+        done:   `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+        active: SPIN_SVG,
+        err:    `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
     };
-    icon.innerHTML = iconMap[state] || String(id);
+    icon.innerHTML = map[state] ?? String(id);
 }
+
+function updateGenFileDisplay() {
+    const count  = uploadedFiles.length;
+    const totalV = videoDurations.reduce((a, b) => a + (b || 0), 0);
+    document.getElementById('genFileCount').textContent = `${count} video${count !== 1 ? 's' : ''}`;
+    document.getElementById('genVideoDur').textContent  = fmtSec(totalV);
+    const listEl = document.getElementById('genFileListMini');
+    listEl.innerHTML = uploadedFiles.slice(0, 5).map(f =>
+        `<div class="file-item"><span class="file-item-name" title="${f.name}">${f.name}</span><span class="file-item-size">${fmt(f.size)}</span></div>`
+    ).join('') + (count > 5 ? `<div style="font-size:11px;color:var(--text-3);padding:3px 6px;">+${count - 5} more</div>` : '');
+    updateGenBalance();
+}
+
+function updateGenBalance() {
+    const totalV = videoDurations.reduce((a, b) => a + (b || 0), 0);
+    const totalA = audioDurations.reduce((a, b) => a + (b || 0), 0);
+    const card   = document.getElementById('genCoverageCard');
+    if (!totalV && !totalA) { card.classList.add('hidden'); return; }
+    card.classList.remove('hidden');
+    const ratio = totalA > 0 ? totalV / totalA : 0;
+    const pct   = Math.min(ratio * 100, 100);
+    document.getElementById('genCovFill').style.width      = `${pct}%`;
+    document.getElementById('genCovFill').style.background = ratio >= 0.95 ? '#22c55e' : '#f59e0b';
+    document.getElementById('genBalanceLabel').textContent  = `${Math.round(ratio * 100)}%`;
+    const diff = Math.abs(totalV - totalA);
+    document.getElementById('genBalanceHint').textContent =
+        (ratio >= 0.95 && ratio <= 1.05) ? '✅ Duration balanced' :
+        totalV > totalA ? `Video ${fmtSec(diff)} longer than audio` :
+        `Audio ${fmtSec(diff)} longer than video`;
+    updateGenAutoBtn();
+}
+
+function updateGenAutoBtn() {
+    document.getElementById('genAutoBtn').disabled = !(audioFiles.length && uploadedFiles.length);
+}
+
+// Speed slider
+document.getElementById('genSpeed').addEventListener('input', e => {
+    document.getElementById('genSpeedVal').textContent = `${parseFloat(e.target.value).toFixed(2)}×`;
+});
+
+// Caption toggle persistence
+try { if (localStorage.getItem('gen_burn_captions') === 'true') document.getElementById('genBurnCaptions').checked = true; } catch(_) {}
+document.getElementById('genBurnCaptions').addEventListener('change', e => {
+    try { localStorage.setItem('gen_burn_captions', e.target.checked); } catch(_) {}
+});
 
 // ── Script generation ─────────────────────────────────────────────────────────
 document.getElementById('genScriptBtn').addEventListener('click', async () => {
     const topic = document.getElementById('genTopic').value.trim();
-    if (!topic) { document.getElementById('genScriptStatus').textContent = '⚠️ Please enter a topic.'; return; }
+    if (!topic) { document.getElementById('genScriptStatus').textContent = '⚠️ Enter a topic first.'; return; }
 
-    const btn = document.getElementById('genScriptBtn');
+    const btn      = document.getElementById('genScriptBtn');
     const statusEl = document.getElementById('genScriptStatus');
-    btn.disabled = true;
-    btn.innerHTML = `<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Generating…`;
+    btn.disabled   = true;
+    btn.innerHTML  = `${SPIN_SVG} Generating…`;
     statusEl.textContent = 'Calling Groq…';
     showProgress(); statusLog.innerHTML = '';
 
     try {
-        const body = {
-            topic,
-            niche: document.getElementById('genNiche').value.trim() || 'general',
-            tone: document.getElementById('genTone').value,
-            style: document.getElementById('genStyle').value,
-            duration_minutes: parseFloat(document.getElementById('genDuration').value),
-            model: document.getElementById('genModel').value
-        };
         const r = await fetch('/api/generate-script', {
-            method: 'POST',
+            method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
+            body:    JSON.stringify({
+                topic,
+                niche:            document.getElementById('genNiche').value.trim() || 'general',
+                tone:             document.getElementById('genTone').value,
+                style:            document.getElementById('genStyle').value,
+                duration_minutes: parseFloat(document.getElementById('genDuration').value),
+                model:            document.getElementById('genModel').value,
+            }),
         });
         const d = await r.json();
         if (!d.ok) throw new Error(d.error || 'Script generation failed');
 
         currentScript = d.script;
-        statusEl.textContent = `✅ Done — ${d.tokens_used || '?'} tokens, model: ${d.model_used}`;
+        statusEl.textContent = `✅ ${d.tokens_used || '?'} tokens · ${d.model_used}`;
         markStep(2, 'done');
         renderGenScript(currentScript);
-        addLog(`✅ Script: "${currentScript.title}" — ${currentScript.narration.split(/\s+/).length} words`);
+        renderYouTubeMeta(currentScript);
+        // Enable footage finder now that we have scenes
+        document.getElementById('genFindFootageBtn').disabled = false;
+        addLog(`✅ Script: "${currentScript.title}" — ${currentScript.narration.split(/\s+/).length} words, ${currentScript.scenes?.length} scenes`);
     } catch(err) {
         statusEl.textContent = `❌ ${err.message}`;
         addLog(`❌ Script error: ${err.message}`);
     } finally {
-        btn.disabled = false;
+        btn.disabled  = false;
         btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Generate Script`;
     }
 });
@@ -2273,80 +2300,196 @@ document.getElementById('genScriptBtn').addEventListener('click', async () => {
 function renderGenScript(script) {
     document.getElementById('genScriptEmpty').classList.add('hidden');
     document.getElementById('genScriptContent').classList.remove('hidden');
-    document.getElementById('genTitle').textContent = script.title || '';
+    document.getElementById('genTitle').textContent       = script.title || '';
     document.getElementById('genDescription').textContent = script.description || '';
-
-    const hashRow = document.getElementById('genHashtagRow');
-    hashRow.innerHTML = (script.hashtags || []).map(h =>
-        `<span style="font-size:11px; padding:2px 7px; border-radius:99px; background:var(--accent-soft); border:1px solid var(--border); color:var(--text-3);">#${h}</span>`
-    ).join('');
 
     const narEl = document.getElementById('genNarration');
     narEl.value = script.narration || '';
     updateGenWordCount();
-    narEl.addEventListener('input', updateGenWordCount);
+    narEl.oninput = updateGenWordCount;
 
-    // Scenes
-    const scenesEl = document.getElementById('genScenesList');
-    scenesEl.innerHTML = (script.scenes || []).map(s => `
+    document.getElementById('genScenesList').innerHTML = (script.scenes || []).map(s => `
         <div class="scene-item">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-                <span style="font-size:11px; font-weight:600; color:var(--text-2);">Scene ${s.id}</span>
-                <span style="font-size:11px; color:var(--text-3);">~${s.duration_hint_seconds}s</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <span style="font-size:11px;font-weight:600;color:var(--text-2);">Scene ${s.id}</span>
+                <span style="font-size:11px;color:var(--text-3);">~${s.duration_hint_seconds}s</span>
             </div>
-            <div style="margin-bottom:4px; color:var(--text-2); font-size:12px;">${s.description || ''}</div>
+            <div style="margin-bottom:5px;color:var(--text-2);font-size:12px;">${s.description || ''}</div>
             <div>${(s.visual_keywords || []).map(k => `<span class="scene-kw">${k}</span>`).join('')}</div>
         </div>`).join('');
 
     document.getElementById('genVoiceBtn').disabled = !kokoroOk;
-    if (!kokoroOk) document.getElementById('genVoiceResult').classList.add('hidden');
 }
 
 function updateGenWordCount() {
-    const words = document.getElementById('genNarration').value.trim().split(/\s+/).filter(Boolean).length;
-    const estSec = Math.round(words / 2.5); // ~150 wpm
+    const words  = document.getElementById('genNarration').value.trim().split(/\s+/).filter(Boolean).length;
+    const estSec = Math.round(words / 2.5);
     document.getElementById('genWordCount').textContent = `${words} words ≈ ${fmtSec(estSec)}`;
 }
 
 document.getElementById('genScenesToggle').addEventListener('click', () => {
-    const el = document.getElementById('genScenesList');
-    const btn = document.getElementById('genScenesToggle');
+    const el    = document.getElementById('genScenesList');
+    const btn   = document.getElementById('genScenesToggle');
     const hidden = el.classList.toggle('hidden');
     btn.textContent = hidden ? 'Show' : 'Hide';
 });
 
-// ── Voiceover generation from script ─────────────────────────────────────────
+// ── YouTube metadata ──────────────────────────────────────────────────────────
+function renderYouTubeMeta(script) {
+    const yt = script.youtube || {};
+    document.getElementById('genYoutubeCard').classList.remove('hidden');
+
+    const titleEl = document.getElementById('genYtTitle');
+    titleEl.value = yt.title || script.title || '';
+    updateYtTitleLen();
+    titleEl.oninput = updateYtTitleLen;
+
+    document.getElementById('genYtDesc').value = yt.description || script.description || '';
+
+    document.getElementById('genYtTags').innerHTML =
+        (yt.tags || script.hashtags || []).map(t =>
+            `<span class="yt-tag">${t}</span>`).join('');
+
+    document.getElementById('genYtHashtags').innerHTML =
+        (yt.hashtags || script.hashtags || []).map(h =>
+            `<span class="yt-hashtag">#${h}</span>`).join('');
+}
+
+function updateYtTitleLen() {
+    const len = document.getElementById('genYtTitle').value.length;
+    const el  = document.getElementById('genYtTitleLen');
+    el.textContent = `${len}/60`;
+    el.style.color = len > 60 ? '#ef4444' : 'var(--text-3)';
+}
+
+document.getElementById('genCopyMetaBtn').addEventListener('click', () => {
+    const title    = document.getElementById('genYtTitle').value;
+    const desc     = document.getElementById('genYtDesc').value;
+    const tags     = [...document.querySelectorAll('#genYtTags .yt-tag')].map(e => e.textContent).join(', ');
+    const hashtags = [...document.querySelectorAll('#genYtHashtags .yt-hashtag')].map(e => e.textContent).join(' ');
+    const text     = `TITLE:\n${title}\n\nDESCRIPTION:\n${desc}\n\nTAGS:\n${tags}\n\nHASHTAGS:\n${hashtags}`;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('genCopyMetaBtn');
+        const orig = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 1800);
+    }).catch(() => {});
+});
+
+// ── Stock footage finder ──────────────────────────────────────────────────────
+document.getElementById('genFindFootageBtn').addEventListener('click', async () => {
+    if (!currentScript?.scenes?.length) return;
+
+    const btn    = document.getElementById('genFindFootageBtn');
+    const status = document.getElementById('genFootageStatus');
+    const grid   = document.getElementById('genFootageGrid');
+    const clipsPerScene = parseInt(document.getElementById('genClipsPerScene').value);
+
+    btn.disabled     = true;
+    btn.innerHTML    = `${SPIN_SVG} Searching…`;
+    status.style.display = 'block';
+    status.textContent   = 'Searching Pexels for each scene…';
+    grid.style.display   = 'none';
+    grid.innerHTML       = '';
+    showProgress(); updateProgress(5);
+
+    try {
+        const r = await fetch('/api/find-footage', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ scenes: currentScript.scenes, clips_per_scene: clipsPerScene }),
+        });
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error);
+
+        const clips = d.clips || [];
+        if (!clips.length) {
+            status.textContent = '⚠️ No footage found. Add PEXELS_API_KEY to .env (free at pexels.com/api).';
+            return;
+        }
+
+        status.textContent = `⬇️ Downloading ${clips.length} clip${clips.length !== 1 ? 's' : ''}…`;
+        updateProgress(30);
+
+        // Fetch each clip as a blob and add to uploadedFiles[]
+        let loaded = 0;
+        for (const clip of clips) {
+            try {
+                const br = await fetch(clip.serveUrl);
+                if (!br.ok) throw new Error(`${br.status}`);
+                const blob = await br.blob();
+                const file = new File([blob], clip.filename, { type: 'video/mp4' });
+                uploadedFiles.push(file);
+                const dur = await getMediaDuration(file, 'video');
+                videoDurations.push(dur);
+
+                // Add thumbnail to grid
+                const card = document.createElement('div');
+                card.className = 'footage-thumb selected';
+                card.innerHTML = `
+                    <img src="${clip.thumbnail}" alt="Scene ${clip.scene_id}" loading="lazy"
+                         onerror="this.style.background='var(--surface-2)';this.style.display='block';">
+                    <div class="footage-thumb-info">
+                        <span>S${clip.scene_id}</span>
+                        <span>${fmtSec(clip.duration || dur)}</span>
+                    </div>
+                    <div class="footage-thumb-check">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>`;
+                grid.appendChild(card);
+
+                loaded++;
+                updateProgress(30 + Math.round((loaded / clips.length) * 60));
+            } catch(err) {
+                addLog(`⚠️  Clip ${clip.filename}: ${err.message}`);
+            }
+        }
+
+        grid.style.display = 'grid';
+        updateProgress(100);
+        renderFileList();
+        updateDurations();
+        updateGenBalance();
+        updateGenAutoBtn();
+        markStep(3, 'done');
+        status.textContent = `✅ ${loaded} clip${loaded !== 1 ? 's' : ''} added from Pexels`;
+        addLog(`✅ Footage: ${loaded} clips added to pool`);
+    } catch(err) {
+        status.textContent = `❌ ${err.message}`;
+        addLog(`❌ Footage error: ${err.message}`);
+    } finally {
+        btn.disabled  = false;
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Find Stock Footage`;
+    }
+});
+
+// ── Voiceover generation ──────────────────────────────────────────────────────
 document.getElementById('genVoiceBtn').addEventListener('click', async () => {
     const narration = document.getElementById('genNarration').value.trim();
-    if (!narration) return;
-    if (!kokoroOk) { addLog('⚠️ Kokoro not running'); return; }
+    if (!narration || !kokoroOk) return;
 
-    const btn = document.getElementById('genVoiceBtn');
+    const btn    = document.getElementById('genVoiceBtn');
     btn.disabled = true;
-    btn.innerHTML = `<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg> Generating voiceover…`;
-    addLog('🎙️ Generating voiceover from script narration…');
+    btn.innerHTML = `${SPIN_SVG} Generating voiceover…`;
+    addLog('🎙️ Generating voiceover…');
 
     try {
         const voice = document.getElementById('genVoice').value;
         const speed = parseFloat(document.getElementById('genSpeed').value);
         const r = await fetch('/api/tts', {
-            method: 'POST',
+            method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: narration, voice, speed, format: 'wav' })
+            body:    JSON.stringify({ text: narration, voice, speed, format: 'wav' }),
         });
         if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || `TTS ${r.status}`); }
 
         genVoiceBlob = await r.blob();
         const voiceUrl = URL.createObjectURL(genVoiceBlob);
-
-        // Show preview
-        document.getElementById('genVoiceAudio').src = voiceUrl;
+        document.getElementById('genVoiceAudio').src    = voiceUrl;
         document.getElementById('genVoiceSize').textContent = fmt(genVoiceBlob.size);
         document.getElementById('genVoiceResult').classList.remove('hidden');
 
-        // Auto-add to audioFiles[] (shared state with Combine tab)
-        const voiceName = document.getElementById('genVoice').options[document.getElementById('genVoice').selectedIndex].text;
-        const file = new File([genVoiceBlob], `gen_voiceover_${Date.now()}.wav`, { type: 'audio/wav' });
+        const file = new File([genVoiceBlob], `gen_vo_${Date.now()}.wav`, { type: 'audio/wav' });
         audioFiles.push(file);
         const dur = await getMediaDuration(file, 'audio');
         audioDurations.push(dur);
@@ -2354,24 +2497,22 @@ document.getElementById('genVoiceBtn').addEventListener('click', async () => {
         updateDurations();
         updateGenBalance();
         updateGenAutoBtn();
-        markStep(3, 'done');
-        addLog(`✅ Voiceover ready — ${fmt(genVoiceBlob.size)}, ~${fmtSec(dur)}`);
+        addLog(`✅ Voiceover — ${fmt(genVoiceBlob.size)}, ~${fmtSec(dur)}`);
     } catch(err) {
         addLog(`❌ Voiceover error: ${err.message}`);
     } finally {
-        btn.disabled = false;
+        btn.disabled  = false;
         btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg> Generate Voiceover`;
     }
 });
 
-// Sync Kokoro status to the gen tab badge too
 function updateGenKokoroBadge(ok) {
     const badge = document.getElementById('genKokoroBadge');
-    const dot = document.getElementById('genKokoroDot');
+    const dot   = document.getElementById('genKokoroDot');
     const label = document.getElementById('genKokoroLabel');
     if (ok) {
         badge.className = 'kokoro-badge ok'; dot.className = 'status-dot ok'; label.textContent = 'Kokoro ready';
-        document.getElementById('genVoiceBtn').disabled = !document.getElementById('genNarration').value.trim();
+        if (document.getElementById('genNarration').value.trim()) document.getElementById('genVoiceBtn').disabled = false;
     } else {
         badge.className = 'kokoro-badge err'; dot.className = 'status-dot err'; label.textContent = 'Kokoro offline';
         document.getElementById('genVoiceBtn').disabled = true;
@@ -2383,71 +2524,58 @@ document.getElementById('genAutoBtn').addEventListener('click', async () => {
     if (!uploadedFiles.length || !audioFiles.length) return;
 
     const burnCaptions = document.getElementById('genBurnCaptions').checked;
-    const outputFmt = document.getElementById('genOutputFormat').value;
-    const btn = document.getElementById('genAutoBtn');
+    const outputFmt    = document.getElementById('genOutputFormat').value;
+    const btn          = document.getElementById('genAutoBtn');
 
     btn.disabled = true;
     document.getElementById('genPipeline').classList.remove('hidden');
     document.getElementById('genResult').classList.add('hidden');
-    showProgress(); statusLog.innerHTML = ''; updateProgress(0);
-
-    // Show caption step only if enabled
     document.getElementById('ps4').style.display = burnCaptions ? 'flex' : 'none';
-
+    showProgress(); statusLog.innerHTML = ''; updateProgress(0);
     currentSessionId = genId();
 
     try {
         openLogStream(currentSessionId);
+
+        const audioDur = audioDurations.reduce((a, b) => a + (b || 0), 0);
         const vCfg = {
             session_id: currentSessionId,
             min_cut_duration: 2,
-            max_cut_duration: 5,
+            max_cut_duration: 6,
             output_format: outputFmt,
-            // match video total to audio duration
-            target_total_duration: audioDurations.reduce((a,b) => a+(b||0), 0)
+            target_total_duration: audioDur,
         };
         const aCfg = {
             session_id: currentSessionId,
-            min_pause_duration: 0.3,
-            max_pause_duration: 1.0,
-            output_format: 'mp3'
+            min_pause_duration: 0.2,
+            max_pause_duration: 0.8,
+            output_format: 'mp3',
         };
 
-        // Step 1: Videos
         setPipelineStep(1, 'active'); addLog('📹 Combining video clips…'); updateProgress(5);
         processedVideoBlob = await processVideos(vCfg);
         setPipelineStep(1, 'done'); updateProgress(35); addLog('✅ Videos combined');
 
-        // Step 2: Audio
-        setPipelineStep(2, 'active'); addLog('🎙️ Combining voiceover…'); updateProgress(40);
+        setPipelineStep(2, 'active'); addLog('🎙️ Combining audio…'); updateProgress(40);
         processedAudioBlob = await processVoiceover(aCfg);
         setPipelineStep(2, 'done'); updateProgress(65); addLog('✅ Audio combined');
 
-        // Step 3: Mux
         setPipelineStep(3, 'active'); addLog('🎛️ Muxing video + audio…'); updateProgress(70);
         processedFinalBlob = await processMuxing(currentSessionId);
         setPipelineStep(3, 'done'); updateProgress(burnCaptions ? 80 : 100); addLog('✅ Muxed');
 
-        // Step 4 (optional): Captions
-        if (burnCaptions && currentScript) {
-            setPipelineStep(4, 'active'); addLog('📝 Generating & burning captions…');
-            const videoForAnnotation = new File([processedFinalBlob], 'muxed.mp4', { type: 'video/mp4' });
-
-            // Annotate
-            const annotFd = new FormData();
-            annotFd.append('video', videoForAnnotation);
-            // Pass narration as a text "script" via a plain text blob (annotator falls back to transcription without PDF)
-            const annotR = await fetch('/api/annotate', { method: 'POST', body: annotFd });
-            if (!annotR.ok) throw new Error(`Annotate: ${annotR.status}`);
+        if (burnCaptions) {
+            setPipelineStep(4, 'active'); addLog('📝 Burning captions…');
+            const muxed = new File([processedFinalBlob], 'muxed.mp4', { type: 'video/mp4' });
+            const annotFd = new FormData(); annotFd.append('video', muxed);
+            const annotR  = await fetch('/api/annotate', { method: 'POST', body: annotFd });
+            if (!annotR.ok) throw new Error(`Annotate ${annotR.status}`);
             const annotData = await annotR.json();
             updateProgress(90);
-
-            // Render
-            const renderFd = new FormData();
-            renderFd.append('video', videoForAnnotation);
+            const renderFd = new FormData(); renderFd.append('video', muxed);
             renderFd.append('annotations', JSON.stringify(annotData.annotations || []));
             const renderR = await fetch('/api/annotate/render', { method: 'POST', body: renderFd });
-            if (!renderR.ok) throw new Error(`Render: ${renderR.status}`);
+            if (!renderR.ok) throw new Error(`Render ${renderR.status}`);
             genFinalBlob = await renderR.blob();
             if (!genFinalBlob.size) throw new Error('Empty render result');
             setPipelineStep(4, 'done'); updateProgress(100); addLog('✅ Captions burned');
@@ -2456,9 +2584,7 @@ document.getElementById('genAutoBtn').addEventListener('click', async () => {
         }
 
         closeLogStream();
-
-        // Show result
-        const title = currentScript?.title || 'faceless_video';
+        const title    = currentScript?.title || 'faceless_video';
         const safeName = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40);
         document.getElementById('genResultMeta').textContent =
             `"${title}" — ${fmt(genFinalBlob.size)} · ${outputFmt.toUpperCase()}`;
@@ -2468,10 +2594,8 @@ document.getElementById('genAutoBtn').addEventListener('click', async () => {
         addLog('🎉 Done! Your faceless video is ready.');
     } catch(err) {
         addLog(`❌ Pipeline error: ${err.message}`);
-        [1,2,3,4].forEach(i => {
-            if (document.getElementById(`ps${i}`)?.classList.contains('active')) {
-                setPipelineStep(i, 'err');
-            }
+        [1, 2, 3, 4].forEach(i => {
+            if (document.getElementById(`ps${i}`)?.className.includes('active')) setPipelineStep(i, 'err');
         });
         closeLogStream();
     } finally {

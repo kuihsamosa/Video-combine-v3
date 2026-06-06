@@ -34,6 +34,7 @@ const { handleAudioCombiner } = require('./audio-combiner');
 const { handleMuxCombiner } = require('./mux-combiner');
 const { handleAnnotation, handleAnnotationRender } = require('./annotator');
 const { generateScript, availableModels } = require('./script-generator');
+const { findFootageForScenes, FOOTAGE_DIR } = require('./footage-finder');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -643,6 +644,45 @@ app.post('/api/generate-script', async (req, res) => {
     setTimeout(() => cleanupSession(sessionId), 30_000);
   }
 });
+
+// ── Stock footage finder ──────────────────────────────────────────────────────
+app.post('/api/find-footage', async (req, res) => {
+  const { scenes, clips_per_scene = 2 } = req.body || {};
+  if (!Array.isArray(scenes) || !scenes.length) {
+    return res.status(400).json({ ok: false, error: 'scenes[] array required' });
+  }
+  if (!process.env.PEXELS_API_KEY && !process.env.PIXABAY_API_KEY) {
+    return res.status(500).json({ ok: false, error: 'No footage API key configured. Add PEXELS_API_KEY or PIXABAY_API_KEY to .env (get a free key at pexels.com/api).' });
+  }
+
+  const sessionId = crypto.randomBytes(4).toString('hex');
+  const logger = createSessionLogger(sessionId);
+
+  try {
+    logger.log(`🎥 Finding footage for ${scenes.length} scenes (${clips_per_scene} clip/scene)…`);
+    const clips = await findFootageForScenes(scenes, process.env, logger, parseInt(clips_per_scene));
+    res.json({ ok: true, session_id: sessionId, clips });
+  } catch (err) {
+    logger.error(`❌ Footage finder: ${err.message}`);
+    res.status(500).json({ ok: false, error: err.message });
+  } finally {
+    setTimeout(() => cleanupSession(sessionId), 60_000);
+  }
+});
+
+// Serve downloaded footage files (sanitised filename only)
+app.get('/api/footage-file/:filename', (req, res) => {
+  const { filename } = req.params;
+  if (!/^footage_[a-z0-9_]+\.mp4$/i.test(filename)) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const filePath = path.join(FOOTAGE_DIR, filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+  res.sendFile(filePath);
+});
+
 
 // Kokoro TTS status check
 app.get('/api/kokoro-status', async (req, res) => {
