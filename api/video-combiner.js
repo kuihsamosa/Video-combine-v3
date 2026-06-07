@@ -113,7 +113,7 @@ function hasAudioStream(inputPath) {
   }
 }
 
-async function extractSegment({ inputPath, startTime, durationSeconds, outputPath, preset, logger, orientation = 'landscape' }) {
+async function extractSegment({ inputPath, startTime, durationSeconds, outputPath, preset, logger, orientation = 'landscape', extraVideoFilter = null }) {
   const audioExists = hasAudioStream(inputPath);
 
   // Base args: seek + input
@@ -125,9 +125,13 @@ async function extractSegment({ inputPath, startTime, durationSeconds, outputPat
     args.push('-f', 'lavfi', '-i', `anullsrc=r=44100:cl=stereo`);
   }
 
+  // Build video filter: scale/pad always applied; optional extra filter chained after
+  const scaleFilter = buildScalePadFilter(orientation);
+  const vf = extraVideoFilter ? `${scaleFilter},${extraVideoFilter}` : scaleFilter;
+
   args.push(
     '-t', String(durationSeconds),
-    '-vf', buildScalePadFilter(orientation),
+    '-vf', vf,
     '-r', '25',
     '-c:v', 'libx264',
     '-preset', preset.preset,

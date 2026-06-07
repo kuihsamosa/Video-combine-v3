@@ -76,7 +76,8 @@ Required schema:
       "visual_keywords": ["specific keyword", "medium keyword", "broad keyword", "fallback keyword", "generic keyword"],
       "search_queries": ["specific 2-3 word stock query", "medium 1-2 word query", "single broad word"],
       "description": "What should be on screen during this segment",
-      "on_screen_text": "Key stat or number to flash on screen, e.g. '$300/month = $3,600/year' — empty string if no stat fits"
+      "on_screen_text": "Key stat or number to flash on screen, e.g. '$300/month = $3,600/year' — empty string if no stat fits",
+      "chapter_title": "Short ALL-CAPS chapter heading if this scene opens a new main topic, e.g. 'MISTAKE #1: SUBSCRIPTIONS' — empty string if mid-chapter"
     }
   ],
   "youtube": {
@@ -110,6 +111,13 @@ on_screen_text: A short punchy stat, number, or phrase to overlay on screen for 
   - Must be concrete: "$180/year", "87% of people", "3x faster", "The #1 mistake"
   - Max 6 words. If no strong stat fits the scene, use empty string "".
   - These reinforce what the narrator is saying and anchor the point visually.
+
+chapter_title: A short, ALL-CAPS heading shown as a title card when a new main chapter begins.
+  - Use ONLY on the FIRST scene of each new numbered/named topic — not on every scene.
+  - Format: "MISTAKE #1: UNUSED SUBSCRIPTIONS" or "THE FIX" or "WHY THIS MATTERS"
+  - Max 6 words, no punctuation except colon and hash symbol.
+  - Empty string "" for all mid-chapter scenes (most scenes).
+  - A 2-minute video should have 3-5 chapter cards maximum.
 
 ════════════════════════════════════════
 HOOK — THE MOST IMPORTANT 10 SECONDS

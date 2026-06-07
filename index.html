@@ -1829,6 +1829,73 @@
   </div>
 </div>
 
+<!-- Production Preset panel -->
+<div id="sfProductionSettings" style="grid-column:1/-1; border:1px solid var(--border); border-radius:8px; overflow:hidden;">
+  <button type="button" id="sfProductionToggle" onclick="sfToggleProduction()" style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--surface-2); border:none; cursor:pointer; font-size:12px; font-weight:600; color:var(--text-2);">
+    <span>🎥 Production Preset</span>
+    <span id="sfProductionSummary" style="font-weight:400; color:var(--text-3); font-size:11px;">Default</span>
+    <svg id="sfProductionChevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div id="sfProductionBody" style="display:none; flex-direction:column; gap:14px; padding:14px;">
+
+    <!-- Quick presets -->
+    <div>
+      <label style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:8px;">Quick Preset</label>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="sfApplyProductionPreset('default')"   id="sfPresetDefault"   style="padding:4px 10px; font-size:11px; border-radius:5px; border:1px solid var(--border); background:var(--accent); color:#fff; cursor:pointer;">Default</button>
+        <button type="button" onclick="sfApplyProductionPreset('explainer')" id="sfPresetExplainer" style="padding:4px 10px; font-size:11px; border-radius:5px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer;">📚 Explainer</button>
+        <button type="button" onclick="sfApplyProductionPreset('viral')"     id="sfPresetViral"     style="padding:4px 10px; font-size:11px; border-radius:5px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer;">🔥 Viral</button>
+        <button type="button" onclick="sfApplyProductionPreset('cinematic')" id="sfPresetCinematic" style="padding:4px 10px; font-size:11px; border-radius:5px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer;">🎬 Cinematic</button>
+      </div>
+    </div>
+
+    <!-- Captions -->
+    <div>
+      <label style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:8px;">Auto-Captions</label>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+          <input type="checkbox" id="sfAutoCaptions" onchange="sfUpdateProductionSummary()"> Burn captions (Groq Whisper)
+        </label>
+        <select id="sfCaptionTemplate" onchange="sfUpdateProductionSummary()" style="font-size:11px; padding:3px 6px; border-radius:5px; border:1px solid var(--border); background:var(--surface); color:var(--text);">
+          <option value="explainer">Explainer (white + yellow)</option>
+          <option value="impact">Impact (CapCut style)</option>
+          <option value="highlight">Highlight (karaoke)</option>
+          <option value="cinematic">Cinematic (slide-up)</option>
+          <option value="neon">Neon (cyberpunk)</option>
+          <option value="fire">Fire (orange outline)</option>
+          <option value="pill">Pill (dark bg)</option>
+          <option value="shadow3d">Shadow 3D</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Cut pacing -->
+    <div>
+      <label style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:8px;">
+        Cut Duration: <span id="sfCutDurLabel" style="color:var(--text); font-weight:700;">2.5s</span>
+      </label>
+      <input type="range" id="sfCutDuration" min="1" max="12" step="0.5" value="2.5"
+        oninput="document.getElementById('sfCutDurLabel').textContent=this.value+'s'; sfUpdateProductionSummary()"
+        style="width:100%; accent-color:var(--accent);">
+      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-3); margin-top:2px;">
+        <span>1s (viral)</span><span>2.5s (explainer)</span><span>12s (cinematic)</span>
+      </div>
+    </div>
+
+    <!-- Color grade + Title cards -->
+    <div style="display:flex; flex-wrap:wrap; gap:12px;">
+      <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+        <input type="checkbox" id="sfColorGrade" checked onchange="sfUpdateProductionSummary()"> Cinematic color grade
+      </label>
+      <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+        <input type="checkbox" id="sfTitleCards" checked onchange="sfUpdateProductionSummary()"> Chapter title cards
+      </label>
+    </div>
+
+    <div id="sfProductionLiveSummary" style="font-size:11px; color:var(--text-3); padding:6px 10px; background:var(--surface-2); border-radius:6px;"></div>
+  </div>
+</div>
+
                         <!-- Schedule -->
                         <div style="grid-column:1/-1; border-top:1px solid var(--border); padding-top:12px;">
                             <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:6px;">Schedule</label>
@@ -4380,6 +4447,30 @@ function schedShowForm(job = null) {
         if (chevron) chevron.style.transform = 'rotate(180deg)';
     }
 
+    // Populate production preset fields
+    const acEl = document.getElementById('sfAutoCaptions');
+    const ctEl = document.getElementById('sfCaptionTemplate');
+    const cgEl = document.getElementById('sfColorGrade');
+    const tcEl = document.getElementById('sfTitleCards');
+    const cdEl = document.getElementById('sfCutDuration');
+    const clEl = document.getElementById('sfCutDurLabel');
+    if (acEl) acEl.checked = !!job?.auto_captions;
+    if (ctEl) ctEl.value   = job?.caption_template || 'explainer';
+    if (cgEl) cgEl.checked = job?.color_grade !== false;
+    if (tcEl) tcEl.checked = job?.title_cards  !== false;
+    const cutSecs = job?.cut_duration_seconds ?? 2.5;
+    if (cdEl) cdEl.value   = cutSecs;
+    if (clEl) clEl.textContent = cutSecs + 's';
+    sfUpdateProductionSummary();
+    // Auto-expand production panel if non-default
+    const prodNonDefault = !!job?.auto_captions || job?.color_grade || job?.title_cards || (job?.cut_duration_seconds && job.cut_duration_seconds !== 2.5);
+    if (prodNonDefault) {
+        const pb = document.getElementById('sfProductionBody');
+        const pc = document.getElementById('sfProductionChevron');
+        if (pb) { pb.style.display = 'flex'; pb.style.flexDirection = 'column'; }
+        if (pc) pc.style.transform = 'rotate(180deg)';
+    }
+
     form.style.display = 'block';
     form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -4465,6 +4556,77 @@ async function sfLoadFootageSources() {
     } catch(_) {}
 }
 
+// ── Production Preset panel ───────────────────────────────────────────────────
+function sfToggleProduction() {
+    const body    = document.getElementById('sfProductionBody');
+    const chevron = document.getElementById('sfProductionChevron');
+    if (!body) return;
+    const open = body.style.display !== 'flex';
+    body.style.display    = open ? 'flex' : 'none';
+    if (chevron) chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+const SF_PRODUCTION_PRESETS = {
+    default: {
+        auto_captions: false, caption_template: 'explainer',
+        color_grade: false, title_cards: false, cut_duration_seconds: 8,
+    },
+    explainer: {
+        auto_captions: true,  caption_template: 'explainer',
+        color_grade: true,  title_cards: true,  cut_duration_seconds: 2.5,
+    },
+    viral: {
+        auto_captions: true,  caption_template: 'impact',
+        color_grade: true,  title_cards: false, cut_duration_seconds: 1.5,
+    },
+    cinematic: {
+        auto_captions: false, caption_template: 'cinematic',
+        color_grade: true,  title_cards: true,  cut_duration_seconds: 6,
+    },
+};
+
+function sfApplyProductionPreset(key) {
+    const p = SF_PRODUCTION_PRESETS[key];
+    if (!p) return;
+    const ac = document.getElementById('sfAutoCaptions');
+    const ct = document.getElementById('sfCaptionTemplate');
+    const cg = document.getElementById('sfColorGrade');
+    const tc = document.getElementById('sfTitleCards');
+    const cd = document.getElementById('sfCutDuration');
+    const cl = document.getElementById('sfCutDurLabel');
+    if (ac) ac.checked = p.auto_captions;
+    if (ct) ct.value   = p.caption_template;
+    if (cg) cg.checked = p.color_grade;
+    if (tc) tc.checked = p.title_cards;
+    if (cd) { cd.value = p.cut_duration_seconds; }
+    if (cl) cl.textContent = p.cut_duration_seconds + 's';
+    // Highlight active preset button
+    ['default','explainer','viral','cinematic'].forEach(k => {
+        const btn = document.getElementById('sfPreset' + k.charAt(0).toUpperCase() + k.slice(1));
+        if (btn) btn.style.background = k === key ? 'var(--accent)' : 'var(--surface)';
+        if (btn) btn.style.color = k === key ? '#fff' : 'var(--text)';
+    });
+    sfUpdateProductionSummary();
+}
+
+function sfUpdateProductionSummary() {
+    const ac  = document.getElementById('sfAutoCaptions')?.checked;
+    const ct  = document.getElementById('sfCaptionTemplate')?.value || 'explainer';
+    const cg  = document.getElementById('sfColorGrade')?.checked;
+    const tc  = document.getElementById('sfTitleCards')?.checked;
+    const cd  = parseFloat(document.getElementById('sfCutDuration')?.value || '2.5');
+    const parts = [];
+    if (ac) parts.push(`Captions: ${ct}`);
+    if (cg) parts.push('Color grade');
+    if (tc) parts.push('Title cards');
+    parts.push(`${cd}s cuts`);
+    const sumEl = document.getElementById('sfProductionSummary');
+    const liveEl = document.getElementById('sfProductionLiveSummary');
+    const text = parts.join(' · ');
+    if (sumEl) sumEl.textContent = text;
+    if (liveEl) liveEl.textContent = text;
+}
+
 function schedHideForm() {
     document.getElementById('schedJobForm').style.display = 'none';
     schedEditingId = null;
@@ -4519,10 +4681,16 @@ async function schedSaveJob() {
             time:           document.getElementById('sfTime').value,
             day_of_week:    parseInt(document.getElementById('sfDayOfWeek').value),
         },
-        clips_per_scene: _sfClips,
-        use_pexels:      document.getElementById('sfSrcPexels')?.checked  ?? true,
-        use_pixabay:     document.getElementById('sfSrcPixabay')?.checked ?? true,
-        use_youtube:     document.getElementById('sfSrcYoutube')?.checked ?? false,
+        clips_per_scene:       _sfClips,
+        use_pexels:            document.getElementById('sfSrcPexels')?.checked  ?? true,
+        use_pixabay:           document.getElementById('sfSrcPixabay')?.checked ?? true,
+        use_youtube:           document.getElementById('sfSrcYoutube')?.checked ?? false,
+        // Production preset fields
+        auto_captions:         document.getElementById('sfAutoCaptions')?.checked ?? false,
+        caption_template:      document.getElementById('sfAutoCaptions')?.checked ? (document.getElementById('sfCaptionTemplate')?.value || 'explainer') : null,
+        color_grade:           document.getElementById('sfColorGrade')?.checked ?? true,
+        title_cards:           document.getElementById('sfTitleCards')?.checked  ?? true,
+        cut_duration_seconds:  parseFloat(document.getElementById('sfCutDuration')?.value || '2.5'),
     };
     // Preserve planner origin metadata if editing an existing planner job
     if (schedEditingId) {

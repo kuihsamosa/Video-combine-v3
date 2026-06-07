@@ -232,6 +232,40 @@ const TEMPLATES = {
     fade:         [0, 0],
     preview: { bg:'#111', color:'#fff', outlineColor:'transparent', shadow:'5px 5px 0 #50008c', text:'SHADOW 3D', font:'Arial Black', bold:true, size:24 },
   },
+
+  // ── 8. Explainer — high-retention educational style ───────────────────────
+  // Matches the "System Preset: High-Retention Educational Explainer" spec:
+  // ALL CAPS, white base, bright yellow on active word (karaoke), 2 words per
+  // group, heavy sans-serif, black drop-shadow, lower-middle positioning.
+  explainer: {
+    label: 'Explainer',
+    desc:  '2-word karaoke, white + yellow active word — high-retention educational style',
+    fontName:       'Arial Black',
+    fontSize:       84,
+    primaryColor:   rgb(255,255,255),
+    highlightColor: rgb(255,221,0),   // bright yellow accent on the active word
+    highlightScale: 108,              // active word scales up slightly
+    outlineColor:   rgb(0,0,0),
+    shadowColor:    rgb(0,0,0),
+    backColor:      rgba(0,0,0,0),
+    bold:           true,
+    outline:        3,
+    shadow:         4,                // black drop-shadow for readability
+    borderStyle:    1,
+    spacing:        0,
+    scaleX:         100,
+    scaleY:         100,
+    alignment:      2,
+    marginV:        100,              // lower-middle of frame
+    uppercase:      true,
+    wordsPerLine:   2,
+    renderMode:     'karaoke',        // active word gets yellow highlight
+    popIn:          true,             // clean pop-in per group
+    slideUp:        false,
+    blurIn:         false,
+    fade:           [0, 0],
+    preview: { bg:'#0d1b2e', color:'#fff', outlineColor:'#000', text:'WHITE <span style="color:#ffdd00">YELLOW</span>', font:'Arial Black', bold:true, size:24 },
+  },
 };
 
 // ── ASS time format ────────────────────────────────────────────────────────────

@@ -1,0 +1,27 @@
+{
+  "name": "stock-footage-finder",
+  "version": "1.0.0",
+  "description": "A serverless stock footage finder that allows users to search multiple stock media sources",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && pip install -r requirements.txt",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements.txt"
+  },
+  "keywords": [
+    "stock-footage",
+    "media-search",
+    "react",
+    "fastapi",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

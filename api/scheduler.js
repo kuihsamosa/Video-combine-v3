@@ -310,6 +310,13 @@ async function runJob(jobId) {
       })();
       const { getVideoPreset } = require('./app-config');
       const resolvedPreset = getVideoPreset('balanced');
+      const { generateTitleCard, extractChapterMarkers } = require('./title-card-generator');
+
+      // Cinematic color grade applied to every extracted segment
+      // High-contrast, slightly desaturated shadows, lifted teal
+      const colorGradeFilter = job.color_grade !== false
+        ? 'eq=contrast=1.12:brightness=-0.02:saturation=1.15,curves=r=\'0/0 0.5/0.48 1/1\':g=\'0/0 0.5/0.51 1/1\':b=\'0/0 0.5/0.56 1/1\''
+        : null;
 
       // We have localPath on each clip — use combineVideos directly if available
       if (typeof combineVideos === 'function') {
@@ -323,6 +330,10 @@ async function runJob(jobId) {
         // Track how many seconds have been extracted from each clip (by localPath)
         const clipOffsets = new Map(); // localPath → nextStartSeconds
 
+        // Default cut length: 2.5s for high-retention pacing (change per 1.5–3s rule)
+        // Can be overridden per job via job.cut_duration_seconds
+        const DEFAULT_CUT_SECS = job.cut_duration_seconds ?? 2.5;
+
         const extractOne = async (clip, idx, cutSecs, startOverride) => {
           const segOut  = path.join(tmpDir, `seg_${idx}.mp4`);
           const clipDur = clip.duration || 30;
@@ -330,6 +341,10 @@ async function runJob(jobId) {
           const avail   = Math.max(0, clipDur - start);
           if (avail < 1) return null; // this clip is exhausted
           const actual  = Math.min(cutSecs, avail);
+
+          // Build extra video filter for color grade if enabled
+          const extraVf = colorGradeFilter || null;
+
           await extractSegment({
             inputPath:       clip.localPath,
             startTime:       start,
@@ -337,15 +352,41 @@ async function runJob(jobId) {
             outputPath:      segOut,
             preset:          resolvedPreset,
             orientation:     job.orientation || 'landscape',
+            extraVideoFilter: extraVf,
             logger:          { log, error: log },
           });
           clipOffsets.set(clip.localPath, start + actual);
           return segOut;
         };
 
+        // ── Inject title cards between chapter-opening scenes ───────────────────
+        const useTitleCards = job.title_cards !== false; // default on
+        const chapterMap    = useTitleCards ? extractChapterMarkers(output.script?.scenes || []) : new Map();
+        let cardCounter  = 0;
+
         for (let i = 0; i < baseClips.length; i++) {
+          // Check if this scene opens a new chapter → insert title card before its segments
+          const sceneId      = baseClips[i].scene_id;
+          const chapterTitle = chapterMap.get(sceneId);
+          if (useTitleCards && chapterTitle) {
+            try {
+              const cardPath = path.join(tmpDir, `titlecard_${cardCounter++}.mp4`);
+              await generateTitleCard({
+                title:        chapterTitle,
+                durationSecs: 2.0,
+                outputPath:   cardPath,
+                orientation:  job.orientation || 'landscape',
+                logger:       { log, error: log },
+              });
+              segPaths.push(cardPath);
+              log(`🎬 Chapter card: "${chapterTitle}"`);
+            } catch (cardErr) {
+              log(`   ⚠️  Title card skipped: ${cardErr.message}`);
+            }
+          }
+
           try {
-            const segOut = await extractOne(baseClips[i], i, 12);
+            const segOut = await extractOne(baseClips[i], i, DEFAULT_CUT_SECS);
             if (segOut) segPaths.push(segOut);
           } catch(e) {
             log(`   ⚠️  Segment ${i}: ${e.message}`);
@@ -380,7 +421,7 @@ async function runJob(jobId) {
               }
               exhaustedPasses = 0; // reset since we found a usable clip
               try {
-                const segOut = await extractOne(clip, loopCounter, 12);
+                const segOut = await extractOne(clip, loopCounter, DEFAULT_CUT_SECS);
                 if (segOut) {
                   segPaths.push(segOut);
                   totalSegSecs += await runFfprobeDurationSeconds(segOut, {}).catch(() => 12);
@@ -432,6 +473,25 @@ async function runJob(jobId) {
           output.video_path = muxOutPath;
           const sizeMB = (fs.statSync(muxOutPath).size / 1048576).toFixed(1);
           log(`✅ Final video: ${muxOutPath} (${sizeMB} MB)`);
+
+          // ── Auto-captions (Groq Whisper → ASS burn) ──────────────────────
+          // Enabled when job.auto_captions is true (or when caption_template is set).
+          const captionTemplate = job.caption_template || (job.auto_captions ? 'explainer' : null);
+          if (captionTemplate) {
+            log(`🎨 Auto-captions: burning "${captionTemplate}" template…`);
+            try {
+              const { burnCaptions } = require('./caption-generator');
+              const groqKeys = ['GROQ_API_KEY', 'GROQ_API_KEY_2', 'GROQ_API_KEY_3']
+                .map(k => process.env[k]).filter(Boolean);
+              const captionedPath = path.join(OUTPUTS_DIR, `sched_captioned_${runId}.mp4`);
+              await burnCaptions(muxOutPath, captionedPath, captionTemplate, groqKeys, { log, error: log });
+              // Replace final output with captioned version
+              fs.renameSync(captionedPath, muxOutPath);
+              log(`✅ Captions burned into final video`);
+            } catch (capErr) {
+              log(`   ⚠️  Caption burn failed (non-fatal): ${capErr.message}`);
+            }
+          }
 
           // Clean up segments
           try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch(_) {}

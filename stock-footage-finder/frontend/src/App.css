@@ -1,0 +1,193 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* Media Card Download Styles */
+.media-card__download-container {
+  position: relative;
+}
+
+.media-card__download-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  min-width: 200px;
+  z-index: 1000;
+  margin-bottom: 8px;
+}
+
+.media-card__download-info {
+  margin-bottom: 12px;
+}
+
+.media-card__download-status {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.media-card__download-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.media-card__download-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.media-card__download-progress-fill {
+  height: 100%;
+  background: #2196f3;
+  transition: width 0.3s ease;
+}
+
+.media-card__download-progress-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  min-width: 35px;
+}
+
+.media-card__download-speed {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.media-card__download-eta {
+  font-size: 11px;
+  color: #666;
+}
+
+.media-card__download-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.media-card__download-action-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.media-card__download-action-button:hover {
+  background: #e0e0e0;
+}
+
+.media-card__download-action-button--danger {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.media-card__download-action-button--danger:hover {
+  background: #ffcdd2;
+}
+
+.media-card__download-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .media-card__download-menu {
+    background: #2d2d2d;
+    border-color: #444;
+  }
+  
+  .media-card__download-status {
+    color: #f0f0f0;
+  }
+  
+  .media-card__download-progress-bar {
+    background: #444;
+  }
+  
+  .media-card__download-progress-text {
+    color: #ccc;
+  }
+  
+  .media-card__download-speed,
+  .media-card__download-eta {
+    color: #aaa;
+  }
+  
+  .media-card__download-action-button {
+    background: #444;
+    color: #f0f0f0;
+  }
+  
+  .media-card__download-action-button:hover {
+    background: #555;
+  }
+  
+  .media-card__download-action-button--danger {
+    background: #4a2c2c;
+    color: #ef5350;
+  }
+  
+  .media-card__download-action-button--danger:hover {
+    background: #5c3838;
+  }
+}
