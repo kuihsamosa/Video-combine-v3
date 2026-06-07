@@ -1810,7 +1810,7 @@
         </label>
         <label id="sfSrcYoutubeLabel" style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; padding:5px 10px; border:1px solid var(--border); border-radius:6px; background:var(--surface);">
           <input type="checkbox" id="sfSrcYoutube" onchange="sfUpdateFootageSummary()"> YouTube
-          <span id="sfYoutubeNotConfigured" style="display:none; font-size:10px; color:#f59e0b; margin-left:2px;">(not configured)</span>
+          <span id="sfYoutubeNotConfigured" style="display:none; font-size:10px; color:#f59e0b; margin-left:2px;">(yt-dlp not found)</span>
         </label>
       </div>
     </div>
@@ -4534,11 +4534,16 @@ async function sfLoadFootageSources() {
         const ytLabel = document.getElementById('sfSrcYoutubeLabel');
         const ytNote  = document.getElementById('sfYoutubeNotConfigured');
         const ytCb    = document.getElementById('sfSrcYoutube');
-        if (!cfg.youtube && ytLabel && ytCb) {
-            ytCb.disabled = true;
-            ytLabel.style.opacity = '0.5';
-            ytLabel.style.cursor  = 'not-allowed';
-            if (ytNote) ytNote.style.display = 'inline';
+        if (cfg.youtube) {
+            // yt-dlp found — enable the checkbox and add helpful tooltip
+            if (ytCb)    { ytCb.disabled = false; }
+            if (ytLabel) { ytLabel.style.opacity = '1'; ytLabel.style.cursor = 'pointer'; ytLabel.title = 'YouTube clips via yt-dlp (transcript scene matching)'; }
+            if (ytNote)  ytNote.style.display = 'none';
+        } else {
+            // yt-dlp not installed
+            if (ytCb)    { ytCb.disabled = true; ytCb.checked = false; }
+            if (ytLabel) { ytLabel.style.opacity = '0.5'; ytLabel.style.cursor = 'not-allowed'; ytLabel.title = 'Install yt-dlp to enable YouTube: brew install yt-dlp'; }
+            if (ytNote)  ytNote.style.display = 'inline';
         }
         if (!cfg.pexels) {
             const el = document.getElementById('sfSrcPexels');

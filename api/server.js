@@ -844,10 +844,26 @@ app.get('/api/scheduler/output/:filename', (req, res) => {
 
 // Footage sources config status
 app.get('/api/config/footage-sources', (req, res) => {
+  // YouTube uses yt-dlp (no API key needed) — check binary availability
+  const ytDlpAvailable = (() => {
+    try {
+      require('child_process').execFileSync(
+        process.platform === 'win32' ? 'where' : 'which',
+        ['yt-dlp'],
+        { timeout: 3000, stdio: 'pipe' }
+      );
+      return true;
+    } catch (_) {
+      // Also check common install paths
+      const paths = ['/opt/homebrew/bin/yt-dlp', '/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp'];
+      return paths.some(p => require('fs').existsSync(p));
+    }
+  })();
+
   res.json({
     pexels:  !!process.env.PEXELS_API_KEY,
     pixabay: !!process.env.PIXABAY_API_KEY,
-    youtube: !!(process.env.YOUTUBE_API_KEY || process.env.YOUTUBE_OAUTH_TOKEN),
+    youtube: ytDlpAvailable,
   });
 });
 
