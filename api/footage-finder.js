@@ -118,20 +118,90 @@ async function downloadClipHTTP(url, filename, logger) {
   return dest;
 }
 
-// yt-dlp download (YouTube clips)
-async function downloadClipYT(ytUrl, filename, quality = '720', logger) {
+// yt-dlp download (YouTube clips) — transcript-aware partial download
+// If scene is provided, fetches the transcript first and uses --download-sections
+// to only pull the relevant time window instead of the full video.
+async function downloadClipYT(ytUrl, filename, quality = '720', logger, scene = null, clipSecs = 15) {
   ensureDir();
   const dest = path.join(FOOTAGE_DIR, filename);
   if (fs.existsSync(dest)) return dest;
 
-  const { downloadYouTube, YT_DIR } = require('./youtube-downloader');
-  logger.log(`   🎬 ${filename} ← YouTube yt-dlp…`);
-  const { filename: dlFilename } = await downloadYouTube(ytUrl, { quality, logger });
+  const YT_DLP = (() => {
+    const { execFileSync } = require('child_process');
+    for (const c of ['/opt/homebrew/bin/yt-dlp', '/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp']) {
+      if (fs.existsSync(c)) return c;
+    }
+    try { return execFileSync('which', ['yt-dlp'], { timeout: 3000 }).toString().trim() || 'yt-dlp'; } catch (_) { return 'yt-dlp'; }
+  })();
 
-  // Move from YT_DIR to FOOTAGE_DIR so it's served via /api/footage-file
-  const src = path.join(YT_DIR, dlFilename);
-  fs.renameSync(src, dest);
-  logger.log(`   ✅ ${filename} — ${(fs.statSync(dest).size / 1048576).toFixed(1)} MB`);
+  const fmtMap = {
+    '720':  'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best[height<=720]',
+    '480':  'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=480]+bestaudio/best[height<=480]',
+    '1080': 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080]',
+  };
+  const fmt = fmtMap[quality] || fmtMap['720'];
+
+  // ── Step 1: find best scene timestamp via transcript ──────────────────────
+  let startSec = null;
+  if (scene) {
+    try {
+      const { findSceneTimestamp } = require('./youtube-transcript');
+      startSec = await findSceneTimestamp(ytUrl, scene, logger);
+    } catch (e) {
+      logger.log(`   ℹ️  Transcript match skipped: ${e.message?.slice(0, 60)}`);
+    }
+  }
+
+  // ── Step 2: build yt-dlp args ─────────────────────────────────────────────
+  const cookieArgs = [];
+  try {
+    const { cookiesExist, COOKIE_PATH } = require('./youtube-auth');
+    if (cookiesExist()) cookieArgs.push('--cookies', COOKIE_PATH);
+  } catch (_) {}
+
+  const args = [
+    '--format', fmt,
+    '--merge-output-format', 'mp4',
+    '--output', dest,
+    '--no-playlist',
+    '--quiet',
+    '--no-warnings',
+    '--no-progress',
+    ...cookieArgs,
+  ];
+
+  if (startSec !== null) {
+    // Only download the matched window + a small buffer
+    const bufferSec = 3;
+    const from  = Math.max(0, startSec - bufferSec);
+    const to    = startSec + clipSecs + bufferSec;
+    const { fmtSecs } = require('./youtube-transcript');
+    const section = `*${fmtSecs(from)}-${fmtSecs(to)}`;
+    args.push('--download-sections', section);
+    logger.log(`   🎬 ${filename} ← YouTube [${fmtSecs(from)}→${fmtSecs(to)}] (transcript match)`);
+  } else {
+    // No transcript match — download only first ~60s to avoid huge files, then let
+    // the scheduler's extractOne pick a random non-zero offset
+    const fallbackEnd = clipSecs * 4; // 4× the clip length as headroom
+    const { fmtSecs } = require('./youtube-transcript');
+    args.push('--download-sections', `*0:00-${fmtSecs(fallbackEnd)}`);
+    logger.log(`   🎬 ${filename} ← YouTube [0:00→${fmtSecs(fallbackEnd)}] (no transcript)`);
+  }
+
+  args.push(ytUrl);
+
+  const { execFile } = require('child_process');
+  const { promisify } = require('util');
+  const execFileAsync = promisify(execFile);
+
+  await execFileAsync(YT_DLP, args, { timeout: 180_000, maxBuffer: 50 * 1024 * 1024 });
+
+  if (!fs.existsSync(dest) || fs.statSync(dest).size === 0) {
+    throw new Error(`yt-dlp produced no output for ${ytUrl.slice(-30)}`);
+  }
+
+  const sizeMB = (fs.statSync(dest).size / 1048576).toFixed(1);
+  logger.log(`   ✅ ${filename} — ${sizeMB} MB (YouTube section)`);
   return dest;
 }
 
@@ -283,9 +353,12 @@ async function findFootageForScenes(
         try {
           const filename  = `footage_s${scene.id}_${clip.source}_${crypto.randomBytes(4).toString('hex')}.mp4`;
           const localPath = clip.source === 'youtube'
-            ? await downloadClipYT(clip.ytUrl, filename, ytQuality, logger)
+            ? await downloadClipYT(clip.ytUrl, filename, ytQuality, logger, scene, 15)
             : await downloadClipHTTP(clip.url, filename, logger);
-          clips.push({ ...clip, filename, localPath, scene_id: scene.id, serveUrl: `/api/footage-file/${filename}` });
+          // For YouTube, the downloaded file is a short section, not the full video.
+          // Override duration to the section length so extractOne doesn't overshoot.
+          const effectiveDuration = clip.source === 'youtube' ? 18 : (clip.duration || null);
+          clips.push({ ...clip, filename, localPath, scene_id: scene.id, duration: effectiveDuration, serveUrl: `/api/footage-file/${filename}` });
         } catch (err) {
           logger.log(`   ⚠️  Download failed (${clip.source}): ${err.message}`);
         }
