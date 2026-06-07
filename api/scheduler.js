@@ -233,11 +233,13 @@ async function runJob(jobId) {
       const topic = output.idea?.title || job.topic || job.niche;
       log(`📝 Step 2: Generating script for "${topic}"…`);
 
+      const jobStyle = job.style || output.idea?.style || 'storytelling';
       const result = await generateScript({
         topic,
         niche:            job.niche || output.idea?.niche || '',
         tone:             job.tone  || output.idea?.tone  || 'informative',
-        style:            job.style || output.idea?.style || 'storytelling',
+        style:            jobStyle,
+        podcast_speakers: jobStyle === 'podcast_dual' ? 2 : 1,
         duration_minutes: job.duration_minutes || output.idea?.duration_minutes || 2,
         model:            job.model || 'llama-3.3-70b-versatile',
         env:              process.env,
@@ -249,19 +251,88 @@ async function runJob(jobId) {
 
     // ── Step 3: Voiceover (TTS) ───────────────────────────────────────────────
     if (job.steps?.voiceover && output.script?.narration) {
-      log(`🎙️  Step 3: Generating voiceover…`);
-      const wavBuf = await generateTTS(
-        output.script.narration,
-        job.voice || 'narrator_warm',
-        job.speed || 0.92,
-        log,
-      );
+      const isPodcastDual = output.script._podcast_dual || job.style === 'podcast_dual';
+      const isPodcast     = output.script._is_podcast   || job.style === 'podcast' || isPodcastDual;
 
-      if (!fs.existsSync(os.tmpdir())) fs.mkdirSync(os.tmpdir(), { recursive: true });
-      const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
-      fs.writeFileSync(audioPath, wavBuf);
-      output.audio_path = audioPath;
-      log(`✅ Voiceover: ${(wavBuf.length / 1048576).toFixed(1)} MB → ${audioPath}`);
+      if (isPodcastDual) {
+        // ── Dual-voice podcast: parse HOST/GUEST turns, synthesise each separately ──
+        log(`🎙️  Step 3: Generating dual-voice podcast voiceover…`);
+
+        const hostVoice  = job.podcast_host_voice  || job.voice || 'narrator_warm';
+        const guestVoice = job.podcast_guest_voice || 'narrator_confident';
+        log(`   HOST voice: ${hostVoice}  |  GUEST voice: ${guestVoice}`);
+
+        // Parse turns: each line starting with HOST: or GUEST: is a turn
+        const narration = output.script.narration;
+        const turns = [];
+        for (const line of narration.split('\n')) {
+          const hostMatch  = line.match(/^HOST:\s*(.+)/i);
+          const guestMatch = line.match(/^GUEST:\s*(.+)/i);
+          if (hostMatch)  turns.push({ speaker: 'HOST',  text: hostMatch[1].trim() });
+          else if (guestMatch) turns.push({ speaker: 'GUEST', text: guestMatch[1].trim() });
+          else if (line.trim() && turns.length > 0) {
+            // Continuation of previous turn (no label)
+            turns[turns.length - 1].text += ' ' + line.trim();
+          }
+        }
+
+        if (!turns.length) {
+          // No HOST:/GUEST: labels found — treat as single-voice
+          log('   ℹ️  No HOST/GUEST labels found — using single voice');
+          const wavBuf = await generateTTS(narration, hostVoice, job.speed || 0.90, log);
+          const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
+          fs.writeFileSync(audioPath, wavBuf);
+          output.audio_path = audioPath;
+        } else {
+          log(`   Parsed ${turns.length} speaker turns (HOST: ${turns.filter(t=>t.speaker==='HOST').length}, GUEST: ${turns.filter(t=>t.speaker==='GUEST').length})`);
+
+          // Synthesise each turn individually, stitch with 200ms gap between speakers
+          const wavChunks = [];
+          for (let i = 0; i < turns.length; i++) {
+            const turn = turns[i];
+            const voice = turn.speaker === 'HOST' ? hostVoice : guestVoice;
+            log(`   Turn ${i+1}/${turns.length} [${turn.speaker}] — ${turn.text.slice(0,60)}…`);
+            try {
+              const turnWav = await generateTTS(turn.text, voice, job.speed || 0.90, log);
+              // Mark as paragraph end to get inter-turn silence
+              wavChunks.push({ buf: turnWav, paragraphEnd: true });
+            } catch (e) {
+              log(`   ⚠️  TTS failed for turn ${i+1}: ${e.message}`);
+            }
+          }
+
+          if (!wavChunks.length) throw new Error('All podcast turns failed TTS');
+          const stitched = stitchWavBuffers(wavChunks, 400); // 400ms between speaker turns
+          const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
+          fs.writeFileSync(audioPath, stitched);
+          output.audio_path = audioPath;
+          log(`✅ Dual-voice voiceover: ${(stitched.length / 1048576).toFixed(1)} MB → ${audioPath}`);
+        }
+      } else if (isPodcast) {
+        // ── Single-host podcast: slightly slower speed, bigger chunk size ──────────
+        log(`🎙️  Step 3: Generating podcast voiceover (single host)…`);
+        const podcastNarration = output.script.narration
+          .replace(/^HOST:\s*/gim, '')   // strip any stray labels
+          .replace(/^GUEST:\s*/gim, '');
+        const wavBuf = await generateTTS(podcastNarration, job.voice || 'narrator_warm', job.speed || 0.86, log);
+        const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
+        fs.writeFileSync(audioPath, wavBuf);
+        output.audio_path = audioPath;
+        log(`✅ Podcast voiceover: ${(wavBuf.length / 1048576).toFixed(1)} MB → ${audioPath}`);
+      } else {
+        // ── Standard single-voice ─────────────────────────────────────────────────
+        log(`🎙️  Step 3: Generating voiceover…`);
+        const wavBuf = await generateTTS(
+          output.script.narration,
+          job.voice || 'narrator_warm',
+          job.speed || 0.92,
+          log,
+        );
+        const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
+        fs.writeFileSync(audioPath, wavBuf);
+        output.audio_path = audioPath;
+        log(`✅ Voiceover: ${(wavBuf.length / 1048576).toFixed(1)} MB → ${audioPath}`);
+      }
     }
 
     // ── Step 4: Find footage ──────────────────────────────────────────────────
@@ -598,10 +669,18 @@ function createJob(data) {
     voice:       data.voice       || 'narrator_warm',
     speed:       parseFloat(data.speed) || 0.92,
     model:       data.model       || 'llama-3.3-70b-versatile',
-    clips_per_scene: parseInt(data.clips_per_scene) || 2,
-    use_youtube: !!data.use_youtube,
-    use_pexels:  data.use_pexels  !== false,
-    use_pixabay: data.use_pixabay !== false,
+    clips_per_scene:       parseInt(data.clips_per_scene) || 2,
+    use_youtube:           !!data.use_youtube,
+    use_pexels:            data.use_pexels  !== false,
+    use_pixabay:           data.use_pixabay !== false,
+    podcast_host_voice:    data.podcast_host_voice  || null,
+    podcast_guest_voice:   data.podcast_guest_voice || null,
+    // Production preset
+    auto_captions:         !!data.auto_captions,
+    caption_template:      data.caption_template      || null,
+    color_grade:           data.color_grade           !== false,
+    title_cards:           data.title_cards           !== false,
+    cut_duration_seconds:  parseFloat(data.cut_duration_seconds) || 2.5,
     steps: {
       brainstorm:      data.steps?.brainstorm      ?? true,
       validate:        data.steps?.validate         ?? true,

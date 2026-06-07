@@ -259,19 +259,26 @@ async function callGroq(messages, model, env, logger) {
 async function generateScript(params, logger) {
   const {
     topic,
-    niche          = 'general',
-    tone           = 'conversational',
+    niche            = 'general',
+    tone             = 'conversational',
     duration_minutes = 2,
-    style          = 'storytelling',
-    model          = 'llama-3.3-70b-versatile',
-    env            = process.env,
+    style            = 'storytelling',
+    podcast_speakers = 1,
+    model            = 'llama-3.3-70b-versatile',
+    env              = process.env,
   } = params;
 
   if (!topic?.trim()) throw new Error('topic is required');
 
-  const userPrompt = buildUserPrompt({ topic, niche, tone, duration_minutes, style });
+  const isPodcast    = style === 'podcast' || style === 'podcast_dual';
+  const speakers     = style === 'podcast_dual' ? 2 : (podcast_speakers || 1);
+  const systemPrompt = isPodcast ? PODCAST_SYSTEM_PROMPT : SYSTEM_PROMPT;
+  const userPrompt   = isPodcast
+    ? buildPodcastPrompt({ topic, niche, tone, duration_minutes, podcast_speakers: speakers })
+    : buildUserPrompt({ topic, niche, tone, duration_minutes, style });
+
   const messages = [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: systemPrompt },
     { role: 'user',   content: userPrompt },
   ];
 
@@ -295,8 +302,15 @@ async function generateScript(params, logger) {
   if (!script.narration?.trim()) throw new Error('Generated script missing narration field');
   if (!script.scenes?.length)    throw new Error('Generated script missing scenes array');
 
-  logger.log(`✅ Script: "${script.title}" — ${script.narration.split(/\s+/).length} words, ${script.scenes.length} scenes`);
-  return { script, model_used: model, tokens_used: result.tokens };
+  // Attach podcast metadata to the script so downstream steps (TTS, scheduler) know the format
+  if (isPodcast) {
+    script._is_podcast   = true;
+    script._speakers     = speakers;
+    script._podcast_dual = speakers >= 2;
+  }
+
+  logger.log(`✅ Script: "${script.title}" — ${script.narration.split(/\s+/).length} words, ${script.scenes.length} scenes${isPodcast ? ` [podcast${speakers >= 2 ? ' dual' : ''}]` : ''}`);
+  return { script, model_used: model, tokens_used: result.tokens, is_podcast: isPodcast, podcast_speakers: speakers };
 }
 
 function availableModels(env = process.env) {
@@ -305,4 +319,113 @@ function availableModels(env = process.env) {
   return GROQ_MODELS.map(m => ({ model: m.id, label: m.label, provider: 'groq' }));
 }
 
-module.exports = { generateScript, availableModels, GROQ_MODELS };
+
+// ── Podcast system prompt ─────────────────────────────────────────────────────
+const PODCAST_SYSTEM_PROMPT = `You are an expert podcast scriptwriter who creates compelling, natural-sounding podcast episodes for faceless video channels.
+Podcast scripts feel like a real recorded conversation — warm, exploratory, and unscripted in energy, even though every word is written.
+
+CRITICAL: Respond with ONLY a valid JSON object. No markdown fences, no explanation, no text outside the JSON.
+
+Required schema:
+{
+  "title": "Podcast episode title (conversational, 5-8 words, with episode feel)",
+  "description": "What this episode covers in 1-2 sentences",
+  "narration": "THE FULL PODCAST SCRIPT — see format rules below",
+  "speakers": ["HOST", "GUEST"],
+  "scenes": [
+    {
+      "id": 1,
+      "duration_hint_seconds": 45,
+      "visual_keywords": ["specific keyword", "medium keyword", "broad keyword", "fallback keyword", "generic keyword"],
+      "search_queries": ["specific 2-3 word stock query", "medium 1-2 word query", "single broad word"],
+      "description": "What should be on screen — use contemplative imagery, text overlays, relevant B-roll",
+      "on_screen_text": "Key quote or stat from this segment, max 8 words — or empty string",
+      "chapter_title": "Chapter heading if new topic starts here — or empty string"
+    }
+  ],
+  "youtube": {
+    "title": "SEO YouTube title (max 60 chars)",
+    "description": "Full YouTube description (150-300 words). Mention it is a podcast-style deep dive.",
+    "tags": ["tag1","tag2","tag3","tag4","tag5","tag6","tag7","tag8","tag9","tag10"],
+    "hashtags": ["Hashtag1","Hashtag2","Hashtag3","Hashtag4","Hashtag5"],
+    "category": "Education"
+  }
+}
+
+════════════════════════════════════════
+PODCAST SCRIPT FORMAT — CRITICAL
+════════════════════════════════════════
+
+For SINGLE-HOST podcast (monologue):
+  - Write as one continuous HOST monologue. No labels needed.
+  - Tone: personal, reflective, like a friend sharing deep thoughts over coffee
+  - Longer sentences allowed. More philosophical. Slower pacing (~130 wpm).
+  - Use "I" and "we" liberally. Share opinions and personal perspective.
+  - Natural filler that adds texture: "you know...", "and honestly,", "here is the thing though,", "I keep coming back to this idea that"
+  - No hard "hook formula" — open with a personal observation or story, not a question
+  - Paragraphs should be 4-6 sentences (vs 2-3 in short-form video)
+  - Outro: personal sign-off, not a CTA-heavy push. "That is all I have got for today. Take care of yourself out there."
+
+For DUAL-HOST podcast (conversation):
+  - Format EVERY line as: HOST: [dialogue] or GUEST: [dialogue]
+  - No other text outside these labels. Every sentence must have a speaker prefix.
+  - HOST opens and closes the episode. GUEST is the expert being interviewed.
+  - Conversation feels natural: interruptions are OK ("HOST: Right, exactly —"), short affirmations ("GUEST: Yeah, absolutely."), building on each other
+  - HOST asks probing questions, challenges gently, summarises key points
+  - GUEST gives detailed expert answers, anecdotes, and concrete examples
+  - Average turn length: 2-4 sentences. Vary it — some one-liners, some longer monologues.
+  - Include at least 3 moments where they genuinely disagree or add nuance to each other
+
+════════════════════════════════════════
+PODCAST SCENE RULES
+════════════════════════════════════════
+
+Scenes are longer (30-60s each) because podcast pacing is slower.
+Visuals should be contemplative and thematic — not action-packed B-roll.
+Good visual choices for podcast: aerial city shots, people thinking/walking, abstract textures,
+coffee shop atmosphere, nature landscapes, slow close-ups of hands/objects.
+
+visual_keywords and search_queries: same rules as standard videos (stock-footage-friendly).
+on_screen_text: use memorable quotes from the script ("The system is designed to keep you spending"),
+  statistics, or provocative questions — these are the main visual interest for a podcast video.
+
+════════════════════════════════════════
+WHAT GREAT PODCAST NARRATION SOUNDS LIKE
+════════════════════════════════════════
+
+Single host example:
+  "I have been thinking about this for weeks now. There is a question that keeps nagging at me — why is it that the people who seem to have the most, often feel like they have the least? And I do not mean that in a motivational-poster kind of way. I mean it literally. I have watched people build something real, hit every marker of success they ever dreamed of, and then wake up one Tuesday morning feeling completely hollow. And nobody talks about that part. So today, I want to go there."
+
+Dual host example:
+  HOST: Okay so I want to start with something that actually surprised me when I was researching this.
+  GUEST: Yeah, go for it.
+  HOST: The data shows that most people make their worst financial decisions not when they are broke — but right after their first big raise. Like that is when the wheels come off.
+  GUEST: That tracks completely. There is actually a name for it — lifestyle inflation. And it is sneaky because it does not feel like a mistake when it is happening. It feels like reward.
+  HOST: Right, like you have earned it.
+  GUEST: Exactly. And nobody is going to tell you to stop. Your friends are excited for you. Your family is proud. The whole world is saying yes.`;
+
+// ── Podcast user prompt builder ───────────────────────────────────────────────
+function buildPodcastPrompt({ topic, niche, tone, duration_minutes, podcast_speakers = 1 }) {
+  const words = Math.round(duration_minutes * 130); // podcast pace ~130 wpm
+  const format = podcast_speakers >= 2 ? 'DUAL-HOST (HOST + GUEST conversation)' : 'SINGLE-HOST (monologue)';
+  const scenesCount = Math.ceil((duration_minutes * 60) / 45); // one scene per ~45s
+  return [
+    `Topic: ${topic}`,
+    `Niche: ${niche || 'general'}`,
+    `Tone: ${tone || 'conversational'}`,
+    `Format: ${format}`,
+    `Target duration: ${duration_minutes} minute${duration_minutes !== 1 ? 's' : ''} (~${words} spoken words)`,
+    `Scenes: approximately ${scenesCount} scenes (one per ~45 seconds)`,
+    ``,
+    podcast_speakers >= 2
+      ? `Write the narration as a full HOST/GUEST conversation (~${words} total words).
+Every line MUST start with HOST: or GUEST: — no exceptions.
+The conversation should feel genuinely exploratory, not scripted.`
+      : `Write the narration as a single-host monologue (~${words} words).
+Personal, reflective, deep — not a listicle.`,
+    ``,
+    `Output JSON only. No markdown. No explanation.`,
+  ].join('\n');
+}
+
+module.exports = { generateScript, availableModels, GROQ_MODELS, PODCAST_SYSTEM_PROMPT };
