@@ -317,6 +317,8 @@ async function runJob(jobId) {
         job.clips_per_scene || 2,
         job.orientation || 'landscape',
         job.use_youtube || false,
+        job.use_pexels  !== false,
+        job.use_pixabay !== false,
         job.yt_quality  || '720',
       );
       output.clips = clips;
@@ -508,6 +510,8 @@ function createJob(data) {
     model:       data.model       || 'llama-3.3-70b-versatile',
     clips_per_scene: parseInt(data.clips_per_scene) || 2,
     use_youtube: !!data.use_youtube,
+    use_pexels:  data.use_pexels  !== false,
+    use_pixabay: data.use_pixabay !== false,
     steps: {
       brainstorm:      data.steps?.brainstorm      ?? true,
       validate:        data.steps?.validate         ?? true,

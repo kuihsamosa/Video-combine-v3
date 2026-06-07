@@ -840,6 +840,15 @@ app.get('/api/scheduler/output/:filename', (req, res) => {
   res.sendFile(fp);
 });
 
+// Footage sources config status
+app.get('/api/config/footage-sources', (req, res) => {
+  res.json({
+    pexels:  !!process.env.PEXELS_API_KEY,
+    pixabay: !!process.env.PIXABAY_API_KEY,
+    youtube: !!(process.env.YOUTUBE_API_KEY || process.env.YOUTUBE_OAUTH_TOKEN),
+  });
+});
+
 // ── Stock footage finder ──────────────────────────────────────────────────────
 app.post('/api/find-footage', async (req, res) => {
   const {

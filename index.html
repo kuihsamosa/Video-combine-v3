@@ -1790,6 +1790,45 @@
                             </div>
                         </div>
 
+                        <!-- Footage settings — collapsible -->
+<div id="sfFootageSettings" style="grid-column:1/-1; border:1px solid var(--border); border-radius:8px; overflow:hidden;">
+  <button type="button" id="sfFootageToggle" onclick="sfToggleFootage()" style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--surface-2); border:none; cursor:pointer; font-size:12px; font-weight:600; color:var(--text-2);">
+    <span>🎬 Footage Settings</span>
+    <span id="sfFootageSummary" style="font-weight:400; color:var(--text-3); font-size:11px;">Pexels + Pixabay · 2 clips/scene</span>
+    <svg id="sfFootageChevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div id="sfFootageBody" style="display:none; flex-direction:column; gap:12px; padding:12px;">
+    <!-- Sources row -->
+    <div>
+      <label style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">Sources</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <label id="sfSrcPexelsLabel" style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; padding:5px 10px; border:1px solid var(--border); border-radius:6px; background:var(--surface);">
+          <input type="checkbox" id="sfSrcPexels" checked onchange="sfUpdateFootageSummary()"> Pexels
+        </label>
+        <label id="sfSrcPixabayLabel" style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; padding:5px 10px; border:1px solid var(--border); border-radius:6px; background:var(--surface);">
+          <input type="checkbox" id="sfSrcPixabay" checked onchange="sfUpdateFootageSummary()"> Pixabay
+        </label>
+        <label id="sfSrcYoutubeLabel" style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; padding:5px 10px; border:1px solid var(--border); border-radius:6px; background:var(--surface);">
+          <input type="checkbox" id="sfSrcYoutube" onchange="sfUpdateFootageSummary()"> YouTube
+          <span id="sfYoutubeNotConfigured" style="display:none; font-size:10px; color:#f59e0b; margin-left:2px;">(not configured)</span>
+        </label>
+      </div>
+    </div>
+    <!-- Clips per scene row -->
+    <div style="display:flex; align-items:center; gap:10px;">
+      <label style="font-size:12px; color:var(--text-2); white-space:nowrap;">Clips per scene</label>
+      <div style="display:flex; align-items:center; gap:0; border:1px solid var(--border); border-radius:6px; overflow:hidden;">
+        <button type="button" onclick="sfAdjustClips(-1)" style="padding:4px 10px; background:var(--surface-2); border:none; cursor:pointer; font-size:14px; color:var(--text-2);">−</button>
+        <span id="sfClipsValue" style="padding:4px 14px; font-size:13px; font-weight:600; color:var(--text); background:var(--surface); min-width:32px; text-align:center;">2</span>
+        <button type="button" onclick="sfAdjustClips(1)" style="padding:4px 10px; background:var(--surface-2); border:none; cursor:pointer; font-size:14px; color:var(--text-2);">+</button>
+      </div>
+      <span style="font-size:11px; color:var(--text-3);">(1–4 per scene)</span>
+    </div>
+    <!-- Live summary -->
+    <div id="sfFootageLiveSummary" style="font-size:11px; color:var(--text-3); padding:6px 10px; background:var(--surface-2); border-radius:6px;"></div>
+  </div>
+</div>
+
                         <!-- Schedule -->
                         <div style="grid-column:1/-1; border-top:1px solid var(--border); padding-top:12px;">
                             <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:6px;">Schedule</label>
@@ -4319,8 +4358,111 @@ function schedShowForm(job = null) {
     document.getElementById('sfTime').value             = job?.schedule?.time        || '09:00';
     document.getElementById('sfDayOfWeek').value        = job?.schedule?.day_of_week ?? 1;
     schedUpdateScheduleUI();
+
+    // Populate footage settings
+    _sfClips = job?.clips_per_scene || 2;
+    const clipsEl = document.getElementById('sfClipsValue');
+    if (clipsEl) clipsEl.textContent = _sfClips;
+    const pexelsEl  = document.getElementById('sfSrcPexels');
+    const pixabayEl = document.getElementById('sfSrcPixabay');
+    const ytEl      = document.getElementById('sfSrcYoutube');
+    if (pexelsEl  && !pexelsEl.disabled)  pexelsEl.checked  = job?.use_pexels  !== false;
+    if (pixabayEl && !pixabayEl.disabled) pixabayEl.checked = job?.use_pixabay !== false;
+    if (ytEl      && !ytEl.disabled)      ytEl.checked      = !!job?.use_youtube;
+    sfUpdateFootageSummary();
+
+    // Auto-expand footage settings if non-default values are set
+    const hasNonDefault = _sfClips !== 2 || !job?.use_pexels || !job?.use_pixabay || job?.use_youtube;
+    if (hasNonDefault) {
+        const body    = document.getElementById('sfFootageBody');
+        const chevron = document.getElementById('sfFootageChevron');
+        if (body)    { body.style.display = 'flex'; body.style.flexDirection = 'column'; }
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+    }
+
     form.style.display = 'block';
     form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Scheduler footage settings ─────────────────────────────────────────────
+let _sfClips = 2;
+
+function sfToggleFootage() {
+    const body    = document.getElementById('sfFootageBody');
+    const chevron = document.getElementById('sfFootageChevron');
+    const open    = body.style.display !== 'none';
+    body.style.display    = open ? 'none' : 'flex';
+    body.style.flexDirection = 'column';
+    chevron.style.transform  = open ? '' : 'rotate(180deg)';
+}
+
+function sfAdjustClips(delta) {
+    _sfClips = Math.max(1, Math.min(4, _sfClips + delta));
+    const el = document.getElementById('sfClipsValue');
+    if (el) el.textContent = _sfClips;
+    sfUpdateFootageSummary();
+}
+
+function sfUpdateFootageSummary() {
+    const pexels  = document.getElementById('sfSrcPexels')?.checked;
+    const pixabay = document.getElementById('sfSrcPixabay')?.checked;
+    const yt      = document.getElementById('sfSrcYoutube')?.checked;
+
+    const parts = [pexels && 'Pexels', pixabay && 'Pixabay', yt && 'YouTube'].filter(Boolean);
+    const sourcesStr = parts.length ? parts.join(' + ') : 'No sources selected ⚠';
+
+    // update header summary
+    const sum = document.getElementById('sfFootageSummary');
+    if (sum) sum.textContent = `${sourcesStr} · ${_sfClips} clip${_sfClips !== 1 ? 's' : ''}/scene`;
+
+    // update live detail line
+    const live = document.getElementById('sfFootageLiveSummary');
+    if (live) {
+        live.textContent = parts.length
+            ? `${sourcesStr} — ${_sfClips} clip${_sfClips !== 1 ? 's' : ''} per scene`
+            : '⚠ Select at least one footage source';
+        live.style.color = parts.length ? 'var(--text-3)' : '#ef4444';
+    }
+
+    // highlight active source labels
+    ['Pexels','Pixabay','Youtube'].forEach(src => {
+        const cb    = document.getElementById(`sfSrc${src}`);
+        const label = document.getElementById(`sfSrc${src}Label`);
+        if (cb && label) {
+            label.style.borderColor  = cb.checked ? 'var(--accent)' : 'var(--border)';
+            label.style.background   = cb.checked ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'var(--surface)';
+        }
+    });
+}
+
+async function sfLoadFootageSources() {
+    try {
+        const r = await fetch('/api/config/footage-sources');
+        if (!r.ok) return;
+        const cfg = await r.json();
+        const ytLabel = document.getElementById('sfSrcYoutubeLabel');
+        const ytNote  = document.getElementById('sfYoutubeNotConfigured');
+        const ytCb    = document.getElementById('sfSrcYoutube');
+        if (!cfg.youtube && ytLabel && ytCb) {
+            ytCb.disabled = true;
+            ytLabel.style.opacity = '0.5';
+            ytLabel.style.cursor  = 'not-allowed';
+            if (ytNote) ytNote.style.display = 'inline';
+        }
+        if (!cfg.pexels) {
+            const el = document.getElementById('sfSrcPexels');
+            const lb = document.getElementById('sfSrcPexelsLabel');
+            if (el) { el.checked = false; el.disabled = true; }
+            if (lb) { lb.style.opacity = '0.5'; lb.style.cursor = 'not-allowed'; lb.title = 'PEXELS_API_KEY not configured'; }
+        }
+        if (!cfg.pixabay) {
+            const el = document.getElementById('sfSrcPixabay');
+            const lb = document.getElementById('sfSrcPixabayLabel');
+            if (el) { el.checked = false; el.disabled = true; }
+            if (lb) { lb.style.opacity = '0.5'; lb.style.cursor = 'not-allowed'; lb.title = 'PIXABAY_API_KEY not configured'; }
+        }
+        sfUpdateFootageSummary();
+    } catch(_) {}
 }
 
 function schedHideForm() {
@@ -4377,6 +4519,10 @@ async function schedSaveJob() {
             time:           document.getElementById('sfTime').value,
             day_of_week:    parseInt(document.getElementById('sfDayOfWeek').value),
         },
+        clips_per_scene: _sfClips,
+        use_pexels:      document.getElementById('sfSrcPexels')?.checked  ?? true,
+        use_pixabay:     document.getElementById('sfSrcPixabay')?.checked ?? true,
+        use_youtube:     document.getElementById('sfSrcYoutube')?.checked ?? false,
     };
     // Preserve planner origin metadata if editing an existing planner job
     if (schedEditingId) {
@@ -4517,6 +4663,7 @@ document.querySelector('[data-tab="scheduler"]')?.addEventListener('click', () =
 
 // Initial load
 schedRefresh();
+sfLoadFootageSources();
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PLANNER

@@ -136,14 +136,18 @@ async function downloadClipYT(ytUrl, filename, quality = '720', logger) {
 }
 
 // ── Combined search — Pexels + Pixabay + YouTube in parallel ─────────────────
-async function searchAll(query, env, perPage, logger, orientation = 'landscape', useYoutube = false) {
+async function searchAll(query, env, perPage, logger, orientation = 'landscape', useYoutube = false, usePexels = true, usePixabay = true) {
   const pexelsKey  = env.PEXELS_API_KEY;
   const pixabayKey = env.PIXABAY_API_KEY;
 
+  if (!useYoutube && !usePexels && !usePixabay) {
+    throw new Error('No footage sources enabled');
+  }
+
   const tasks = [
-    pexelsKey  ? searchPexels(query,  pexelsKey,  perPage, orientation) : Promise.resolve([]),
-    pixabayKey ? searchPixabay(query, pixabayKey, perPage, orientation) : Promise.resolve([]),
-    useYoutube ? searchYouTubeFootage(query, perPage, logger)           : Promise.resolve([]),
+    (usePexels  && pexelsKey)  ? searchPexels(query,  pexelsKey,  perPage, orientation) : Promise.resolve([]),
+    (usePixabay && pixabayKey) ? searchPixabay(query, pixabayKey, perPage, orientation) : Promise.resolve([]),
+    useYoutube ? searchYouTubeFootage(query, perPage, logger)                           : Promise.resolve([]),
   ];
 
   const [pexelsRes, pixabayRes, youtubeRes] = await Promise.allSettled(tasks);
@@ -185,11 +189,16 @@ async function findFootageForScenes(
   clipsPerScene = 2,
   orientation   = 'landscape',
   useYoutube    = false,
+  usePexels     = true,
+  usePixabay    = true,
   ytQuality     = '720',
 ) {
   const pexelsKey  = env.PEXELS_API_KEY;
   const pixabayKey = env.PIXABAY_API_KEY;
 
+  if (!useYoutube && !usePexels && !usePixabay) {
+    throw new Error('No footage sources enabled');
+  }
   if (!pexelsKey && !pixabayKey && !useYoutube) {
     throw new Error('No footage source configured. Add PEXELS_API_KEY / PIXABAY_API_KEY to .env, or enable YouTube.');
   }
@@ -213,10 +222,10 @@ async function findFootageForScenes(
                      (scene.description || '').split(' ').slice(0, 4).join(' ') ||
                      'cinematic nature';
 
-    const sources = ['Pexels', 'Pixabay', useYoutube && 'YouTube'].filter(Boolean).join(' + ');
+    const sources = [usePexels && 'Pexels', usePixabay && 'Pixabay', useYoutube && 'YouTube'].filter(Boolean).join(' + ');
     logger.log(`🔍 Scene ${scene.id}: "${query}" [${orientation}] (${sources})…`);
 
-    const candidates = await searchAll(query, env, clipsPerScene + 2, logger, orientation, useYoutube);
+    const candidates = await searchAll(query, env, clipsPerScene + 2, logger, orientation, useYoutube, usePexels, usePixabay);
 
     if (!candidates.length) {
       logger.log(`   ⚠️  No results for scene ${scene.id} — skipping`);
