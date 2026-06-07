@@ -176,12 +176,18 @@ async function generateTTS(text, voice = 'narrator_warm', speed = 0.92, logger) 
   const buffers = [];
   for (let i = 0; i < chunks.length; i++) {
     const body = JSON.stringify({
-      text:                 chunks[i],
-      voice:                resolvedVoice,
+      model:              'kokoro',
+      input:              chunks[i],
+      voice:              resolvedVoice,
       speed,
-      format:               'wav',
-      stream:               false,
-      normalization_options: { unit: 'paragraph' },
+      response_format:    'wav',
+      stream:             false,
+      normalization_options: {
+        unit:                               'paragraph',
+        email_normalization:                true,
+        phone_normalization:                true,
+        replace_remaining_symbols:          true,
+      },
     });
     const r = await fetch(`${KOKOROURL}/v1/audio/speech`, {
       method:  'POST',
@@ -511,9 +517,11 @@ function createJob(data) {
       day_of_week:    data.schedule?.day_of_week    ?? 1,
       interval_hours: data.schedule?.interval_hours ?? 24,
     },
-    enabled:     data.enabled !== false,
-    status:      'idle',
-    created_at:  new Date().toISOString(),
+    enabled:          data.enabled !== false,
+    status:           'idle',
+    created_at:       new Date().toISOString(),
+    _from_planner:    data._from_planner    || false,
+    _planner_idea_id: data._planner_idea_id || null,
     last_run:    null,
     last_run_id: null,
     next_run_ms: null,
