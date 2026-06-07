@@ -316,34 +316,43 @@ async function runJob(jobId) {
         const tmpDir = path.join(os.tmpdir(), `sched_seg_${runId}`);
         fs.mkdirSync(tmpDir, { recursive: true });
 
-        // ── Extract segments at up to 12s per clip (was 5s — 2.4× more coverage) ──
+        // ── Extract segments — no-repeat: advance start offset per clip ──────────
         const baseClips = output.clips;
         let segPaths = [];
 
-        const extractOne = async (clip, idx, cutSecs) => {
-          const segOut = path.join(tmpDir, `seg_${idx}.mp4`);
-          const dur    = clip.duration || 12;
+        // Track how many seconds have been extracted from each clip (by localPath)
+        const clipOffsets = new Map(); // localPath → nextStartSeconds
+
+        const extractOne = async (clip, idx, cutSecs, startOverride) => {
+          const segOut  = path.join(tmpDir, `seg_${idx}.mp4`);
+          const clipDur = clip.duration || 30;
+          const start   = startOverride ?? (clipOffsets.get(clip.localPath) || 0);
+          const avail   = Math.max(0, clipDur - start);
+          if (avail < 1) return null; // this clip is exhausted
+          const actual  = Math.min(cutSecs, avail);
           await extractSegment({
             inputPath:       clip.localPath,
-            startTime:       0,
-            durationSeconds: Math.min(cutSecs, dur),
+            startTime:       start,
+            durationSeconds: actual,
             outputPath:      segOut,
             preset:          resolvedPreset,
             orientation:     job.orientation || 'landscape',
             logger:          { log, error: log },
           });
+          clipOffsets.set(clip.localPath, start + actual);
           return segOut;
         };
 
         for (let i = 0; i < baseClips.length; i++) {
           try {
-            segPaths.push(await extractOne(baseClips[i], i, 12));
+            const segOut = await extractOne(baseClips[i], i, 12);
+            if (segOut) segPaths.push(segOut);
           } catch(e) {
             log(`   ⚠️  Segment ${i}: ${e.message}`);
           }
         }
 
-        // ── Coverage check: loop clips until we have enough to cover the audio ──
+        // ── Coverage check: extract more from untapped parts of each clip ────────
         if (audioDurForCombine > 0 && segPaths.length > 0) {
           // Probe total segment duration
           let totalSegSecs = 0;
@@ -352,23 +361,36 @@ async function runJob(jobId) {
           }
           log(`📐 Segment coverage: ${totalSegSecs.toFixed(1)}s / ${audioDurForCombine.toFixed(1)}s audio`);
 
-          // Loop existing segments (in round-robin) until covered + 20% buffer
+          // Fill gap by pulling more non-overlapping windows from each clip
           const needed = audioDurForCombine * 1.2;
           if (totalSegSecs < needed) {
-            log(`🔁 Looping clips to fill ${(needed - totalSegSecs).toFixed(1)}s gap…`);
+            log(`🔁 Pulling more from existing clips (no-repeat) to fill ${(needed - totalSegSecs).toFixed(1)}s gap…`);
             let loopIdx = 0;
-            let loopCounter = baseClips.length; // continue numbering from after originals
-            while (totalSegSecs < needed && loopIdx < 200) {
+            let loopCounter = baseClips.length;
+            let exhaustedPasses = 0;
+            while (totalSegSecs < needed && exhaustedPasses < baseClips.length) {
               const clip = baseClips[loopIdx % baseClips.length];
+              const clipDur = clip.duration || 30;
+              const usedSoFar = clipOffsets.get(clip.localPath) || 0;
+              if (usedSoFar >= clipDur - 1) {
+                // This clip is fully used; if all clips exhausted, stop
+                exhaustedPasses++;
+                loopIdx++;
+                continue;
+              }
+              exhaustedPasses = 0; // reset since we found a usable clip
               try {
                 const segOut = await extractOne(clip, loopCounter, 12);
-                segPaths.push(segOut);
-                totalSegSecs += await runFfprobeDurationSeconds(segOut, {}).catch(() => 12);
-                loopCounter++;
+                if (segOut) {
+                  segPaths.push(segOut);
+                  totalSegSecs += await runFfprobeDurationSeconds(segOut, {}).catch(() => 12);
+                  loopCounter++;
+                }
               } catch (_) {}
               loopIdx++;
+              if (loopIdx > 2000) break; // safety cap
             }
-            log(`📐 After loop: ${totalSegSecs.toFixed(1)}s total segments`);
+            log(`📐 After fill: ${totalSegSecs.toFixed(1)}s total segments (${segPaths.length} clips, no repeats)`);
           }
         }
 

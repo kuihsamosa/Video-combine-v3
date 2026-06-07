@@ -37,6 +37,7 @@ const { generateScript, availableModels } = require('./script-generator');
 const { brainstormIdeas, validateIdea, refineIdea } = require('./planner');
 const schedulerModule = require('./scheduler');
 const { findFootageForScenes, clearAllFootage, FOOTAGE_DIR } = require('./footage-finder');
+const { IMAGE_DIR } = require('./image-finder');
 const { preprocessTTS: _preprocessTTS, chunkTTS: _chunkTTS, stitchWavBuffers, findDataOffset } = require('./tts-utils');
 const { burnCaptions, TEMPLATES: CAPTION_TEMPLATES } = require('./caption-generator');
 const { searchJamendo, searchFreesound, downloadTrack, mixMusicUnderVideo, clearAllMusic, MUSIC_DIR } = require('./music-finder');
@@ -962,10 +963,13 @@ app.post('/api/burn-captions', async (req, res) => {
 // Serve downloaded footage files (sanitised filename only)
 app.get('/api/footage-file/:filename', (req, res) => {
   const { filename } = req.params;
-  if (!/^footage_[a-z0-9_]+\.mp4$/i.test(filename)) {
+  // Allow both video footage clips and image-derived clips
+  if (!/^(footage|img_clip)_[a-z0-9_]+\.mp4$/i.test(filename)) {
     return res.status(400).json({ error: 'Invalid filename' });
   }
-  const filePath = path.join(FOOTAGE_DIR, filename);
+  // Check footage dir first, then image dir
+  let filePath = path.join(FOOTAGE_DIR, filename);
+  if (!fs.existsSync(filePath)) filePath = path.join(IMAGE_DIR, filename);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
   res.setHeader('Content-Type', 'video/mp4');
   res.setHeader('Content-Disposition', `inline; filename="${filename}"`);

@@ -75,7 +75,8 @@ Required schema:
       "duration_hint_seconds": 10,
       "visual_keywords": ["specific keyword", "medium keyword", "broad keyword", "fallback keyword", "generic keyword"],
       "search_queries": ["specific 2-3 word stock query", "medium 1-2 word query", "single broad word"],
-      "description": "What should be on screen during this segment"
+      "description": "What should be on screen during this segment",
+      "on_screen_text": "Key stat or number to flash on screen, e.g. '$300/month = $3,600/year' — empty string if no stat fits"
     }
   ],
   "youtube": {
@@ -105,35 +106,81 @@ search_queries: Exactly 3 pre-built search strings for Pexels/Pixabay, from spec
   - query 2: 1-2 words, medium (e.g. "fitness workout")
   - query 3: 1 single common word, broadest fallback (e.g. "exercise")
 
+on_screen_text: A short punchy stat, number, or phrase to overlay on screen for that scene.
+  - Must be concrete: "$180/year", "87% of people", "3x faster", "The #1 mistake"
+  - Max 6 words. If no strong stat fits the scene, use empty string "".
+  - These reinforce what the narrator is saying and anchor the point visually.
+
 ════════════════════════════════════════
-NARRATION WRITING RULES — READ CAREFULLY
+HOOK — THE MOST IMPORTANT 10 SECONDS
 ════════════════════════════════════════
 
-STRUCTURE (follow this arc every time):
-  1. HOOK (first 5-10 seconds): One punchy line that stops the scroll. A bold claim, a shocking stat, or a question they can't ignore. NO greetings yet.
-  2. PROMISE: Tell them what they're about to learn / why it matters. One or two sentences.
-  3. GREETING: "Welcome back, everyone" or "Hey, welcome in" — warm but brief.
-  4. BODY: The actual content delivered as a flowing conversation. Break big ideas into short punchy sections. Use rhetorical questions to keep them engaged ("But here's the thing — why does this even matter?"). Pause with a short sentence for emphasis. Build tension then release it.
-  5. CALLBACK + PAYOFF: Tie back to the hook. Deliver on the promise.
-  6. OUTRO + CTA: "If this hit different for you, drop a like — it seriously helps. Subscribe if you want more of this. And I'll see you in the next one."
+The hook MUST follow this battle-tested formula. No exceptions.
 
-VOICE AND STYLE:
-  - Write exactly how a smart, enthusiastic friend would explain this over coffee — not a Wikipedia article
-  - Use contractions everywhere: "you're", "it's", "that's", "here's", "we're", "don't"
-  - Use second-person: speak directly to "you" and "we"
-  - Mix sentence lengths: one short punchy sentence. Then a longer one that builds context and carries the listener forward. Then short again.
-  - Use natural spoken filler only when it adds rhythm: "And honestly?", "Here's the thing.", "Think about it.", "Right?", "Seriously."
-  - Rhetorical questions: ask the listener something they can't help but answer in their head
-  - Avoid: bullet-point energy, "In this video we will discuss", "Furthermore", "In conclusion", "Additionally", "It is important to note"
-  - Avoid any stage directions like [pause], (beat), [cut to], etc. — just the spoken words
+FORMULA: "[Problem as a direct question]? [Today/Right now], [we're exposing / you're about to find out / here are] [specific number] [things/reasons/mistakes] that [concrete consequence]. [Challenge line that creates FOMO or self-audit, e.g. 'Let's see how many you're guilty of.']"
+
+STRONG hook examples:
+  "Are you throwing money away without even realizing it? Today, we're exposing the top five everyday traps draining your bank account — and exactly how much they're costing you over a year. Let's see how many you're guilty of."
+  "What if the habits you think are healthy are actually working against you? We're breaking down seven things millions of people do every single day that are quietly destroying their progress. Sound familiar?"
+  "Most people will never build real wealth. Not because they don't earn enough — but because of three invisible mistakes they keep making without knowing it."
+
+WEAK hooks to AVOID:
+  "You're about to find out some interesting things..." (vague, no number, no stakes)
+  "Welcome back everyone, today we're talking about..." (starts with greeting — kills retention)
+  "In this video we will discuss..." (essay energy, not conversational)
+
+════════════════════════════════════════
+NARRATION STRUCTURE — FOLLOW THIS EXACTLY
+════════════════════════════════════════
+
+  1. HOOK (0-10s): Use the formula above. Bold question + specific promise + FOMO/self-audit line. NO greeting yet.
+  2. PIVOT (10-20s): One or two sentences that deepen the stakes. NOT a greeting — build tension on the hook.
+  3. GREETING (one sentence only): "Hey — glad you're here." or "Let's get into it." MAX one sentence. No "welcome back everyone." No filler warmup.
+  4. BODY: Deliver value as a flowing conversation. Each main point MUST include:
+       a) THE TRAP or FACT — name it clearly and directly
+       b) THE NUMBER — a specific dollar amount, percentage, time, or stat that makes it feel real ("that's $2,160 a year gone")
+       c) THE FIX — one concrete, actionable step the viewer can take today
+     Between points: use rhetorical questions to reset engagement ("But here's what nobody tells you...", "Sound familiar?", "Here's where it gets wild.")
+  5. CALLBACK + PAYOFF: Return to the hook's question and answer it with what they just learned. One punchy paragraph, max 3 sentences.
+  6. CTA (last 15-20s): High-engagement question format ONLY.
+     FORMULA: "Which [specific item from the video] hits closest to home for you? Drop it in the comments — I read every single one. If you want more [niche] breakdowns like this, hit subscribe. New video every [week]. I'll see you in the next one."
+
+════════════════════════════════════════
+DATA-DRIVEN WRITING — NON-NEGOTIABLE
+════════════════════════════════════════
+
+Every point in the body MUST include at least one of:
+  - A specific dollar amount (e.g. "$15 a month = $180 a year")
+  - A percentage (e.g. "78% of people")
+  - A time comparison (e.g. "in just 10 minutes a week")
+  - A multiplier (e.g. "three times more likely to succeed")
+
+If you don't have a verified statistic, construct a realistic illustrative example:
+  GOOD: "If you eat out just three times a week at fifteen dollars each, that's nearly two thousand three hundred dollars a year on food you could have made at home."
+  BAD: "Eating out is expensive." (no number = no impact, viewer will not remember it)
+
+Annual math is powerful: always convert monthly costs to yearly when relevant.
+  "Fifteen dollars a month sounds harmless. But that's a hundred and eighty dollars a year. Across five subscriptions? You're already at nine hundred dollars gone."
+
+════════════════════════════════════════
+VOICE AND STYLE
+════════════════════════════════════════
+
+  - Write exactly how a smart, enthusiastic friend explains something over coffee — not a Wikipedia article
+  - Contractions everywhere: "you're", "it's", "that's", "here's", "we're", "don't", "can't", "won't"
+  - Second-person throughout: speak directly to "you" and "we" — never "people" or "viewers"
+  - Mix sentence lengths constantly: Short punchy sentence. Then a longer one that builds context and carries the listener forward before landing on the key idea. Then short again.
+  - Rhetorical questions every 4-5 sentences: ask something the listener can't help but answer in their head
+  - BANNED phrases (instant disqualification): "In this video we will discuss", "Furthermore", "In conclusion", "Additionally", "It is important to note", "Welcome back everyone", "As I mentioned earlier", "Let's dive in", "Today I want to talk about"
+  - NO stage directions whatsoever: [pause], (beat), [cut to], [music], [transition] — just the spoken words
 
 PACING:
-  - ~150 words per minute when spoken naturally
-  - Every 3-4 sentences: a moment of emphasis (one short powerful sentence alone)
-  - Vary rhythm to prevent monotony
+  - Target 150 words per minute when spoken naturally
+  - Every 3-4 sentences: one short standalone sentence for emphasis. (Like this.)
+  - Never three long sentences in a row — the listener will zone out
 
-WHAT GREAT NARRATION SOUNDS LIKE:
-  "Nobody talks about this. But it changes everything once you see it. [GREETING] Hey, welcome in — I'm glad you're here. Because today we're going to break down one of the most misunderstood forces in modern life..."`;
+GREAT NARRATION EXAMPLE:
+  "Are you making these money mistakes right now? Today we're exposing the five habits quietly bleeding your bank account dry — and exactly how to stop them. Hey — let's get into it. Because the first one alone could be costing you over a thousand dollars a year without you even noticing. And most people never connect the dots."`;
 
 function buildUserPrompt({ topic, niche, tone, duration_minutes, style }) {
   const words = Math.round(duration_minutes * 150);

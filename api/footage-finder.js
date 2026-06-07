@@ -299,13 +299,29 @@ async function findFootageForScenes(
   // ── Pass 1: one scene at a time, tiered queries ─────────────────────────────
   for (const scene of scenes) {
     const clips = await downloadForScene(scene, clipsPerScene);
-    if (!clips.length) logger.log(`   ⚠️  No clips found for scene ${scene.id} after all query tiers`);
-    results.push(...clips);
+    if (!clips.length) {
+      logger.log(`   ⚠️  No video clips for scene ${scene.id} — falling back to image search…`);
+      // Image fallback: convert still photos to Ken Burns video clips
+      try {
+        const { findImagesForScene } = require('./image-finder');
+        const imageClips = await findImagesForScene(scene, env, logger, clipsPerScene, orientation, 5);
+        if (imageClips.length) {
+          logger.log(`   🖼️  Image fallback: ${imageClips.length} still(s) → video clips for scene ${scene.id}`);
+          results.push(...imageClips);
+        } else {
+          logger.log(`   ⚠️  Image fallback also empty for scene ${scene.id}`);
+        }
+      } catch (imgErr) {
+        logger.log(`   ⚠️  Image fallback error scene ${scene.id}: ${imgErr.message}`);
+      }
+    } else {
+      results.push(...clips);
+    }
   }
 
   // ── Pass 2: coverage top-up ─────────────────────────────────────────────────
   // If a targetDurationSeconds was provided (set by scheduler from audio length),
-  // keep pulling extra clips (with broader queries) until total clip seconds ≥ target.
+  // keep pulling extra clips (with broader queries) until total clip seconds >= target.
   const targetSecs = clipsPerScene._targetDurationSeconds || 0; // smuggled in via property
   if (targetSecs > 0) {
     const totalClipSecs = results.reduce((s, c) => s + (c.duration || 8), 0);
@@ -313,18 +329,29 @@ async function findFootageForScenes(
     if (deficit > 0) {
       const extraNeeded = Math.ceil(deficit / 8);
       logger.log(`📐 Coverage gap: ${deficit.toFixed(0)}s short — fetching ${extraNeeded} extra clip(s)…`);
-      // Rotate through scenes requesting extras
       for (let i = 0; i < Math.min(extraNeeded, scenes.length * 2); i++) {
         const scene = scenes[i % scenes.length];
         const extra = await downloadForScene(scene, 1);
-        results.push(...extra);
-        if (!extra.length) break;
+        if (extra.length) {
+          results.push(...extra);
+        } else {
+          // Last resort: image for top-up too
+          try {
+            const { findImagesForScene } = require('./image-finder');
+            const imgExtra = await findImagesForScene(scene, env, logger, 1, orientation, 5);
+            results.push(...imgExtra);
+          } catch (_) {}
+        }
+        const nowSecs = results.reduce((s, c) => s + (c.duration || 8), 0);
+        if (nowSecs >= targetSecs) break;
       }
     }
   }
 
   const totalDur = results.reduce((s, c) => s + (c.duration || 8), 0);
-  logger.log(`✅ Footage finder done — ${results.length} clip(s), ~${totalDur.toFixed(0)}s raw footage`);
+  const videoCount = results.filter(c => !c.isImage).length;
+  const imageCount = results.filter(c =>  c.isImage).length;
+  logger.log(`✅ Footage finder done — ${videoCount} video clip(s) + ${imageCount} image clip(s), ~${totalDur.toFixed(0)}s raw footage`);
   return results;
 }
 
