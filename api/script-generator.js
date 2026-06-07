@@ -1,5 +1,43 @@
 // Script generator — Groq only (multi-key rotation), extended schema with YouTube metadata.
 
+// Node 16 compatibility: polyfill global fetch with built-in https if needed
+if (typeof fetch === 'undefined') {
+  const https = require('https');
+  const http  = require('http');
+  global.fetch = function nodeFetch(url, opts = {}) {
+    return new Promise((resolve, reject) => {
+      const u = new URL(url);
+      const mod = u.protocol === 'https:' ? https : http;
+      const body = opts.body ? Buffer.from(opts.body) : null;
+      const req = mod.request({
+        hostname: u.hostname,
+        port:     u.port || (u.protocol === 'https:' ? 443 : 80),
+        path:     u.pathname + u.search,
+        method:   opts.method || 'GET',
+        headers:  Object.assign({ ...(opts.headers || {}) }, body ? { 'content-length': body.length } : {}),
+        ...(opts.signal ? { signal: opts.signal } : {}),
+      }, (res) => {
+        const chunks = [];
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => {
+          const buf = Buffer.concat(chunks);
+          resolve({
+            ok:     res.statusCode >= 200 && res.statusCode < 300,
+            status: res.statusCode,
+            statusText: res.statusMessage || '',
+            text:   async () => buf.toString(),
+            json:   async () => JSON.parse(buf.toString()),
+            arrayBuffer: async () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+          });
+        });
+      });
+      req.on('error', reject);
+      if (body) req.write(body);
+      req.end();
+    });
+  };
+}
+
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // ── Groq models ───────────────────────────────────────────────────────────────

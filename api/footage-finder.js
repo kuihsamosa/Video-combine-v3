@@ -1,6 +1,9 @@
 // Footage Finder — queries Pexels, Pixabay, AND YouTube in parallel per scene.
 // All clips are downloaded to FOOTAGE_DIR and served via /api/footage-file/:name.
 
+// Node 16 compatibility
+if (typeof fetch === 'undefined') { require('./script-generator'); }
+
 const fs     = require('fs');
 const path   = require('path');
 const os     = require('os');

@@ -1614,6 +1614,22 @@
 
     <!-- ===== TAB: FILES ===== -->
     <div class="tab-panel" id="tab-files">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+
+        <!-- Generated Videos card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                    Generated Videos
+                </div>
+                <button id="refreshOutputsBtn" class="btn btn-ghost btn-sm">Refresh</button>
+            </div>
+            <div class="card-p">
+                <div id="outputVideosList" style="font-size:12px; color:var(--text-3);">Loading…</div>
+            </div>
+        </div>
+
         <div class="grid-2" style="align-items:start;">
             <div class="card">
                 <div class="card-header">
@@ -1644,6 +1660,7 @@
                 </div>
             </div>
         </div>
+        </div><!-- end flex column -->
     </div>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
@@ -2966,6 +2983,41 @@ async function refreshTempAnalyzer() {
 }
 
 document.getElementById('refreshTempBtn').addEventListener('click', refreshTempAnalyzer);
+
+// ─── Output videos list ───────────────────────────────────────────────────────
+async function refreshOutputVideos() {
+    const el = document.getElementById('outputVideosList');
+    if (!el) return;
+    el.innerHTML = '<span style="color:var(--text-3)">Loading…</span>';
+    try {
+        const r = await fetch('/api/scheduler/outputs');
+        if (!r.ok) throw new Error(`${r.status}`);
+        const { files } = await r.json();
+        if (!files.length) {
+            el.innerHTML = '<span style="color:var(--text-3)">No output videos yet. Run a scheduled job to generate videos.</span>';
+            return;
+        }
+        el.innerHTML = files.map(f => {
+            const mb   = (f.size / 1048576).toFixed(1);
+            const date = new Date(f.mtime).toLocaleString();
+            // derive job name from run history if available
+            return `
+            <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; color:var(--accent);"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:13px; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${f.name}">${f.name}</div>
+                    <div style="font-size:11px; color:var(--text-3);">${mb} MB &nbsp;·&nbsp; ${date}</div>
+                </div>
+                <a href="/api/scheduler/output/${encodeURIComponent(f.name)}" download="${f.name}" class="btn btn-primary btn-sm" style="flex-shrink:0;">
+                    ⬇ Download
+                </a>
+            </div>`;
+        }).join('');
+    } catch(err) {
+        el.innerHTML = `<span style="color:#ef4444">Error: ${err.message}</span>`;
+    }
+}
+document.getElementById('refreshOutputsBtn').addEventListener('click', refreshOutputVideos);
 document.getElementById('cleanupBtn').addEventListener('click', async () => {
     const st = document.getElementById('cleanupStatus');
     st.textContent = 'Cleaning…'; st.style.color = 'var(--text-3)';
@@ -2977,6 +3029,7 @@ document.getElementById('cleanupBtn').addEventListener('click', async () => {
         st.style.color = '#22c55e';
         addLog(`✅ Cleared: ${d.cleared.join(', ')}`);
         refreshTempAnalyzer();
+        refreshOutputVideos();
     } catch(err) {
         st.textContent = `Error: ${err.message}`;
         st.style.color = '#ef4444';
@@ -4971,6 +5024,7 @@ plannerRenderQueue();
 checkKokoro();
 loadAvailableModels();
 refreshTempAnalyzer();
+refreshOutputVideos();
 renderFileList();
 renderAudioFileList();
 updateDurations();

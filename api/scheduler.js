@@ -2,6 +2,9 @@
 // Orchestrates: Brainstorm → Script → Voiceover → Footage → Combine
 // Jobs persist in scheduler-jobs.json. A background tick checks every 60s.
 
+// Node 16 compatibility: ensure global fetch is available
+if (typeof fetch === 'undefined') { require('./script-generator'); } // polyfill is installed as side-effect
+
 const fs      = require('fs');
 const path    = require('path');
 const os      = require('os');
@@ -328,6 +331,8 @@ async function runJob(jobId) {
       const { combineVideos, extractSegment } = (() => {
         try { return require('./video-combiner'); } catch(_) { return {}; }
       })();
+      const { getVideoPreset } = require('./app-config');
+      const resolvedPreset = getVideoPreset('balanced');
 
       // We have localPath on each clip — use combineVideos directly if available
       if (typeof combineVideos === 'function') {
@@ -347,7 +352,7 @@ async function runJob(jobId) {
               startTime:       0,
               durationSeconds: Math.min(5, dur),
               outputPath:      segOut,
-              preset:          'balanced',
+              preset:          resolvedPreset,
               orientation:     job.orientation || 'landscape',
               logger:          { log, error: log },
             });
@@ -366,7 +371,7 @@ async function runJob(jobId) {
             segmentPaths:    segPaths,
             listPath,
             outputPath:      combinedPath,
-            preset:          'balanced',
+            preset:          resolvedPreset,
             logger:          { log, error: log },
             outputFormat:    'mp4',
             transition:      'none',

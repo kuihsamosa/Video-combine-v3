@@ -813,6 +813,21 @@ app.get('/api/scheduler/jobs/:id/logs', (req, res) => {
   req.on('close', () => schedulerModule.unsubscribeRunLog(runId, res));
 });
 
+// List completed output videos
+app.get('/api/scheduler/outputs', (req, res) => {
+  const outputDir = path.join(__dirname, '../output');
+  if (!fs.existsSync(outputDir)) return res.json({ files: [] });
+  const files = fs.readdirSync(outputDir)
+    .filter(f => /^sched_final_[a-f0-9]+\.mp4$/i.test(f))
+    .map(f => {
+      const fp   = path.join(outputDir, f);
+      const stat = fs.statSync(fp);
+      return { name: f, size: stat.size, mtime: stat.mtime.toISOString() };
+    })
+    .sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
+  res.json({ files });
+});
+
 // Download a completed run's video
 app.get('/api/scheduler/output/:filename', (req, res) => {
   const filename = path.basename(req.params.filename);
