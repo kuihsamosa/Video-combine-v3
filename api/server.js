@@ -37,6 +37,7 @@ const { generateScript, availableModels } = require('./script-generator');
 const { brainstormIdeas, validateIdea, refineIdea } = require('./planner');
 const schedulerModule = require('./scheduler');
 const { findFootageForScenes, clearAllFootage, FOOTAGE_DIR } = require('./footage-finder');
+const { preprocessTTS: _preprocessTTS, chunkTTS: _chunkTTS, stitchWavBuffers, findDataOffset } = require('./tts-utils');
 const { burnCaptions, TEMPLATES: CAPTION_TEMPLATES } = require('./caption-generator');
 const { searchJamendo, searchFreesound, downloadTrack, mixMusicUnderVideo, clearAllMusic, MUSIC_DIR } = require('./music-finder');
 const { getYouTubeInfo, downloadYouTube, listYouTubeFiles, clearYouTubeCache, YT_DIR } = require('./youtube-downloader');
@@ -1209,7 +1210,10 @@ app.get('/api/youtube-file/:filename', (req, res) => {
 // ── TTS text preprocessor ─────────────────────────────────────────────────────
 // Cleans narration text so Kokoro produces natural-sounding speech instead of
 // robotic literal readings of symbols, markdown, numbers, and punctuation.
-function preprocessTTS(raw) {
+// Delegate to shared tts-utils module
+function preprocessTTS(raw) { return _preprocessTTS(raw); }
+
+function _preprocessTTS_UNUSED(raw) {
   let t = raw;
 
   // 1. Strip markdown formatting
@@ -1282,10 +1286,10 @@ function preprocessTTS(raw) {
   return t.trim();
 }
 
-// Splits cleaned text into natural paragraph/sentence chunks so Kokoro doesn't
-// receive one giant wall of text (which degrades prosody on long scripts).
-// Returns an array of strings, each ≤ maxChars.
-function chunkTTS(text, maxChars = 500) {
+// Delegate to shared tts-utils module (returns array of {text, paragraphEnd} objects)
+function chunkTTS(text, maxChars = 300) { return _chunkTTS(text, maxChars); }
+
+function _chunkTTS_UNUSED(text, maxChars = 500) {
   // First split on blank lines (paragraph breaks)
   const paras = text.split(/\n{2,}/).map(p => p.replace(/\n/g, ' ').trim()).filter(Boolean);
   const chunks = [];
@@ -1404,7 +1408,7 @@ app.post('/api/tts', async (req, res) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'kokoro', input: chunks[0],
+          model: 'kokoro', input: chunks[0].text,
           voice: resolvedVoice, speed: effectiveSpeed,
           response_format: format, stream: false,
           normalization_options: normOpts,
@@ -1422,16 +1426,16 @@ app.post('/api/tts', async (req, res) => {
       return res.send(Buffer.from(buf));
     }
 
-    // Multiple chunks — call Kokoro per chunk, concatenate raw PCM/WAV buffers
-    const buffers = [];
+    // Multiple chunks — call Kokoro per chunk then stitch with paragraph silences
+    const wavChunks = [];
     for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      if (!chunk.trim()) continue;
+      const { text: chunkText, paragraphEnd } = chunks[i];
+      if (!chunkText.trim()) continue;
       const kokoroRes = await fetch(`${KOKORO_URL}/v1/audio/speech`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'kokoro', input: chunk,
+          model: 'kokoro', input: chunkText,
           voice: resolvedVoice, speed: effectiveSpeed,
           response_format: format, stream: false,
           normalization_options: normOpts,
@@ -1442,44 +1446,19 @@ app.post('/api/tts', async (req, res) => {
         const errText = await kokoroRes.text().catch(() => '');
         return res.status(502).json({ error: `Kokoro chunk ${i + 1} failed`, details: errText });
       }
-      buffers.push(Buffer.from(await kokoroRes.arrayBuffer()));
+      wavChunks.push({ buf: Buffer.from(await kokoroRes.arrayBuffer()), paragraphEnd });
     }
 
-    if (buffers.length === 0) {
+    if (wavChunks.length === 0) {
       return res.status(500).json({ error: 'No audio generated' });
     }
 
-    // Stitch chunks together.
-    // WAV: find the 'data' chunk offset in each buffer (don't hardcode 44 —
-    // Kokoro sometimes outputs extended headers with LIST/INFO metadata).
-    // MP3: raw concatenation is valid for same-bitrate streams.
+    // Stitch: WAV gets 350ms silence at paragraph breaks; MP3 is raw concat
     let combined;
-    if (format === 'wav' && buffers.length > 1) {
-      // Locate the 'data' sub-chunk in a WAV buffer by scanning for the marker.
-      function findDataOffset(buf) {
-        // WAV always starts RIFF....WAVEfmt  ...data....
-        // Scan from byte 12 (after RIFF header) for the 'data' marker.
-        for (let i = 12; i < buf.length - 8; i++) {
-          if (buf[i] === 0x64 && buf[i+1] === 0x61 && buf[i+2] === 0x74 && buf[i+3] === 0x61) {
-            return i + 8; // skip 'data' (4) + chunk size (4)
-          }
-        }
-        return 44; // fallback
-      }
-
-      // Keep the full first buffer (header + PCM data), strip headers from the rest
-      const pcmParts = buffers.map((b, i) => i === 0 ? b : b.slice(findDataOffset(b)));
-      combined = Buffer.concat(pcmParts);
-
-      // Find where the data chunk starts in the combined buffer to patch sizes
-      const dataOffset = findDataOffset(buffers[0]);
-      const totalPcmBytes = combined.length - dataOffset;
-
-      // Patch RIFF chunk size at offset 4 and data chunk size at (dataOffset - 4)
-      combined.writeUInt32LE(combined.length - 8, 4);           // RIFF total size
-      combined.writeUInt32LE(totalPcmBytes, dataOffset - 4);    // data chunk size
+    if (format === 'wav') {
+      combined = stitchWavBuffers(wavChunks, 350);
     } else {
-      combined = Buffer.concat(buffers);
+      combined = Buffer.concat(wavChunks.map(c => c.buf));
     }
 
     res.set('Content-Type', format === 'wav' ? 'audio/wav' : 'audio/mpeg');

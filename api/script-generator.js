@@ -73,7 +73,8 @@ Required schema:
     {
       "id": 1,
       "duration_hint_seconds": 10,
-      "visual_keywords": ["keyword1", "keyword2", "keyword3"],
+      "visual_keywords": ["specific keyword", "medium keyword", "broad keyword", "fallback keyword", "generic keyword"],
+      "search_queries": ["specific 2-3 word stock query", "medium 1-2 word query", "single broad word"],
       "description": "What should be on screen during this segment"
     }
   ],
@@ -85,6 +86,24 @@ Required schema:
     "category": "Education"
   }
 }
+
+════════════════════════════════════════
+SCENE KEYWORD RULES — CRITICAL FOR FOOTAGE
+════════════════════════════════════════
+
+visual_keywords: Exactly 5 keywords, ordered from MOST SPECIFIC to MOST GENERIC.
+  - keyword 1: specific action/subject (e.g. "person doing push-ups")
+  - keyword 2: medium specificity (e.g. "gym workout")
+  - keyword 3: topic-level (e.g. "fitness exercise")
+  - keyword 4: broad category (e.g. "sport health")
+  - keyword 5: universal fallback (e.g. "motivation success")
+  Rules: ALL keywords must be real stock-footage search terms that return results on Pexels/Pixabay.
+  AVOID overly niche phrases, proper nouns, brand names, or abstract concepts that have no visual.
+
+search_queries: Exactly 3 pre-built search strings for Pexels/Pixabay, from specific to broad:
+  - query 1: 2-3 words, most specific (e.g. "gym weight training")
+  - query 2: 1-2 words, medium (e.g. "fitness workout")
+  - query 3: 1 single common word, broadest fallback (e.g. "exercise")
 
 ════════════════════════════════════════
 NARRATION WRITING RULES — READ CAREFULLY

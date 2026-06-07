@@ -13,6 +13,7 @@ const crypto  = require('crypto');
 const { brainstormIdeas, validateIdea } = require('./planner');
 const { generateScript }                = require('./script-generator');
 const { findFootageForScenes }          = require('./footage-finder');
+const { preprocessTTS, chunkTTS, stitchWavBuffers, findDataOffset } = require('./tts-utils');
 
 const JOBS_FILE    = path.join(__dirname, '../scheduler-jobs.json');
 const OUTPUTS_DIR  = path.join(__dirname, '../output');
@@ -127,42 +128,7 @@ function finaliseRun(runId, status, output) {
 }
 
 // ── TTS helper: call Kokoro directly, return WAV Buffer ───────────────────────
-function preprocessTTS(raw) {
-  let t = raw;
-  t = t.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1').replace(/#{1,6}\s*/g, '');
-  t = t.replace(/—/g, ', ').replace(/–/g, ', ').replace(/…/g, '... ');
-  t = t.replace(/'/g, "'").replace(/[""]/g, '"').replace(/·|•|●/g, '. ');
-  t = t.replace(/(\d+)\s*%/g, '$1 percent').replace(/\$(\d[\d,]*)/g, '$1 dollars');
-  t = t.replace(/&/g, ' and ').replace(/\+/g, ' plus ').replace(/#(\w+)/g, '$1');
-  t = t.replace(/^\s*\d+\.\s+/gm, '').replace(/^\s*[-•]\s+/gm, '');
-  t = t.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n');
-  return t.trim();
-}
-
-function chunkTTS(text, max = 480) {
-  const paras = text.split(/\n{2,}/).map(p => p.replace(/\n/g,' ').trim()).filter(Boolean);
-  const chunks = [];
-  for (const para of paras) {
-    if (para.length <= max) { chunks.push(para); continue; }
-    const sents = para.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [para];
-    let cur = '';
-    for (const s of sents) {
-      if ((cur + ' ' + s).trim().length > max && cur.length > 0) { chunks.push(cur.trim()); cur = s; }
-      else cur = (cur + ' ' + s).trim();
-    }
-    if (cur.trim()) chunks.push(cur.trim());
-  }
-  return chunks.length ? chunks : [text];
-}
-
-function findDataOffset(buf) {
-  for (let i = 12; i < buf.length - 8; i++) {
-    if (buf[i]===0x64&&buf[i+1]===0x61&&buf[i+2]===0x74&&buf[i+3]===0x61) return i + 8;
-  }
-  return 44;
-}
-
-async function generateTTS(text, voice = 'narrator_warm', speed = 0.92, logger) {
+async function generateTTS(text, voice = 'narrator_warm', speed = 0.88, logger) {
   const VOICE_PRESETS = {
     'narrator_warm':      'af_heart(0.65)+af_jessica(0.35)',
     'narrator_confident': 'am_adam(0.55)+am_michael(0.45)',
@@ -173,23 +139,24 @@ async function generateTTS(text, voice = 'narrator_warm', speed = 0.92, logger) 
   };
   const resolvedVoice = VOICE_PRESETS[voice] || voice || 'af_heart';
   const cleaned = preprocessTTS(text);
-  const chunks  = chunkTTS(cleaned, 480);
+  const chunks  = chunkTTS(cleaned, 300);  // 300 chars → better prosody per chunk
   logger(`🎙️  TTS: ${chunks.length} chunk(s), voice=${resolvedVoice}`);
 
-  const buffers = [];
+  const wavChunks = [];
   for (let i = 0; i < chunks.length; i++) {
+    const { text: chunkText, paragraphEnd } = chunks[i];
     const body = JSON.stringify({
-      model:              'kokoro',
-      input:              chunks[i],
-      voice:              resolvedVoice,
+      model:           'kokoro',
+      input:           chunkText,
+      voice:           resolvedVoice,
       speed,
-      response_format:    'wav',
-      stream:             false,
+      response_format: 'wav',
+      stream:          false,
       normalization_options: {
-        unit:                               'paragraph',
-        email_normalization:                true,
-        phone_normalization:                true,
-        replace_remaining_symbols:          true,
+        unit:                      'paragraph',
+        email_normalization:       true,
+        phone_normalization:       true,
+        replace_remaining_symbols: true,
       },
     });
     const r = await fetch(`${KOKOROURL}/v1/audio/speech`, {
@@ -200,22 +167,12 @@ async function generateTTS(text, voice = 'narrator_warm', speed = 0.92, logger) 
     });
     if (!r.ok) throw new Error(`Kokoro ${r.status} on chunk ${i + 1}`);
     const buf = Buffer.from(await r.arrayBuffer());
-    buffers.push(buf);
+    wavChunks.push({ buf, paragraphEnd });
     logger(`   ✅ Chunk ${i+1}/${chunks.length} — ${(buf.length/1024).toFixed(0)} KB`);
   }
 
-  if (buffers.length === 1) return buffers[0];
-
-  // Stitch WAV: keep header from first chunk, concat PCM from all
-  const hdrEnd   = findDataOffset(buffers[0]);
-  const header   = buffers[0].slice(0, hdrEnd);
-  const pcm      = Buffer.concat(buffers.map((b, i) => i === 0 ? b.slice(hdrEnd) : b.slice(findDataOffset(b))));
-  const totalData = pcm.length;
-  const out      = Buffer.concat([header, pcm]);
-  // Patch RIFF chunk size (bytes 4-7) and data chunk size (bytes hdrEnd-4 to hdrEnd-1)
-  out.writeUInt32LE(36 + totalData, 4);
-  out.writeUInt32LE(totalData, hdrEnd - 4);
-  return out;
+  // Stitch with 350ms silence at paragraph breaks for natural breathing room
+  return stitchWavBuffers(wavChunks, 350);
 }
 
 // ── Run the full pipeline for one job ────────────────────────────────────────
