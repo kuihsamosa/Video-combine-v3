@@ -1,9 +1,9 @@
-// Footage Finder — searches Pexels (primary) and Pixabay (fallback) for stock video clips,
-// then downloads them to a local temp directory so the pipeline can use them.
+// Footage Finder — queries Pexels, Pixabay, AND YouTube in parallel per scene.
+// All clips are downloaded to FOOTAGE_DIR and served via /api/footage-file/:name.
 
-const fs   = require('fs');
-const path = require('path');
-const os   = require('os');
+const fs     = require('fs');
+const path   = require('path');
+const os     = require('os');
 const crypto = require('crypto');
 
 const FOOTAGE_DIR = path.join(os.tmpdir(), 'vcombine_footage');
@@ -13,9 +13,8 @@ function ensureDir() {
 }
 
 // ── Pexels ────────────────────────────────────────────────────────────────────
-// Free tier: 200 req/hour. Docs: https://www.pexels.com/api/documentation/
-async function searchPexels(query, apiKey, perPage = 3) {
-  const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=landscape&size=medium`;
+async function searchPexels(query, apiKey, perPage = 4, orientation = 'landscape') {
+  const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=${orientation}&size=medium`;
   const r = await fetch(url, {
     headers: { Authorization: apiKey },
     signal: AbortSignal.timeout(15_000),
@@ -26,7 +25,6 @@ async function searchPexels(query, apiKey, perPage = 3) {
   }
   const data = await r.json();
   return (data.videos || []).flatMap(v => {
-    // Prefer 720 p (balance quality vs download size)
     const files = (v.video_files || []).filter(f => f.link && f.file_type === 'video/mp4');
     files.sort((a, b) => Math.abs(a.height - 720) - Math.abs(b.height - 720));
     const best = files[0];
@@ -45,8 +43,7 @@ async function searchPexels(query, apiKey, perPage = 3) {
 }
 
 // ── Pixabay ───────────────────────────────────────────────────────────────────
-// Free tier: 100 req/min. Docs: https://pixabay.com/api/docs/
-async function searchPixabay(query, apiKey, perPage = 3) {
+async function searchPixabay(query, apiKey, perPage = 4, orientation = 'landscape') {
   const url = `https://pixabay.com/api/videos/?key=${apiKey}&q=${encodeURIComponent(query)}&video_type=film&per_page=${perPage}&safesearch=true`;
   const r = await fetch(url, { signal: AbortSignal.timeout(15_000) });
   if (!r.ok) throw new Error(`Pixabay ${r.status}`);
@@ -54,6 +51,11 @@ async function searchPixabay(query, apiKey, perPage = 3) {
   return (data.hits || []).flatMap(v => {
     const vid = v.videos?.medium || v.videos?.large || v.videos?.small;
     if (!vid?.url) return [];
+    const ratio = vid.width / (vid.height || 1);
+    const isPortrait  = ratio < 0.8;
+    const isLandscape = ratio > 1.2;
+    if (orientation === 'portrait'  && !isPortrait)  return [];
+    if (orientation === 'landscape' && !isLandscape) return [];
     return [{
       id:        `pixabay_${v.id}`,
       url:       vid.url,
@@ -67,45 +69,133 @@ async function searchPixabay(query, apiKey, perPage = 3) {
   });
 }
 
-// ── Downloader ────────────────────────────────────────────────────────────────
-async function downloadClip(url, filename, logger) {
+// ── YouTube ───────────────────────────────────────────────────────────────────
+// Returns search results (no download yet) shaped like Pexels/Pixabay results.
+async function searchYouTubeFootage(query, perPage = 2, logger) {
+  try {
+    const { searchYouTube } = require('./youtube-search');
+    const results = await searchYouTube(query, {
+      limit:  perPage + 2,   // extra headroom — long videos filtered below
+      filter: 'any',
+      logger,
+    });
+    // Prefer shorter videos (under 10 min) for B-roll; skip very long ones
+    const filtered = results.filter(v => !v.duration || v.duration < 600);
+    return filtered.slice(0, perPage).map(v => ({
+      id:        `youtube_${v.id}`,
+      ytId:      v.id,
+      ytUrl:     v.url,
+      url:       v.url,          // used as display URL; actual download via yt-dlp
+      thumbnail: v.thumbnail,
+      duration:  v.duration,
+      title:     v.title,
+      source:    'youtube',
+      query,
+    }));
+  } catch (e) {
+    logger?.log?.(`   ⚠️  YouTube search: ${e.message}`);
+    return [];
+  }
+}
+
+// ── Download helpers ──────────────────────────────────────────────────────────
+
+// Direct HTTP download (Pexels / Pixabay CDN URLs)
+async function downloadClipHTTP(url, filename, logger) {
   ensureDir();
   const dest = path.join(FOOTAGE_DIR, filename);
-  if (fs.existsSync(dest)) return dest;   // already cached
+  if (fs.existsSync(dest)) return dest;
 
   logger.log(`   ⬇️  ${filename} ← ${url.replace(/\?.*/, '').slice(0, 70)}…`);
-  const r = await fetch(url, { signal: AbortSignal.timeout(90_000) });
+  const r = await fetch(url, { signal: AbortSignal.timeout(120_000) });
   if (!r.ok) throw new Error(`Download ${r.status}: ${url.slice(0, 60)}`);
-
   const buf = await r.arrayBuffer();
   fs.writeFileSync(dest, Buffer.from(buf));
-  logger.log(`   ✅ ${filename} (${(buf.byteLength / 1048576).toFixed(1)} MB)`);
+  logger.log(`   ✅ ${filename} — ${(buf.byteLength / 1048576).toFixed(1)} MB`);
   return dest;
+}
+
+// yt-dlp download (YouTube clips)
+async function downloadClipYT(ytUrl, filename, quality = '720', logger) {
+  ensureDir();
+  const dest = path.join(FOOTAGE_DIR, filename);
+  if (fs.existsSync(dest)) return dest;
+
+  const { downloadYouTube, YT_DIR } = require('./youtube-downloader');
+  logger.log(`   🎬 ${filename} ← YouTube yt-dlp…`);
+  const { filename: dlFilename } = await downloadYouTube(ytUrl, { quality, logger });
+
+  // Move from YT_DIR to FOOTAGE_DIR so it's served via /api/footage-file
+  const src = path.join(YT_DIR, dlFilename);
+  fs.renameSync(src, dest);
+  logger.log(`   ✅ ${filename} — ${(fs.statSync(dest).size / 1048576).toFixed(1)} MB`);
+  return dest;
+}
+
+// ── Combined search — Pexels + Pixabay + YouTube in parallel ─────────────────
+async function searchAll(query, env, perPage, logger, orientation = 'landscape', useYoutube = false) {
+  const pexelsKey  = env.PEXELS_API_KEY;
+  const pixabayKey = env.PIXABAY_API_KEY;
+
+  const tasks = [
+    pexelsKey  ? searchPexels(query,  pexelsKey,  perPage, orientation) : Promise.resolve([]),
+    pixabayKey ? searchPixabay(query, pixabayKey, perPage, orientation) : Promise.resolve([]),
+    useYoutube ? searchYouTubeFootage(query, perPage, logger)           : Promise.resolve([]),
+  ];
+
+  const [pexelsRes, pixabayRes, youtubeRes] = await Promise.allSettled(tasks);
+
+  const pexels  = pexelsRes.status  === 'fulfilled' ? pexelsRes.value  : [];
+  const pixabay = pixabayRes.status === 'fulfilled' ? pixabayRes.value : [];
+  const youtube = youtubeRes.status === 'fulfilled' ? youtubeRes.value : [];
+
+  if (pexelsRes.status  === 'rejected') logger?.log?.(`   ⚠️  Pexels: ${pexelsRes.reason?.message}`);
+  if (pixabayRes.status === 'rejected') logger?.log?.(`   ⚠️  Pixabay: ${pixabayRes.reason?.message}`);
+  if (youtubeRes.status === 'rejected') logger?.log?.(`   ⚠️  YouTube: ${youtubeRes.reason?.message}`);
+
+  // Interleave: pexels, pixabay, youtube, pexels, pixabay, youtube …
+  const merged = [];
+  const len = Math.max(pexels.length, pixabay.length, youtube.length);
+  for (let i = 0; i < len; i++) {
+    if (i < pexels.length)  merged.push(pexels[i]);
+    if (i < pixabay.length) merged.push(pixabay[i]);
+    if (i < youtube.length) merged.push(youtube[i]);
+  }
+  return merged;
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
 /**
- * Search and download stock footage for each scene.
+ * Search Pexels, Pixabay, and optionally YouTube for each scene's keywords,
+ * download the clips, and return clip objects ready for the pipeline.
  *
  * @param {Array<{id, visual_keywords, description}>} scenes
- * @param {object} env               — process.env
- * @param {object} logger            — { log, error }
- * @param {number} [clipsPerScene=2] — how many clips to download per scene
- * @returns {Promise<Array>} Array of clip objects with localPath + serveUrl
+ * @param {object} env
+ * @param {object} logger
+ * @param {number} [clipsPerScene=2]
+ * @param {string} [orientation='landscape']
+ * @param {boolean} [useYoutube=false]
+ * @param {string}  [ytQuality='720']
  */
-async function findFootageForScenes(scenes, env, logger, clipsPerScene = 2) {
+async function findFootageForScenes(
+  scenes, env, logger,
+  clipsPerScene = 2,
+  orientation   = 'landscape',
+  useYoutube    = false,
+  ytQuality     = '720',
+) {
   const pexelsKey  = env.PEXELS_API_KEY;
   const pixabayKey = env.PIXABAY_API_KEY;
 
-  if (!pexelsKey && !pixabayKey) {
-    throw new Error('No footage API key configured. Add PEXELS_API_KEY or PIXABAY_API_KEY to .env');
+  if (!pexelsKey && !pixabayKey && !useYoutube) {
+    throw new Error('No footage source configured. Add PEXELS_API_KEY / PIXABAY_API_KEY to .env, or enable YouTube.');
   }
 
   ensureDir();
 
-  // Clean up old footage (older than 2 hours) to avoid filling /tmp
+  // Evict footage older than 2 hours
   try {
-    const cutoff = Date.now() - 2 * 3600 * 1000;
+    const cutoff = Date.now() - 2 * 3600_000;
     for (const f of fs.readdirSync(FOOTAGE_DIR)) {
       const fp = path.join(FOOTAGE_DIR, f);
       if (fs.statSync(fp).mtimeMs < cutoff) fs.unlinkSync(fp);
@@ -116,50 +206,43 @@ async function findFootageForScenes(scenes, env, logger, clipsPerScene = 2) {
 
   for (const scene of scenes) {
     const keywords = (scene.visual_keywords || []).slice(0, 3);
-    const query = keywords.join(' ') || (scene.description || '').split(' ').slice(0, 4).join(' ') || 'cinematic nature';
+    const query    = keywords.join(' ') ||
+                     (scene.description || '').split(' ').slice(0, 4).join(' ') ||
+                     'cinematic nature';
 
-    logger.log(`🔍 Scene ${scene.id}: searching "${query}"…`);
+    const sources = ['Pexels', 'Pixabay', useYoutube && 'YouTube'].filter(Boolean).join(' + ');
+    logger.log(`🔍 Scene ${scene.id}: "${query}" [${orientation}] (${sources})…`);
 
-    let candidates = [];
-
-    // Primary: Pexels
-    if (pexelsKey) {
-      try {
-        candidates = await searchPexels(query, pexelsKey, clipsPerScene + 1);
-      } catch (err) {
-        logger.log(`   ⚠️  Pexels: ${err.message}`);
-      }
-    }
-
-    // Fallback: Pixabay
-    if (!candidates.length && pixabayKey) {
-      try {
-        candidates = await searchPixabay(query, pixabayKey, clipsPerScene + 1);
-      } catch (err) {
-        logger.log(`   ⚠️  Pixabay: ${err.message}`);
-      }
-    }
+    const candidates = await searchAll(query, env, clipsPerScene + 2, logger, orientation, useYoutube);
 
     if (!candidates.length) {
       logger.log(`   ⚠️  No results for scene ${scene.id} — skipping`);
       continue;
     }
 
-    // Download up to clipsPerScene clips
-    for (const clip of candidates.slice(0, clipsPerScene)) {
+    let downloaded = 0;
+    for (const clip of candidates) {
+      if (downloaded >= clipsPerScene) break;
       try {
-        const ext      = 'mp4';
-        const filename = `footage_s${scene.id}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
-        const localPath = await downloadClip(clip.url, filename, logger);
+        const filename = `footage_s${scene.id}_${clip.source}_${crypto.randomBytes(4).toString('hex')}.mp4`;
+
+        let localPath;
+        if (clip.source === 'youtube') {
+          localPath = await downloadClipYT(clip.ytUrl, filename, ytQuality, logger);
+        } else {
+          localPath = await downloadClipHTTP(clip.url, filename, logger);
+        }
+
         results.push({
           ...clip,
           filename,
           localPath,
-          scene_id:  scene.id,
-          serveUrl:  `/api/footage-file/${filename}`,
+          scene_id: scene.id,
+          serveUrl: `/api/footage-file/${filename}`,
         });
+        downloaded++;
       } catch (err) {
-        logger.log(`   ⚠️  Download failed: ${err.message}`);
+        logger.log(`   ⚠️  Download failed (${clip.source}): ${err.message}`);
       }
     }
   }
@@ -168,9 +251,24 @@ async function findFootageForScenes(scenes, env, logger, clipsPerScene = 2) {
   return results;
 }
 
-// Clean up a specific clip after it has been used
+// ── Cleanup ───────────────────────────────────────────────────────────────────
+function clearAllFootage(logger) {
+  ensureDir();
+  let count = 0, bytes = 0;
+  for (const f of fs.readdirSync(FOOTAGE_DIR)) {
+    try {
+      const fp = path.join(FOOTAGE_DIR, f);
+      bytes += fs.statSync(fp).size;
+      fs.unlinkSync(fp);
+      count++;
+    } catch (_) {}
+  }
+  if (logger) logger.log(`🗑️  Cleared ${count} footage file(s) (${(bytes / 1048576).toFixed(1)} MB)`);
+  return { count, bytes };
+}
+
 function removeClip(filename) {
   try { fs.unlinkSync(path.join(FOOTAGE_DIR, filename)); } catch (_) {}
 }
 
-module.exports = { findFootageForScenes, removeClip, FOOTAGE_DIR };
+module.exports = { findFootageForScenes, removeClip, clearAllFootage, FOOTAGE_DIR };

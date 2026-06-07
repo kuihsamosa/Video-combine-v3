@@ -20,51 +20,77 @@ function getGroqKeys(env) {
 }
 
 // ── Prompts ───────────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are a professional scriptwriter and YouTube SEO expert for faceless video channels.
-Given a topic, niche, tone, style, and target duration, produce a complete video package.
+const SYSTEM_PROMPT = `You are a top-tier YouTube scriptwriter who specialises in faceless video channels that consistently hit millions of views.
+Your scripts sound like a real human being talking — not an essay, not a listicle, not a press release.
+They are warm, direct, and keep the viewer glued from the first word to the last.
 
 CRITICAL: Respond with ONLY a valid JSON object. No markdown fences, no explanation, no text outside the JSON.
 
-Required schema (fill every field):
+Required schema:
 {
-  "title": "Compelling video title, 5-10 words",
-  "description": "1-2 sentence summary of the video",
-  "narration": "Full voiceover script as continuous spoken prose (~150 words/min). No stage directions, no scene markers — just the words spoken aloud.",
+  "title": "Attention-grabbing video title (6-10 words, creates curiosity or promises value)",
+  "description": "1-2 sentence hook — what the viewer will walk away knowing",
+  "narration": "THE FULL SPOKEN VOICEOVER SCRIPT — see rules below",
   "scenes": [
     {
       "id": 1,
       "duration_hint_seconds": 10,
       "visual_keywords": ["keyword1", "keyword2", "keyword3"],
-      "description": "What should visually appear on screen during this segment"
+      "description": "What should be on screen during this segment"
     }
   ],
   "youtube": {
-    "title": "SEO-optimised YouTube title (max 60 chars, include main keyword near start)",
-    "description": "Full YouTube video description (150-300 words). Start with a hook. Include: what viewers will learn, 2-3 paragraph body, call-to-action (subscribe/comment), and relevant links placeholder. Naturally embed keywords.",
-    "tags": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7", "tag8", "tag9", "tag10"],
-    "hashtags": ["Hashtag1", "Hashtag2", "Hashtag3", "Hashtag4", "Hashtag5"],
+    "title": "SEO YouTube title (max 60 chars, lead with main keyword)",
+    "description": "Full YouTube description (150-300 words). Open with a hook sentence. Then 2-3 body paragraphs. End with CTA to subscribe and comment. Naturally embed keywords.",
+    "tags": ["tag1","tag2","tag3","tag4","tag5","tag6","tag7","tag8","tag9","tag10"],
+    "hashtags": ["Hashtag1","Hashtag2","Hashtag3","Hashtag4","Hashtag5"],
     "category": "Education"
   }
 }
 
-Rules:
-- narration must be fluent, engaging continuous prose — absolutely no bullet points or headers
-- scenes should cover 4-12 logical visual segments
-- visual_keywords per scene: 3-5 concrete searchable nouns/adjectives for stock footage (e.g. "mountain sunrise", "city traffic", "person meditating")
-- duration_hint_seconds should sum close to total target duration
-- youtube.tags: 8-12 short phrases, mix broad and specific, no # symbol
-- youtube.hashtags: 3-5 title-case words with no spaces, no # symbol`;
+════════════════════════════════════════
+NARRATION WRITING RULES — READ CAREFULLY
+════════════════════════════════════════
+
+STRUCTURE (follow this arc every time):
+  1. HOOK (first 5-10 seconds): One punchy line that stops the scroll. A bold claim, a shocking stat, or a question they can't ignore. NO greetings yet.
+  2. PROMISE: Tell them what they're about to learn / why it matters. One or two sentences.
+  3. GREETING: "Welcome back, everyone" or "Hey, welcome in" — warm but brief.
+  4. BODY: The actual content delivered as a flowing conversation. Break big ideas into short punchy sections. Use rhetorical questions to keep them engaged ("But here's the thing — why does this even matter?"). Pause with a short sentence for emphasis. Build tension then release it.
+  5. CALLBACK + PAYOFF: Tie back to the hook. Deliver on the promise.
+  6. OUTRO + CTA: "If this hit different for you, drop a like — it seriously helps. Subscribe if you want more of this. And I'll see you in the next one."
+
+VOICE AND STYLE:
+  - Write exactly how a smart, enthusiastic friend would explain this over coffee — not a Wikipedia article
+  - Use contractions everywhere: "you're", "it's", "that's", "here's", "we're", "don't"
+  - Use second-person: speak directly to "you" and "we"
+  - Mix sentence lengths: one short punchy sentence. Then a longer one that builds context and carries the listener forward. Then short again.
+  - Use natural spoken filler only when it adds rhythm: "And honestly?", "Here's the thing.", "Think about it.", "Right?", "Seriously."
+  - Rhetorical questions: ask the listener something they can't help but answer in their head
+  - Avoid: bullet-point energy, "In this video we will discuss", "Furthermore", "In conclusion", "Additionally", "It is important to note"
+  - Avoid any stage directions like [pause], (beat), [cut to], etc. — just the spoken words
+
+PACING:
+  - ~150 words per minute when spoken naturally
+  - Every 3-4 sentences: a moment of emphasis (one short powerful sentence alone)
+  - Vary rhythm to prevent monotony
+
+WHAT GREAT NARRATION SOUNDS LIKE:
+  "Nobody talks about this. But it changes everything once you see it. [GREETING] Hey, welcome in — I'm glad you're here. Because today we're going to break down one of the most misunderstood forces in modern life..."`;
 
 function buildUserPrompt({ topic, niche, tone, duration_minutes, style }) {
   const words = Math.round(duration_minutes * 150);
   return [
     `Topic: ${topic}`,
     `Niche: ${niche || 'general'}`,
-    `Tone: ${tone || 'educational'}`,
+    `Tone: ${tone || 'conversational'}`,
     `Style: ${style || 'storytelling'}`,
-    `Target duration: ${duration_minutes} minute${duration_minutes !== 1 ? 's' : ''} (~${words} words)`,
-    '',
-    'Output JSON only.',
+    `Target duration: ${duration_minutes} minute${duration_minutes !== 1 ? 's' : ''} (~${words} spoken words)`,
+    ``,
+    `Write the narration as ~${words} words of natural spoken prose following ALL the rules above.`,
+    `Scenes should map to ~${Math.round(duration_minutes * 60)} seconds total.`,
+    ``,
+    `Output JSON only. No markdown. No explanation.`,
   ].join('\n');
 }
 
@@ -90,7 +116,7 @@ async function callGroq(messages, model, env, logger) {
       const r = await fetch(GROQ_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ model, messages, temperature: 0.8, max_tokens: 4096 }),
+        body: JSON.stringify({ model, messages, temperature: 0.85, max_tokens: 4096 }),
         signal: AbortSignal.timeout(60_000),
       });
       if (!r.ok) {
@@ -100,7 +126,7 @@ async function callGroq(messages, model, env, logger) {
         throw e;
       }
       const data = await r.json();
-      _keyIndex = (_keyIndex + i + 1) % keys.length;   // advance past this key
+      _keyIndex = (_keyIndex + i + 1) % keys.length;
       return {
         content: data.choices?.[0]?.message?.content ?? '',
         tokens:  data.usage?.total_tokens ?? 0,
@@ -118,25 +144,11 @@ async function callGroq(messages, model, env, logger) {
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
-/**
- * Generate a complete structured video script via Groq.
- *
- * @param {object} params
- * @param {string} params.topic
- * @param {string} [params.niche]
- * @param {string} [params.tone]
- * @param {number} [params.duration_minutes=2]
- * @param {string} [params.style]
- * @param {string} [params.model='llama-3.3-70b-versatile']
- * @param {object} [params.env]   — defaults to process.env
- * @param {object} logger
- * @returns {Promise<{ script, model_used, tokens_used }>}
- */
 async function generateScript(params, logger) {
   const {
     topic,
     niche          = 'general',
-    tone           = 'educational',
+    tone           = 'conversational',
     duration_minutes = 2,
     style          = 'storytelling',
     model          = 'llama-3.3-70b-versatile',
@@ -175,7 +187,6 @@ async function generateScript(params, logger) {
   return { script, model_used: model, tokens_used: result.tokens };
 }
 
-/** Returns Groq model list (always available when any GROQ key is set). */
 function availableModels(env = process.env) {
   const hasKey = getGroqKeys(env).length > 0;
   if (!hasKey) return [];

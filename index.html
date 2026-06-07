@@ -152,6 +152,36 @@
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
 
+        /* Tools sub-row (shown below the main nav when Tools is active) */
+        .tab-dropdown { flex: 1; }
+        .tab-dropdown-btn {
+            width: 100%; padding: 9px 16px; border-radius: 10px;
+            font-size: 13px; font-weight: 550; cursor: pointer; border: none;
+            background: none; color: var(--text-3);
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: all 140ms ease; white-space: nowrap;
+        }
+        .tab-dropdown-btn:hover { color: var(--text-2); background: var(--accent-soft); }
+        .tab-dropdown-btn.has-active { background: var(--accent-soft); color: var(--text); }
+        /* Sub-row that slides in under the nav */
+        #toolsSubRow {
+            display: none; gap: 6px; padding: 6px 8px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; margin-bottom: 12px; margin-top: -10px;
+        }
+        #toolsSubRow.open { display: flex; }
+        .tab-dropdown-item {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+            padding: 8px 12px; border-radius: 9px; cursor: pointer; border: none;
+            background: none; color: var(--text-2); font-size: 12.5px; font-weight: 550;
+            transition: background 100ms; white-space: nowrap;
+        }
+        .tab-dropdown-item:hover { background: var(--accent-soft); color: var(--text); }
+        .tab-dropdown-item.active { background: var(--accent); color: #fff; }
+        html[data-theme="dark"] .tab-dropdown-item.active { color: #0e1a11; }
+        .tab-dropdown-chevron { transition: transform 150ms ease; font-size: 10px; }
+        .tab-dropdown-btn.has-active .tab-dropdown-chevron { transform: rotate(180deg); }
+
         /* Form elements */
         input[type="text"], input[type="number"], textarea, select {
             width: 100%;
@@ -354,7 +384,199 @@
                   background: var(--accent-soft); border: 1px solid var(--border); color: var(--text-2); }
         .yt-hashtag { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px;
                       background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+        /* YouTube search result cards */
+        .yt-result-card {
+            position: relative; border-radius: var(--radius-sm); overflow: hidden;
+            border: 1.5px solid var(--border); cursor: pointer; background: var(--surface-2);
+            transition: border-color 0.15s;
+        }
+        .yt-result-card:hover { border-color: var(--accent); }
+        .yt-result-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+        .yt-result-card img { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; }
+        .yt-result-info {
+            padding: 5px 7px; font-size: 11px; line-height: 1.35;
+        }
+        .yt-result-title { font-weight: 600; color: var(--text); overflow: hidden;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .yt-result-meta { color: var(--text-3); font-size: 10px; margin-top: 2px;
+            display: flex; gap: 6px; }
+        .yt-result-check {
+            position: absolute; top: 5px; right: 5px; width: 20px; height: 20px;
+            border-radius: 99px; background: var(--accent); display: none;
+            align-items: center; justify-content: center;
+        }
+        .yt-result-card.selected .yt-result-check { display: flex; }
+        .yt-result-dur {
+            position: absolute; bottom: 42px; right: 5px;
+            background: rgba(0,0,0,.75); color: #fff; font-size: 10px; font-weight: 600;
+            padding: 1px 5px; border-radius: 4px;
+        }
         html[data-theme="dark"] .yt-hashtag { background: #1e3a5f; border-color: #2563eb; color: #93c5fd; }
+
+        /* Music result rows */
+        .music-row {
+            display:flex; align-items:center; gap:8px; padding:6px 8px;
+            border:1px solid var(--border); border-radius:8px; cursor:pointer;
+            background:var(--surface-2); transition: border-color .12s;
+        }
+        .music-row:hover { border-color:var(--accent); }
+        .music-row.selected { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,var(--surface-2)); }
+        .music-row-info { flex:1; min-width:0; }
+        .music-row-name { font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .music-row-sub  { font-size:10.5px; color:var(--text-3); }
+        .music-play-btn { background:none; border:1px solid var(--border); border-radius:50%; width:26px; height:26px;
+                          display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+        .music-play-btn:hover { border-color:var(--accent); color:var(--accent); }
+        /* Transition picker */
+        .trans-btn {
+            padding:5px 4px; border:2px solid var(--border); border-radius:7px; font-size:10px;
+            font-weight:600; text-align:center; cursor:pointer; background:var(--surface-2);
+            color:var(--text-2); transition:border-color .12s, color .12s, background .12s;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        }
+        .trans-btn:hover { border-color:var(--accent); color:var(--accent); }
+        .trans-btn.selected { border-color:var(--accent); color:var(--accent);
+                              background:color-mix(in srgb,var(--accent) 10%,var(--surface-2)); }
+        /* Orientation picker */
+        .orientation-btn {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 5px; padding: 10px 6px; border: 2px solid var(--border); border-radius: 10px;
+            background: var(--surface-2); color: var(--text-2); cursor: pointer; font-size: 11px;
+            font-weight: 600; transition: border-color .15s, color .15s, background .15s;
+        }
+        .orientation-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .orientation-btn.selected {
+            border-color: var(--accent); color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 10%, var(--surface-2));
+        }
+        /* Caption template carousel */
+        .caption-card {
+            flex: 0 0 auto; width: 110px; border: 2px solid var(--border); border-radius: 10px;
+            cursor: pointer; overflow: hidden; transition: border-color .15s, box-shadow .15s;
+            user-select: none;
+        }
+        .caption-card:hover { border-color: var(--accent); }
+        .caption-card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent); }
+        .caption-card-preview {
+            height: 60px; display: flex; align-items: flex-end; justify-content: center;
+            padding-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: .5px;
+            overflow: hidden; position: relative;
+        }
+        .caption-card-label {
+            font-size: 10.5px; font-weight: 600; text-align: center; padding: 5px 4px;
+            color: var(--text-2); background: var(--surface-2); border-top: 1px solid var(--border);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* ── Scheduler ──────────────────────────────────────────────────── */
+        .sched-job-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; overflow: hidden;
+            transition: border-color .15s;
+        }
+        .sched-job-card:hover { border-color: var(--primary); }
+        .sched-job-card.running { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+        .sched-job-card.error   { border-color: #ef4444; }
+        .sched-job-header {
+            padding: 12px 16px 10px;
+            display: flex; align-items: center; gap: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sched-job-name { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
+        .sched-status-dot {
+            width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+        }
+        .sched-job-body { padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 6px; }
+        .sched-job-meta { font-size: 11.5px; color: var(--text-3); display: flex; flex-wrap: wrap; gap: 6px; }
+        .sched-job-actions { display: flex; gap: 6px; padding: 0 16px 12px; }
+        .sched-job-actions .btn { flex: 1; font-size: 11.5px; }
+        .sched-step-pill {
+            display: inline-flex; align-items: center; gap: 3px;
+            padding: 2px 7px; border-radius: 99px; font-size: 10px; font-weight: 600;
+            background: var(--surface-2); color: var(--text-3);
+        }
+        .sched-step-pill.on { background: rgba(34,197,94,.1); color: #166534; }
+        .run-log-line { font-size: 11px; color: var(--text-2); font-family: monospace; line-height: 1.5; }
+        .run-log-line.err { color: #ef4444; }
+        .sched-toggle { position: relative; display: inline-flex; cursor: pointer; }
+        .sched-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .sched-toggle-track {
+            width: 32px; height: 18px; background: var(--border); border-radius: 9px;
+            transition: background .15s;
+        }
+        .sched-toggle input:checked + .sched-toggle-track { background: #22c55e; }
+        .sched-toggle-thumb {
+            position: absolute; top: 3px; left: 3px;
+            width: 12px; height: 12px; background: #fff; border-radius: 50%;
+            transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+        }
+        .sched-toggle input:checked ~ .sched-toggle-thumb { transform: translateX(14px); }
+        .sched-history-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 11.5px;
+        }
+        .sched-history-row:last-child { border-bottom: none; }
+
+        /* ── Planner ────────────────────────────────────────────────────── */
+        .idea-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .idea-card:hover { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,.07); }
+        .idea-card.queued { border-color: #22c55e; background: rgba(34,197,94,.03); }
+        .idea-card.validating { border-color: var(--primary); }
+        .idea-card-header {
+            padding: 14px 16px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .idea-card-title {
+            font-size: 13.5px; font-weight: 700; color: var(--text);
+            margin-bottom: 4px; line-height: 1.35;
+        }
+        .idea-card-hook {
+            font-size: 11.5px; color: var(--text-2); font-style: italic;
+            line-height: 1.45;
+        }
+        .idea-card-body { padding: 10px 16px 12px; display:flex; flex-direction:column; gap:8px; }
+        .idea-card-meta { display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
+        .idea-tag {
+            display: inline-flex; align-items:center; gap:3px;
+            padding: 2px 8px; border-radius: 99px; font-size: 10.5px; font-weight: 600;
+            background: var(--surface-2); color: var(--text-2);
+        }
+        .idea-tag-blue  { background: rgba(99,102,241,.1);  color: #4338ca; }
+        .idea-tag-green { background: rgba(34,197,94,.1);   color: #166534; }
+        .idea-tag-amber { background: rgba(245,158,11,.1);  color: #92400e; }
+        .idea-tag-red   { background: rgba(239,68,68,.1);   color: #991b1b; }
+        .idea-score-bar { height: 5px; border-radius: 3px; background: var(--border); overflow:hidden; }
+        .idea-score-fill { height: 100%; border-radius: 3px; transition: width .5s ease; }
+        .idea-card-actions { display:flex; gap:6px; padding: 0 16px 14px; }
+        .idea-card-actions .btn { flex:1; font-size:11.5px; }
+
+        .val-section-title {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .6px; color: var(--text-3); margin-bottom: 4px;
+        }
+        .val-list { list-style: none; margin:0; padding:0; display:flex; flex-direction:column; gap:3px; }
+        .val-list li { font-size: 11.5px; color: var(--text-2); padding-left: 14px; position: relative; line-height: 1.4; }
+        .val-list li::before { content: '•'; position:absolute; left:3px; color: var(--text-3); }
+
+        .queue-item {
+            padding: 8px 10px; border-radius: 8px; background: var(--surface-2);
+            border: 1px solid var(--border); display:flex; flex-direction:column; gap:4px;
+        }
+        .queue-item-title { font-size: 12px; font-weight: 600; color: var(--text); }
+        .queue-item-meta  { font-size: 10.5px; color: var(--text-3); }
+        .queue-item-actions { display:flex; gap:4px; margin-top:2px; }
+
+        .score-ring {
+            width: 44px; height: 44px; flex-shrink: 0;
+            border-radius: 50%; display:flex; align-items:center; justify-content:center;
+            font-size: 14px; font-weight: 800; border: 3px solid;
+        }
     </style>
 </head>
 <body>
@@ -386,23 +608,43 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
             Generate
         </button>
-        <button class="tab" data-tab="voice" role="tab">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-            Voice
+        <!-- Voice / Combine / Annotate behind a Tools toggle button -->
+        <div class="tab-dropdown" id="toolsDropdown">
+            <button class="tab-dropdown-btn" id="toolsDropdownBtn" onclick="toggleToolsDropdown()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+                Tools
+                <span class="tab-dropdown-chevron">▾</span>
+            </button>
+        </div>
+        <button class="tab" data-tab="scheduler" role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Scheduler
         </button>
-        <button class="tab" data-tab="combine" role="tab">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-            Combine
-        </button>
-        <button class="tab" data-tab="annotate" role="tab">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-            Annotate
+        <button class="tab" data-tab="planner" role="tab">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/></svg>
+            Planner
         </button>
         <button class="tab" data-tab="files" role="tab">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
             Files
         </button>
     </nav>
+
+    <!-- Tools sub-row (Voice / Combine / Annotate) — slides in below nav, no overlap -->
+    <div id="toolsSubRow">
+        <button class="tab-dropdown-item" id="tools-voice-item" onclick="switchToToolTab('voice')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            Voice
+        </button>
+        <button class="tab-dropdown-item" id="tools-combine-item" onclick="switchToToolTab('combine')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            Combine
+        </button>
+        <button class="tab-dropdown-item" id="tools-annotate-item" onclick="switchToToolTab('annotate')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Annotate
+        </button>
+    </div>
 
     <!-- Global log / progress strip (shown when processing) -->
     <div id="globalProgress" class="hidden card card-p space-y" style="margin-bottom: 16px;">
@@ -458,6 +700,24 @@
                                 <option value="motivational">Motivational speech</option>
                             </select>
                         </div>
+                        <!-- Orientation picker -->
+                        <div>
+                            <label class="field-label">Orientation</label>
+                            <div id="orientationPicker" style="display:flex; gap:8px;">
+                                <button class="orientation-btn selected" data-value="landscape" title="Landscape 16:9 — YouTube, desktop">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="20" viewBox="0 0 32 20" fill="none">
+                                        <rect x="1" y="1" width="30" height="18" rx="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/>
+                                    </svg>
+                                    <span>16:9</span>
+                                </button>
+                                <button class="orientation-btn" data-value="portrait" title="Portrait 9:16 — TikTok, Reels, Shorts">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="32" viewBox="0 0 20 32" fill="none">
+                                        <rect x="1" y="1" width="18" height="30" rx="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/>
+                                    </svg>
+                                    <span>9:16</span>
+                                </button>
+                            </div>
+                        </div>
                         <div>
                             <label class="field-label">Duration</label>
                             <select id="genDuration">
@@ -500,23 +760,52 @@
                     </div>
                     <div class="card-p" style="display:flex; flex-direction:column; gap:10px;">
                         <div>
-                            <label class="field-label">Voice</label>
+                            <label class="field-label">Voice preset</label>
                             <select id="genVoice">
-                                <option value="af_heart">Heart (US Female)</option>
-                                <option value="af_bella">Bella (US Female)</option>
-                                <option value="af_nicole">Nicole (US Female)</option>
-                                <option value="af_sky">Sky (US Female)</option>
-                                <option value="am_adam">Adam (US Male)</option>
-                                <option value="am_michael">Michael (US Male)</option>
-                                <option value="bf_emma">Emma (UK Female)</option>
-                                <option value="bm_george">George (UK Male)</option>
+                                <optgroup label="— Blended Narrator Presets —">
+                                    <option value="narrator_warm">Narrator — Warm &amp; Intimate</option>
+                                    <option value="narrator_confident">Narrator — Confident Male</option>
+                                    <option value="narrator_calm">Narrator — Calm &amp; Smooth</option>
+                                    <option value="narrator_energetic">Narrator — Energetic &amp; Punchy</option>
+                                    <option value="narrator_deep">Narrator — Deep &amp; Cinematic</option>
+                                    <option value="narrator_crisp">Narrator — Crisp &amp; Clear</option>
+                                </optgroup>
+                                <optgroup label="— Single Voices —">
+                                    <option value="af_heart">Heart (US ♀)</option>
+                                    <option value="af_bella">Bella (US ♀)</option>
+                                    <option value="af_jessica">Jessica (US ♀)</option>
+                                    <option value="af_nicole">Nicole (US ♀)</option>
+                                    <option value="af_sky">Sky (US ♀)</option>
+                                    <option value="af_river">River (US ♀)</option>
+                                    <option value="am_adam">Adam (US ♂)</option>
+                                    <option value="am_michael">Michael (US ♂)</option>
+                                    <option value="am_echo">Echo (US ♂)</option>
+                                    <option value="am_liam">Liam (US ♂)</option>
+                                    <option value="am_fenrir">Fenrir (US ♂)</option>
+                                    <option value="am_puck">Puck (US ♂)</option>
+                                    <option value="bm_george">George (UK ♂)</option>
+                                    <option value="bm_daniel">Daniel (UK ♂)</option>
+                                    <option value="bm_lewis">Lewis (UK ♂)</option>
+                                    <option value="bf_emma">Emma (UK ♀)</option>
+                                    <option value="bf_alice">Alice (UK ♀)</option>
+                                </optgroup>
+                                <optgroup label="— Custom blend —">
+                                    <option value="__custom__">Custom blend…</option>
+                                </optgroup>
                             </select>
                         </div>
+                        <!-- Custom blend input, shown when Custom is selected -->
+                        <div id="genVoiceCustomRow" style="display:none;">
+                            <label class="field-label">Blend string
+                                <span style="font-weight:400; color:var(--text-3); font-size:10px; margin-left:4px;">e.g. af_heart(0.6)+bm_george(0.4)</span>
+                            </label>
+                            <input type="text" id="genVoiceCustom" placeholder="voice1(w)+voice2(w)" style="font-family:monospace; font-size:12px;">
+                        </div>
                         <div>
-                            <label class="field-label">Speed</label>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <input type="range" id="genSpeed" min="0.5" max="2.0" step="0.05" value="1.0" style="flex:1; width:auto; background:none; border:none; padding:0; box-shadow:none; accent-color:var(--accent);">
-                                <span id="genSpeedVal" style="font-size:12px; font-weight:600; color:var(--text); min-width:28px; text-align:right;">1.0×</span>
+                            <label class="field-label">Speed <span id="genSpeedVal" style="font-weight:600; color:var(--text);">0.92×</span></label>
+                            <input type="range" id="genSpeed" min="0.5" max="2.0" step="0.01" value="0.92" style="width:100%; background:none; border:none; padding:0; box-shadow:none; accent-color:var(--accent);">
+                            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-3); margin-top:2px;">
+                                <span>0.5× slower</span><span>1.0× normal</span><span>2.0× faster</span>
                             </div>
                         </div>
                     </div>
@@ -629,35 +918,93 @@
                                     <option value="3">3 clips / scene</option>
                                 </select>
                             </div>
-                            <div style="flex:1;">
-                                <label class="field-label">Source</label>
-                                <select id="genFootageSource" style="width:100%;">
-                                    <option value="pexels">Pexels</option>
-                                    <option value="pixabay">Pixabay</option>
-                                    <option value="auto" selected>Auto (best)</option>
-                                </select>
+                            <div style="flex:1; padding-top:18px; font-size:11.5px; color:var(--text-3);">
+                                Pexels + Pixabay
                             </div>
                         </div>
-                        <button id="genFindFootageBtn" class="btn btn-ghost" style="width:100%;" disabled>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            Find Stock Footage
-                        </button>
+                        <!-- Source tabs -->
+                        <div style="display:flex; gap:6px; margin-bottom:2px;">
+                            <button id="footageTabStock" class="btn btn-primary btn-sm" style="flex:1; font-size:11px;" onclick="switchFootageTab('stock')">Pexels / Pixabay</button>
+                            <button id="footageTabYT" class="btn btn-ghost btn-sm" style="flex:1; font-size:11px;" onclick="switchFootageTab('yt')">YouTube</button>
+                        </div>
+
+                        <!-- Stock footage panel -->
+                        <div id="footagePanelStock">
+                            <!-- YouTube toggle — sits right in the stock panel so the pipeline uses all sources at once -->
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); font-size:11.5px; color:var(--text-2);">
+                                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; flex:1; margin:0;">
+                                    <input type="checkbox" id="genUseYoutube" style="width:13px; height:13px; cursor:pointer;" onchange="genYoutubeToggle()">
+                                    Also search YouTube
+                                </label>
+                                <select id="genYtQuality" style="font-size:11px; width:72px; display:none;" title="YouTube download quality">
+                                    <option value="720">720p</option>
+                                    <option value="1080">1080p</option>
+                                    <option value="480">480p</option>
+                                </select>
+                                <span id="genYtAuthWarn" style="font-size:10.5px; color:#f59e0b; display:none;">⚠️ Sign in for best results</span>
+                            </div>
+                            <button id="genFindFootageBtn" class="btn btn-ghost" style="width:100%;" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                Find Footage
+                            </button>
+                        </div>
+
+                        <!-- YouTube panel -->
+                        <div id="footagePanelYT" style="display:none; display:flex; flex-direction:column; gap:8px;">
+
+                            <!-- Auth bar -->
+                            <div id="ytAuthBar" style="display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); font-size:12px;">
+                                <span id="ytAuthDot" style="width:8px;height:8px;border-radius:50%;background:#94a3b8;flex-shrink:0;"></span>
+                                <span id="ytAuthLabel" style="flex:1; color:var(--text-2);">Not signed in</span>
+                                <button id="ytLoginBtn" class="btn btn-ghost btn-sm" onclick="ytStartLogin()" style="font-size:11px; padding:3px 8px;" title="Opens Vivaldi/Firefox so you can sign in to YouTube">Open browser</button>
+                                <button id="ytExtractBtn" class="btn btn-ghost btn-sm" onclick="ytExtractCookies()" style="font-size:11px; padding:3px 8px;" title="Read cookies from your already-logged-in Vivaldi or Firefox">Capture cookies</button>
+                                <button id="ytSignOutBtn" class="btn btn-ghost btn-sm" onclick="ytSignOut()" style="font-size:11px; padding:3px 8px; display:none; color:#ef4444;">Sign out</button>
+                            </div>
+                            <div id="ytLoginStatus" style="font-size:11px; color:var(--text-3); display:none; padding:4px 6px; border-radius:6px; background:var(--surface-2);"></div>
+
+                            <!-- Search row -->
+                            <div style="display:flex; gap:6px;">
+                                <input id="ytSearchQuery" type="text" placeholder="Search YouTube…" style="flex:1; font-size:12px;">
+                                <select id="ytSearchFilter" style="width:90px; font-size:12px;">
+                                    <option value="any">Any length</option>
+                                    <option value="short">Short (&lt;4m)</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="long">Long (&gt;20m)</option>
+                                </select>
+                                <button id="ytSearchBtn" class="btn btn-ghost btn-sm" onclick="ytSearch()" style="padding:0 10px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                </button>
+                            </div>
+
+                            <!-- Results grid (like Pexels/Pixabay) -->
+                            <div id="ytResultsGrid" style="display:none; display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:280px; overflow-y:auto;"></div>
+                            <div id="ytSearchStatus" style="font-size:11.5px; color:var(--text-3); text-align:center; display:none;"></div>
+
+                            <!-- Quality + paste URL fallback -->
+                            <div style="display:flex; gap:6px; align-items:center; padding-top:4px; border-top:1px solid var(--border);">
+                                <select id="ytQuality" style="flex:1; font-size:11px;">
+                                    <option value="1080">1080p</option>
+                                    <option value="720">720p</option>
+                                    <option value="480">480p</option>
+                                    <option value="best">Best</option>
+                                </select>
+                                <span style="font-size:11px; color:var(--text-3);">or paste URL:</span>
+                                <input id="ytUrlInput" type="text" placeholder="youtube.com/watch?v=…" style="flex:2; font-size:11px; font-family:monospace;">
+                                <button id="ytDownloadBtn" class="btn btn-ghost btn-sm" onclick="ytDownloadUrl()" style="padding:0 8px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                </button>
+                            </div>
+                            <div id="ytStatus" style="font-size:11.5px; color:var(--text-3); display:none;"></div>
+                        </div>
+
                         <div id="genFootageStatus" style="font-size:12px; color:var(--text-3); text-align:center; display:none;"></div>
 
                         <!-- Footage grid / thumbnails -->
                         <div id="genFootageGrid" style="display:none; display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:260px; overflow-y:auto;"></div>
-
-                        <!-- Divider: or upload manually -->
-                        <div class="divider" style="margin:2px 0;"></div>
-                        <label id="genVideoDropZone" for="fileInput" class="drop-zone" style="padding:12px; cursor:pointer;">
-                            <div class="drop-zone-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
-                            <div class="drop-zone-title" style="font-size:11.5px;">Or upload your own clips</div>
-                        </label>
-                        <div style="font-size:12px; color:var(--text-3); display:flex; justify-content:space-between;">
-                            <span id="genFileCount">0 videos</span>
-                            <span id="genVideoDur">0s</span>
+                        <div style="font-size:12px; color:var(--text-3); display:flex; justify-content:space-between; margin-top:2px;">
+                            <span id="genFileCount">0 videos loaded</span>
+                            <span id="genVideoDur"></span>
                         </div>
-                        <div id="genFileListMini" class="space-y-sm" style="max-height:100px; overflow-y:auto;"></div>
                     </div>
                 </div>
 
@@ -671,6 +1018,98 @@
                     <div id="genBalanceHint" style="font-size:11.5px; color:var(--text-3); margin-top:5px;"></div>
                 </div>
 
+                <!-- Background music card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                            Background Music
+                        </div>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-2);">
+                            <input type="checkbox" id="genUseMusicToggle" style="accent-color:var(--accent);width:14px;height:14px;">
+                            Enable
+                        </label>
+                    </div>
+                    <div class="card-p space-y">
+                        <div style="display:flex;gap:6px;">
+                            <select id="genMusicMood" style="flex:1;">
+                                <option value="">Any mood</option>
+                                <option value="cinematic">Cinematic</option>
+                                <option value="motivational">Motivational</option>
+                                <option value="calm">Calm / Ambient</option>
+                                <option value="upbeat">Upbeat</option>
+                                <option value="energetic">Energetic</option>
+                                <option value="dramatic">Dramatic</option>
+                                <option value="corporate">Corporate</option>
+                            </select>
+                            <input id="genMusicQuery" type="text" placeholder="Search…" style="flex:1;">
+                            <button id="genMusicSearchBtn" class="btn btn-ghost" style="padding:0 10px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </button>
+                        </div>
+
+                        <!-- Volume control -->
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                            <input type="range" id="genMusicVolume" min="5" max="60" value="18" style="flex:1;accent-color:var(--accent);">
+                            <span id="genMusicVolVal" style="font-size:11px;color:var(--text-3);width:28px;">18%</span>
+                        </div>
+
+                        <div id="genMusicStatus" style="font-size:11.5px;color:var(--text-3);display:none;"></div>
+                        <div id="genMusicResults" class="space-y-sm" style="max-height:200px;overflow-y:auto;display:none;"></div>
+
+                        <!-- Selected track display -->
+                        <div id="genMusicSelected" style="display:none;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span id="genMusicSelectedName" style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+                                <button onclick="clearSelectedMusic()" style="background:none;border:none;cursor:pointer;color:var(--text-3);font-size:16px;line-height:1;padding:0;">×</button>
+                            </div>
+                            <audio id="genMusicPreview" controls style="width:100%;height:28px;margin-top:6px;"></audio>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video transitions card -->
+                <div class="card card-p space-y">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <label class="field-label" style="margin-bottom:0;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                            Transitions
+                        </label>
+                        <span style="font-size:11px;color:var(--text-3);">between clips</span>
+                    </div>
+                    <div id="transitionPicker" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+                        <label class="field-label" style="margin-bottom:0;white-space:nowrap;font-size:11px;">Duration</label>
+                        <input type="range" id="genTransitionDur" min="0.2" max="1.5" step="0.1" value="0.5" style="flex:1;accent-color:var(--accent);">
+                        <span id="genTransitionDurVal" style="font-size:11px;color:var(--text-3);width:28px;">0.5s</span>
+                    </div>
+                </div>
+
+                <!-- Caption style selector -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            Caption Style
+                        </div>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-2);">
+                            <input type="checkbox" id="genBurnCaptions" style="accent-color:var(--accent);width:14px;height:14px;">
+                            Enable
+                        </label>
+                    </div>
+                    <div class="card-p">
+                        <!-- Template carousel -->
+                        <div id="captionCarousel" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;">
+                            <!-- Populated by JS from /api/caption-templates -->
+                        </div>
+                        <div id="captionTemplateDesc" style="font-size:11.5px;color:var(--text-3);margin-top:8px;text-align:center;min-height:16px;"></div>
+                    </div>
+                </div>
+
                 <!-- Auto-create -->
                 <div class="card card-p space-y">
                     <div style="display:flex; gap:8px;">
@@ -682,13 +1121,6 @@
                             </select>
                         </div>
                     </div>
-                    <div class="toggle-row">
-                        <input type="checkbox" id="genBurnCaptions">
-                        <div>
-                            <label for="genBurnCaptions" style="font-size:13px; font-weight:550; cursor:pointer;">Burn captions</label>
-                            <div style="font-size:11.5px; color:var(--text-3); margin-top:1px;">Auto-generate &amp; render subtitles (slower)</div>
-                        </div>
-                    </div>
                     <button id="genAutoBtn" class="btn btn-primary btn-lg" style="width:100%;" disabled>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                         Auto-Create Video
@@ -698,7 +1130,7 @@
                         <div class="pipeline-step" id="ps1"><span class="ps-icon" id="ps1-icon">1</span><span>Combine video clips</span></div>
                         <div class="pipeline-step" id="ps2"><span class="ps-icon" id="ps2-icon">2</span><span>Combine voiceover audio</span></div>
                         <div class="pipeline-step" id="ps3"><span class="ps-icon" id="ps3-icon">3</span><span>Mux video + audio</span></div>
-                        <div class="pipeline-step" id="ps4" style="display:none;"><span class="ps-icon" id="ps4-icon">4</span><span>Burn captions</span></div>
+                        <div class="pipeline-step" id="ps4" style="display:none;"><span class="ps-icon" id="ps4-icon">4</span><span>Burn captions (Groq Whisper)</span></div>
                     </div>
 
                     <div id="genResult" class="hidden">
@@ -714,6 +1146,13 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- Clear temp files -->
+                    <button id="clearTempBtn" class="btn btn-ghost" style="width:100%; color:var(--text-3); font-size:12px; margin-top:4px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                        Clear all temp files
+                    </button>
+                    <div id="clearTempStatus" style="font-size:11px; color:var(--text-3); text-align:center; min-height:14px;"></div>
                 </div>
             </div>
 
@@ -1198,6 +1637,318 @@
         </div>
     </div>
 
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- SCHEDULER TAB                                                         -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-scheduler">
+        <div style="display:grid; grid-template-columns:1fr 340px; gap:16px; align-items:start;">
+
+            <!-- ── Left: Jobs + New Job Form ──────────────────────────────── -->
+            <div style="display:flex; flex-direction:column; gap:14px;">
+
+                <!-- Header bar -->
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="flex:1;">
+                        <div style="font-size:17px; font-weight:700; color:var(--text);">Production Scheduler</div>
+                        <div style="font-size:12px; color:var(--text-3); margin-top:2px;">Automate brainstorming, scripting, voiceover and footage on a fixed schedule.</div>
+                    </div>
+                    <button class="btn btn-primary" onclick="schedShowForm()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        New Job
+                    </button>
+                </div>
+
+                <!-- Job cards list -->
+                <div id="schedJobsEmpty" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:220px; color:var(--text-3); gap:10px; text-align:center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <div style="font-size:13px; font-weight:600; color:var(--text-2);">No scheduled jobs yet</div>
+                    <div style="font-size:12px;">Click <strong>New Job</strong> to set up an automated production pipeline.</div>
+                </div>
+                <div id="schedJobsList" style="display:none; flex-direction:column; gap:10px;"></div>
+
+                <!-- New / Edit Job Form (hidden until needed) -->
+                <div id="schedJobForm" class="card" style="display:none;">
+                    <div class="card-header">
+                        <div class="card-title" id="schedFormTitle">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            New Job
+                        </div>
+                        <button class="btn btn-ghost btn-sm" onclick="schedHideForm()" style="padding:3px 7px;">✕</button>
+                    </div>
+                    <div class="card-p" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+
+                        <!-- Job name + niche -->
+                        <div style="grid-column:1/-1;">
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Job name</label>
+                            <input id="sfName" type="text" placeholder="e.g. Daily Finance Video" style="width:100%; box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Niche</label>
+                            <input id="sfNiche" type="text" placeholder="e.g. personal finance" style="width:100%; box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Platform</label>
+                            <select id="sfPlatform" style="width:100%;">
+                                <option value="YouTube">YouTube</option>
+                                <option value="TikTok">TikTok</option>
+                                <option value="Instagram Reels">Instagram Reels</option>
+                                <option value="YouTube Shorts">YouTube Shorts</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Tone</label>
+                            <select id="sfTone" style="width:100%;">
+                                <option value="calm">Calm</option>
+                                <option value="energetic">Energetic</option>
+                                <option value="educational">Educational</option>
+                                <option value="inspirational">Inspirational</option>
+                                <option value="mysterious">Mysterious</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Style</label>
+                            <select id="sfStyle" style="width:100%;">
+                                <option value="storytelling">Storytelling</option>
+                                <option value="listicle">Listicle</option>
+                                <option value="explainer">Explainer</option>
+                                <option value="documentary">Documentary</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Duration</label>
+                            <select id="sfDuration" style="width:100%;">
+                                <option value="1">1 min</option>
+                                <option value="2" selected>2 min</option>
+                                <option value="3">3 min</option>
+                                <option value="5">5 min</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Voice</label>
+                            <select id="sfVoice" style="width:100%;">
+                                <option value="narrator_warm">Narrator — Warm</option>
+                                <option value="narrator_confident">Narrator — Confident</option>
+                                <option value="narrator_calm">Narrator — Calm</option>
+                                <option value="narrator_energetic">Narrator — Energetic</option>
+                                <option value="narrator_deep">Narrator — Deep</option>
+                                <option value="narrator_crisp">Narrator — Crisp</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Orientation</label>
+                            <select id="sfOrientation" style="width:100%;">
+                                <option value="landscape">Landscape (16:9)</option>
+                                <option value="portrait">Portrait (9:16)</option>
+                            </select>
+                        </div>
+
+                        <!-- Pipeline steps -->
+                        <div style="grid-column:1/-1;">
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:6px;">Pipeline steps to run</label>
+                            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                                <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer;"><input type="checkbox" id="sfStepBrainstorm" checked> Brainstorm ideas</label>
+                                <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer;"><input type="checkbox" id="sfStepValidate" checked> Validate idea</label>
+                                <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer;"><input type="checkbox" id="sfStepScript" checked> Generate script</label>
+                                <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer;"><input type="checkbox" id="sfStepVoiceover" checked> Voiceover</label>
+                                <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer;"><input type="checkbox" id="sfStepFootage" checked> Find footage</label>
+                                <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer;"><input type="checkbox" id="sfStepCombine"> Combine video</label>
+                            </div>
+                        </div>
+
+                        <!-- Schedule -->
+                        <div style="grid-column:1/-1; border-top:1px solid var(--border); padding-top:12px;">
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:6px;">Schedule</label>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                <select id="sfSchedType" style="width:130px;" onchange="schedUpdateScheduleUI()">
+                                    <option value="manual">Manual only</option>
+                                    <option value="hourly">Every N hours</option>
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                </select>
+                                <span id="sfSchedHours" style="display:none; align-items:center; gap:6px; font-size:12px;">
+                                    Every <input id="sfIntervalHours" type="number" min="1" max="168" value="24" style="width:55px; text-align:center;"> hours
+                                </span>
+                                <span id="sfSchedTime" style="display:none; align-items:center; gap:6px; font-size:12px;">
+                                    at <input id="sfTime" type="time" value="09:00" style="width:90px;">
+                                </span>
+                                <span id="sfSchedDay" style="display:none; align-items:center; gap:6px; font-size:12px;">
+                                    on <select id="sfDayOfWeek" style="width:110px;">
+                                        <option value="1">Monday</option>
+                                        <option value="2">Tuesday</option>
+                                        <option value="3">Wednesday</option>
+                                        <option value="4">Thursday</option>
+                                        <option value="5">Friday</option>
+                                        <option value="6">Saturday</option>
+                                        <option value="0">Sunday</option>
+                                    </select>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Save -->
+                        <div style="grid-column:1/-1; display:flex; gap:8px; justify-content:flex-end; padding-top:4px;">
+                            <button class="btn btn-ghost" onclick="schedHideForm()">Cancel</button>
+                            <button class="btn btn-primary" onclick="schedSaveJob()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                Save Job
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Right: Live Log Panel ────────────────────────────────────── -->
+            <div style="position:sticky; top:16px; display:flex; flex-direction:column; gap:14px;">
+
+                <!-- Live run log -->
+                <div class="card" id="schedLogCard" style="display:none;">
+                    <div class="card-header">
+                        <div class="card-title" id="schedLogTitle">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            Run Log
+                        </div>
+                        <span id="schedLogStatus" class="badge badge-amber">Running</span>
+                    </div>
+                    <div id="schedLogBody" style="padding:10px 14px; max-height:420px; overflow-y:auto; display:flex; flex-direction:column; gap:2px; font-size:11px; font-family:monospace;"></div>
+                    <div style="padding:10px 14px; border-top:1px solid var(--border); display:flex; gap:8px;" id="schedLogActions"></div>
+                </div>
+
+                <!-- Last run summary -->
+                <div class="card" id="schedLastRunCard" style="display:none;">
+                    <div class="card-header">
+                        <div class="card-title">Last Output</div>
+                    </div>
+                    <div class="card-p space-y" id="schedLastRunBody" style="font-size:12px;"></div>
+                </div>
+
+                <!-- Upcoming schedule -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            Upcoming Runs
+                        </div>
+                        <button class="btn btn-ghost btn-sm" onclick="schedRefresh()" style="font-size:11px;">Refresh</button>
+                    </div>
+                    <div class="card-p" id="schedUpcoming" style="font-size:12px; color:var(--text-3);">No jobs scheduled.</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- PLANNER TAB                                                           -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-planner">
+        <div style="display:grid; grid-template-columns:300px 1fr 280px; gap:16px; align-items:start;">
+
+            <!-- ── Left: Brainstorm Controls ──────────────────────────────── -->
+            <div style="display:flex; flex-direction:column; gap:14px;">
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Channel Setup
+                        </div>
+                    </div>
+                    <div class="card-p space-y">
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Channel Niche</label>
+                            <input id="plannerNiche" type="text" placeholder="e.g. stoicism, dark history, personal finance…" style="width:100%; box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Platform</label>
+                            <select id="plannerPlatform" style="width:100%;">
+                                <option value="YouTube">YouTube</option>
+                                <option value="TikTok">TikTok</option>
+                                <option value="Instagram Reels">Instagram Reels</option>
+                                <option value="YouTube Shorts">YouTube Shorts</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Primary Goal</label>
+                            <select id="plannerGoal" style="width:100%;">
+                                <option value="grow audience">Grow audience</option>
+                                <option value="maximise ad revenue">Maximise ad revenue</option>
+                                <option value="sell digital products">Sell digital products</option>
+                                <option value="build brand authority">Build brand authority</option>
+                                <option value="affiliate marketing">Affiliate marketing</option>
+                                <option value="go viral">Go viral</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Preferred Tone</label>
+                            <select id="plannerTone" style="width:100%;">
+                                <option value="">Any</option>
+                                <option value="calm">Calm &amp; measured</option>
+                                <option value="energetic">High energy</option>
+                                <option value="educational">Educational</option>
+                                <option value="inspirational">Inspirational</option>
+                                <option value="mysterious">Mysterious / dark</option>
+                                <option value="controversial">Controversial / bold</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Ideas to generate</label>
+                            <select id="plannerCount" style="width:100%;">
+                                <option value="5">5</option>
+                                <option value="8" selected>8</option>
+                                <option value="12">12</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Topics / formats to avoid</label>
+                            <textarea id="plannerAvoid" rows="2" placeholder="e.g. political content, talking-head style…" style="width:100%; box-sizing:border-box; resize:vertical; font-size:12px;"></textarea>
+                        </div>
+
+                        <button id="plannerBrainstormBtn" class="btn btn-primary" style="width:100%;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            Brainstorm Ideas
+                        </button>
+                        <div id="plannerBrainstormStatus" style="font-size:11.5px; color:var(--text-3); text-align:center; display:none;"></div>
+                    </div>
+                </div>
+
+                <!-- Queue stats -->
+                <div class="card" id="plannerQueueCard" style="display:none;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                            Production Queue
+                        </div>
+                        <span id="plannerQueueCount" class="badge badge-green">0</span>
+                    </div>
+                    <div class="card-p" id="plannerQueueList" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+
+            </div>
+
+            <!-- ── Centre: Ideas Grid ──────────────────────────────────────── -->
+            <div>
+                <div id="plannerIdeasEmpty" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:300px; color:var(--text-3); gap:12px; text-align:center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <div style="font-size:14px; font-weight:600; color:var(--text-2);">No ideas yet</div>
+                    <div style="font-size:12px; max-width:260px;">Set your niche and click <strong>Brainstorm Ideas</strong> to generate video concepts.</div>
+                </div>
+                <div id="plannerIdeasGrid" style="display:none; flex-direction:column; gap:12px;"></div>
+            </div>
+
+            <!-- ── Right: Detail / Validation Panel ───────────────────────── -->
+            <div id="plannerDetailPanel" style="display:none; position:sticky; top:16px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title" id="plannerDetailTitle" style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Validation Report</div>
+                        <button class="btn btn-ghost btn-sm" onclick="plannerCloseDetail()" style="padding:3px 7px; font-size:11px;">✕</button>
+                    </div>
+                    <div class="card-p space-y" id="plannerDetailBody" style="font-size:12px;"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
 </div><!-- /app -->
 
 <script>
@@ -1229,10 +1980,57 @@ document.querySelectorAll('.tab').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        // Close tools sub-row and clear tool-tab state
+        document.querySelectorAll('.tab-dropdown-item').forEach(i => i.classList.remove('active'));
+        document.getElementById('toolsDropdownBtn')?.classList.remove('has-active');
+        document.getElementById('toolsSubRow')?.classList.remove('open');
         btn.classList.add('active');
         document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     });
 });
+
+// ── Tools sub-row (Voice / Combine / Annotate) ───────────────────────────────
+
+function toggleToolsDropdown() {
+    const subRow = document.getElementById('toolsSubRow');
+    const btn    = document.getElementById('toolsDropdownBtn');
+    const isOpen = subRow.classList.contains('open');
+
+    if (isOpen) {
+        // Close sub-row, deactivate any tool tab
+        subRow.classList.remove('open');
+        btn.classList.remove('has-active');
+        // If a tool panel is active, go back to Generate
+        const anyToolActive = ['voice','combine','annotate'].some(t =>
+            document.getElementById('tab-' + t)?.classList.contains('active'));
+        if (anyToolActive) {
+            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-dropdown-item').forEach(i => i.classList.remove('active'));
+            document.querySelector('[data-tab="generate"]')?.classList.add('active');
+            document.getElementById('tab-generate')?.classList.add('active');
+        }
+    } else {
+        // Open sub-row and highlight the button
+        subRow.classList.add('open');
+        btn.classList.add('has-active');
+        // Deactivate regular tabs so nothing looks selected
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    }
+}
+
+function switchToToolTab(tab) {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + tab)?.classList.add('active');
+    document.querySelectorAll('.tab-dropdown-item').forEach(i => i.classList.remove('active'));
+    document.getElementById(`tools-${tab}-item`)?.classList.add('active');
+    document.getElementById('toolsDropdownBtn')?.classList.add('has-active');
+    // Keep sub-row open so user can switch between tools
+    document.getElementById('toolsSubRow')?.classList.add('open');
+    if (tab === 'annotate') { try { refreshTempAnalyzer?.(); } catch(_) {} }
+}
 
 // ─── Global state ─────────────────────────────────────────────────────────────
 let uploadedFiles = [], videoDurations = [];
@@ -1244,6 +2042,7 @@ let ttsGeneratedClips = []; // {blob, name, url, voice, addedToQueue}
 let currentSessionId = null;
 let logEventSource = null, logPollInterval = null;
 let currentScript = null;       // Generated script from Groq
+let genOrientation = 'landscape'; // 'landscape' | 'portrait'
 let genVoiceBlob = null;        // Generated voiceover blob for the Generate tab
 let genFinalBlob = null;        // Auto-create output blob
 
@@ -2209,12 +3008,10 @@ function setPipelineStep(id, state) {
 function updateGenFileDisplay() {
     const count  = uploadedFiles.length;
     const totalV = videoDurations.reduce((a, b) => a + (b || 0), 0);
-    document.getElementById('genFileCount').textContent = `${count} video${count !== 1 ? 's' : ''}`;
-    document.getElementById('genVideoDur').textContent  = fmtSec(totalV);
-    const listEl = document.getElementById('genFileListMini');
-    listEl.innerHTML = uploadedFiles.slice(0, 5).map(f =>
-        `<div class="file-item"><span class="file-item-name" title="${f.name}">${f.name}</span><span class="file-item-size">${fmt(f.size)}</span></div>`
-    ).join('') + (count > 5 ? `<div style="font-size:11px;color:var(--text-3);padding:3px 6px;">+${count - 5} more</div>` : '');
+    const countEl = document.getElementById('genFileCount');
+    const durEl   = document.getElementById('genVideoDur');
+    if (countEl) countEl.textContent = count ? `${count} video${count !== 1 ? 's' : ''} loaded` : '0 videos loaded';
+    if (durEl)   durEl.textContent   = count ? fmtSec(totalV) : '';
     updateGenBalance();
 }
 
@@ -2246,10 +3043,601 @@ document.getElementById('genSpeed').addEventListener('input', e => {
     document.getElementById('genSpeedVal').textContent = `${parseFloat(e.target.value).toFixed(2)}×`;
 });
 
+// Voice preset — show custom blend input when "Custom blend…" selected
+document.getElementById('genVoice').addEventListener('change', e => {
+    const customRow = document.getElementById('genVoiceCustomRow');
+    customRow.style.display = e.target.value === '__custom__' ? 'block' : 'none';
+});
+
+// Footage source tab switcher
+function switchFootageTab(tab) {
+    document.getElementById('footagePanelStock').style.display = tab === 'stock' ? '' : 'none';
+    document.getElementById('footagePanelYT').style.display    = tab === 'yt'    ? '' : 'none';
+    document.getElementById('footageTabStock').className = 'btn btn-sm ' + (tab === 'stock' ? 'btn-primary' : 'btn-ghost');
+    document.getElementById('footageTabYT').className    = 'btn btn-sm ' + (tab === 'yt'    ? 'btn-primary' : 'btn-ghost');
+}
+
+// ── YouTube auth ──────────────────────────────────────────────────────────────
+let ytAuthOk = false;   // true when valid cookies exist
+
+async function ytRefreshAuthStatus() {
+    try {
+        const r = await fetch('/api/youtube-auth/status');
+        const d = await r.json();
+        const dot   = document.getElementById('ytAuthDot');
+        const label = document.getElementById('ytAuthLabel');
+        const signOut = document.getElementById('ytSignOutBtn');
+        ytAuthOk = d.exists && !d.stale;
+        if (d.exists) {
+            dot.style.background   = d.stale ? '#f59e0b' : '#22c55e';
+            label.textContent      = d.stale
+                ? `⚠️ Cookies ${d.ageh}h old — may need refresh`
+                : `✅ Signed in (cookies ${d.ageh}h old)`;
+            signOut.style.display  = 'inline-flex';
+        } else {
+            dot.style.background   = '#94a3b8';
+            label.textContent      = 'Not signed in — results may be limited';
+            signOut.style.display  = 'none';
+        }
+        // Update auth warning badge in the stock panel toggle
+        const aw = document.getElementById('genYtAuthWarn');
+        const uc = document.getElementById('genUseYoutube');
+        if (aw && uc) aw.style.display = (uc.checked && !ytAuthOk) ? '' : 'none';
+    } catch(_) {}
+}
+
+async function ytStartLogin() {
+    const statusEl = document.getElementById('ytLoginStatus');
+    statusEl.style.display = 'block';
+
+    // Step 1 — open the user's real browser
+    try {
+        const r = await fetch('/api/youtube-auth/open-browser', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ browser: 'auto' }),
+        });
+        const d = await r.json();
+        const name = d.browser || 'your browser';
+        statusEl.innerHTML =
+            `🌐 <strong>${name}</strong> opened at YouTube.<br>` +
+            `Sign in to your Google account, then click ` +
+            `<button class="btn btn-primary btn-sm" onclick="ytExtractCookies()" ` +
+            `style="font-size:11px;padding:3px 10px;display:inline-flex;margin-left:4px;">` +
+            `Capture Cookies</button>`;
+    } catch(e) {
+        statusEl.textContent = `❌ ${e.message}`;
+    }
+}
+
+async function ytExtractCookies() {
+    const statusEl = document.getElementById('ytLoginStatus');
+    statusEl.style.display = 'block';
+    statusEl.textContent   = '🍪 Extracting cookies from Vivaldi/Firefox…';
+    // Try Vivaldi first (installed), then Firefox
+    for (const browser of ['vivaldi', 'firefox', 'safari']) {
+        try {
+            const r = await fetch('/api/youtube-auth/extract', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ browser }),
+            });
+            const d = await r.json();
+            if (d.ok) {
+                statusEl.textContent = `✅ Cookies captured from ${browser}`;
+                ytRefreshAuthStatus();
+                return;
+            }
+            statusEl.textContent = `⚠️ ${browser}: ${d.error || 'failed'} — trying next…`;
+        } catch(_) {}
+    }
+    statusEl.textContent = '❌ Could not extract cookies. Try Sign in instead.';
+}
+
+async function ytSignOut() {
+    await fetch('/api/youtube-auth/clear', { method: 'POST' });
+    document.getElementById('ytLoginStatus').style.display = 'none';
+    ytRefreshAuthStatus();
+}
+
+// ── YouTube search (like Pexels/Pixabay) ──────────────────────────────────────
+let ytSelectedResults = new Set(); // video IDs selected for download
+
+async function ytSearch() {
+    const q      = document.getElementById('ytSearchQuery').value.trim();
+    const filter = document.getElementById('ytSearchFilter').value;
+    if (!q) return;
+
+    const btn    = document.getElementById('ytSearchBtn');
+    const grid   = document.getElementById('ytResultsGrid');
+    const status = document.getElementById('ytSearchStatus');
+    btn.disabled = true;
+    btn.innerHTML = SPIN_SVG;
+    grid.innerHTML = '';
+    grid.style.display = 'none';
+    status.style.display = 'block';
+    status.textContent = `🔍 Searching YouTube for "${q}"…`;
+    ytSelectedResults.clear();
+
+    try {
+        const r = await fetch(`/api/youtube-search?q=${encodeURIComponent(q)}&limit=12&filter=${filter}`);
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error);
+
+        const results = d.results || [];
+        if (!results.length) {
+            status.textContent = '⚠️ No results found';
+            return;
+        }
+
+        grid.innerHTML = '';
+        for (const v of results) {
+            const card = document.createElement('div');
+            card.className = 'yt-result-card';
+            card.dataset.id  = v.id;
+            card.dataset.url = v.url;
+            card.dataset.title = v.title;
+            card.innerHTML = `
+                <img src="${v.thumbnail}" alt="" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 9%22><rect width=%2216%22 height=%229%22 fill=%22%23222%22/></svg>'">
+                ${v.durationFmt ? `<div class="yt-result-dur">${v.durationFmt}</div>` : ''}
+                <div class="yt-result-info">
+                    <div class="yt-result-title">${v.title}</div>
+                    <div class="yt-result-meta">
+                        <span>${v.uploader || ''}</span>
+                        ${v.views ? `<span>${(v.views/1000).toFixed(0)}K views</span>` : ''}
+                    </div>
+                </div>
+                <div class="yt-result-check">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>`;
+            card.addEventListener('click', () => {
+                if (ytSelectedResults.has(v.id)) {
+                    ytSelectedResults.delete(v.id);
+                    card.classList.remove('selected');
+                } else {
+                    ytSelectedResults.add(v.id);
+                    card.dataset.url = v.url;
+                    card.classList.add('selected');
+                }
+                ytUpdateDownloadBar();
+            });
+            grid.appendChild(card);
+        }
+
+        grid.style.display = 'grid';
+        status.textContent = `${results.length} results — click to select, then Download Selected`;
+    } catch(e) {
+        status.textContent = `❌ ${e.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+    }
+}
+
+function ytUpdateDownloadBar() {
+    const status = document.getElementById('ytSearchStatus');
+    const n = ytSelectedResults.size;
+    if (n === 0) {
+        status.textContent = document.getElementById('ytResultsGrid').children.length
+            ? 'Click results to select them'
+            : '';
+        return;
+    }
+    status.innerHTML = `${n} selected — <button class="btn btn-primary btn-sm" onclick="ytDownloadSelected()" style="font-size:11px; padding:3px 10px; display:inline-flex;">Download ${n} clip${n>1?'s':''}</button>`;
+}
+
+async function ytDownloadSelected() {
+    const quality = document.getElementById('ytQuality').value;
+    const status  = document.getElementById('ytSearchStatus');
+    const urls    = [];
+
+    document.querySelectorAll('.yt-result-card.selected').forEach(card => {
+        urls.push({ url: card.dataset.url, title: card.dataset.title });
+    });
+    if (!urls.length) return;
+
+    let loaded = 0, failed = 0;
+    status.textContent = `⬇️ Downloading 0/${urls.length}…`;
+
+    for (const { url, title } of urls) {
+        status.textContent = `⬇️ ${loaded + failed + 1}/${urls.length}: ${title.slice(0,40)}…`;
+        try {
+            await ytDownloadOneUrl(url, quality);
+            loaded++;
+        } catch(e) {
+            failed++;
+            addLog(`❌ YouTube: ${title.slice(0,40)} — ${e.message}`);
+        }
+    }
+
+    renderFileList(); updateDurations(); updateGenBalance(); updateGenAutoBtn();
+    status.textContent = `✅ ${loaded} clip${loaded!==1?'s':''} added${failed?`, ${failed} failed`:''}`;
+}
+
+// Download a single URL and push to uploadedFiles[]
+async function ytDownloadOneUrl(url, quality) {
+    quality = quality || document.getElementById('ytQuality').value;
+    const r = await fetch('/api/download-youtube', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, quality }),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error);
+
+    const vr   = await fetch(d.serveUrl);
+    if (!vr.ok) throw new Error(`Serve ${vr.status}`);
+    const blob = await vr.blob();
+    const file = new File([blob], d.filename, { type: 'video/mp4' });
+    uploadedFiles.push(file);
+    const dur = await getMediaDuration(file, 'video');
+    videoDurations.push(dur);
+    addLog(`✅ YouTube clip added: ${d.filename} (${fmtSec(dur)})`);
+}
+
+// URL paste fallback
+async function ytDownloadUrl() {
+    const url = document.getElementById('ytUrlInput').value.trim();
+    if (!url.startsWith('http')) { alert('Paste a valid YouTube URL'); return; }
+    const status = document.getElementById('ytStatus');
+    status.style.display = 'block';
+    status.textContent = '⬇️ Downloading…';
+    try {
+        await ytDownloadOneUrl(url);
+        renderFileList(); updateDurations(); updateGenBalance(); updateGenAutoBtn();
+        status.textContent = '✅ Clip added';
+        document.getElementById('ytUrlInput').value = '';
+    } catch(e) {
+        status.textContent = `❌ ${e.message}`;
+    }
+}
+
+// Search on Enter
+document.getElementById('ytSearchQuery').addEventListener('keydown', e => {
+    if (e.key === 'Enter') ytSearch();
+});
+
+// Init auth status on page load + when YouTube tab is opened
+ytRefreshAuthStatus();
+
+// Also refresh when switching to the YT tab
+const _origSwitchFootageTab = switchFootageTab;
+switchFootageTab = function(tab) {
+    _origSwitchFootageTab(tab);
+    if (tab === 'yt') ytRefreshAuthStatus();
+};
+
+// ── YouTube toggle in the stock footage panel ────────────────────────────────
+function genYoutubeToggle() {
+    const checked    = document.getElementById('genUseYoutube')?.checked;
+    const qualSel    = document.getElementById('genYtQuality');
+    const authWarn   = document.getElementById('genYtAuthWarn');
+    if (qualSel)  qualSel.style.display  = checked ? '' : 'none';
+    if (authWarn) authWarn.style.display = (checked && !ytAuthOk) ? '' : 'none';
+    // Update button label
+    const btn = document.getElementById('genFindFootageBtn');
+    if (btn && !btn.disabled) {
+        const label = checked ? 'Find Footage (Stock + YouTube)' : 'Find Footage';
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> ${label}`;
+    }
+}
+
 // Caption toggle persistence
 try { if (localStorage.getItem('gen_burn_captions') === 'true') document.getElementById('genBurnCaptions').checked = true; } catch(_) {}
 document.getElementById('genBurnCaptions').addEventListener('change', e => {
     try { localStorage.setItem('gen_burn_captions', e.target.checked); } catch(_) {}
+});
+
+// ── Caption template carousel ─────────────────────────────────────────────────
+// Visual preview configs matching the server-side TEMPLATES object
+// Caption card preview specs — mirrors server-side TEMPLATES
+const CAPTION_PREVIEW_STYLES = {
+    impact:    { bg:'#111', color:'#fff',     outline:'#000',              text:'TWO WORDS',                   font:'Arial Black', bold:true,  spacing:'0',   pill:false, shadow:'' },
+    highlight: { bg:'#111', color:'#fff',     outline:'#000',              text:'WORD <span style="color:#ffdc00;font-size:13px">POP</span> HERE', font:'Arial Black', bold:true, spacing:'0', pill:false, shadow:'' },
+    neon:      { bg:'#0a0a0a', color:'#00ffdc', outline:'#00b4a0',         text:'NEON',                        font:'Arial Black', bold:true,  spacing:'0',   pill:false, shadow:'' },
+    cinematic: { bg:'#000', color:'#f0ebe1',  outline:'rgba(0,0,0,0)',     text:'C I N E M A T I C',           font:'Arial',       bold:true,  spacing:'3px', pill:false, shadow:'3px 3px 8px rgba(0,0,0,.7)' },
+    fire:      { bg:'#111', color:'#fff',     outline:'#ff5000',           text:'FIRE 🔥',                     font:'Arial Black', bold:true,  spacing:'0',   pill:false, shadow:'' },
+    pill:      { bg:'#111', color:'#fff',     outline:'transparent',       text:'Pill Caption',                font:'Arial',       bold:true,  spacing:'0',   pill:true,  shadow:'' },
+    shadow3d:  { bg:'#111', color:'#fff',     outline:'transparent',       text:'SHADOW 3D',                   font:'Arial Black', bold:true,  spacing:'0',   pill:false, shadow:'5px 5px 0 #50008c' },
+};
+
+// Build the text-shadow CSS string for caption card previews
+function buildPreviewShadow(pv) {
+    if (pv.shadow) return pv.shadow;
+    if (!pv.outline || pv.outline === 'transparent') return 'none';
+    const c = pv.outline;
+    return `-1px -1px 0 ${c},1px -1px 0 ${c},-1px 1px 0 ${c},1px 1px 0 ${c},0 2px 6px ${c}`;
+}
+
+async function loadCaptionCarousel() {
+    const carousel = document.getElementById('captionCarousel');
+    const desc     = document.getElementById('captionTemplateDesc');
+    if (!carousel) return;
+
+    // Fetch from API so label/desc stay in sync with server; fall back to built-in
+    let templates;
+    try {
+        const r = await fetch('/api/caption-templates');
+        if (r.ok) { const d = await r.json(); templates = d.templates || d; }
+    } catch(_) {}
+
+    if (!templates?.length) {
+        templates = [
+            { id:'impact',    label:'Impact',     desc:'2-word pop groups, thick outline — the viral default' },
+            { id:'highlight', label:'Highlight',  desc:'3-word groups — active word jumps yellow' },
+            { id:'neon',      label:'Neon',        desc:'Word-by-word, electric cyan glow' },
+            { id:'cinematic', label:'Cinematic',   desc:'3-word slide-up, off-white, slow elegant fade' },
+            { id:'fire',      label:'Fire',        desc:'2-word pop, white text with orange fire outline' },
+            { id:'pill',      label:'Pill',        desc:'3-word groups inside a dark translucent pill' },
+            { id:'shadow3d',  label:'Shadow 3D',   desc:'2-word pop, white with deep purple 3D shadow' },
+        ];
+    }
+
+    const savedTemplate = (() => { try { return localStorage.getItem('gen_caption_template') || 'impact'; } catch(_) { return 'impact'; } })();
+
+    carousel.innerHTML = '';
+    templates.forEach(tmpl => {
+        const pv   = CAPTION_PREVIEW_STYLES[tmpl.id] || CAPTION_PREVIEW_STYLES.impact;
+        const card = document.createElement('div');
+        card.className  = 'caption-card' + (tmpl.id === savedTemplate ? ' selected' : '');
+        card.dataset.id = tmpl.id;
+
+        const pillStyle = pv.pill ? 'background:rgba(0,0,0,.7);padding:3px 9px;border-radius:7px;' : '';
+        const shadow    = buildPreviewShadow(pv);
+
+        card.innerHTML = `
+            <div class="caption-card-preview" style="background:${pv.bg};">
+                <span style="
+                    font-family:'${pv.font}',sans-serif;
+                    font-weight:${pv.bold ? 900 : 400};
+                    font-size:11px;
+                    color:${pv.color};
+                    text-shadow:${shadow};
+                    letter-spacing:${pv.spacing || '0'};
+                    ${pillStyle}
+                    display:inline-block;
+                    line-height:1.15;
+                ">${pv.text}</span>
+            </div>
+            <div class="caption-card-label">${tmpl.label}</div>`;
+
+        card.addEventListener('click', () => {
+            carousel.querySelectorAll('.caption-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            if (desc) desc.textContent = tmpl.desc || '';
+            try { localStorage.setItem('gen_caption_template', tmpl.id); } catch(_) {}
+        });
+
+        if (tmpl.id === savedTemplate && desc) desc.textContent = tmpl.desc || '';
+        carousel.appendChild(card);
+    });
+}
+
+loadCaptionCarousel();
+
+// ── Orientation picker ────────────────────────────────────────────────────────
+document.querySelectorAll('.orientation-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.orientation-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        genOrientation = btn.dataset.value;
+        try { localStorage.setItem('gen_orientation', genOrientation); } catch(_) {}
+    });
+});
+// Restore saved orientation
+try {
+    const saved = localStorage.getItem('gen_orientation');
+    if (saved === 'portrait') {
+        document.querySelectorAll('.orientation-btn').forEach(b => b.classList.remove('selected'));
+        document.querySelector('.orientation-btn[data-value="portrait"]').classList.add('selected');
+        genOrientation = 'portrait';
+    }
+} catch(_) {}
+
+// ── Transition picker ─────────────────────────────────────────────────────────
+const TRANSITIONS = [
+    { id:'none',       label:'None' },
+    { id:'fade',       label:'Fade' },
+    { id:'fadeblack',  label:'Blackout' },
+    { id:'zoomin',     label:'Zoom In' },
+    { id:'dissolve',   label:'Dissolve' },
+    { id:'wipeleft',   label:'Wipe ←' },
+    { id:'wiperight',  label:'Wipe →' },
+    { id:'slideleft',  label:'Slide ←' },
+    { id:'slideright', label:'Slide →' },
+    { id:'slideup',    label:'Slide ↑' },
+    { id:'circleopen', label:'Circle' },
+    { id:'pixelize',   label:'Pixelize' },
+    { id:'smoothleft', label:'Smooth ←' },
+    { id:'diagtl',     label:'Diag ↖' },
+    { id:'horzopen',   label:'H-Open' },
+    { id:'vertopen',   label:'V-Open' },
+];
+let genTransition = 'fade';
+let genTransitionDur = 0.5;
+
+(function buildTransitionPicker() {
+    const picker = document.getElementById('transitionPicker');
+    TRANSITIONS.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = 'trans-btn' + (t.id === genTransition ? ' selected' : '');
+        btn.dataset.id = t.id;
+        btn.textContent = t.label;
+        btn.title = t.id;
+        btn.addEventListener('click', () => {
+            picker.querySelectorAll('.trans-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            genTransition = t.id;
+            try { localStorage.setItem('gen_transition', genTransition); } catch(_) {}
+        });
+        picker.appendChild(btn);
+    });
+    // Restore saved
+    try {
+        const saved = localStorage.getItem('gen_transition');
+        if (saved && TRANSITIONS.find(t => t.id === saved)) {
+            genTransition = saved;
+            picker.querySelectorAll('.trans-btn').forEach(b => {
+                b.classList.toggle('selected', b.dataset.id === saved);
+            });
+        }
+    } catch(_) {}
+})();
+
+document.getElementById('genTransitionDur').addEventListener('input', e => {
+    genTransitionDur = parseFloat(e.target.value);
+    document.getElementById('genTransitionDurVal').textContent = `${genTransitionDur.toFixed(1)}s`;
+});
+
+// ── Background music ──────────────────────────────────────────────────────────
+let selectedMusicTrack = null;   // { name, artist, downloadUrl, previewUrl, source, id }
+let selectedMusicBlob  = null;   // downloaded audio blob
+
+document.getElementById('genMusicVolume').addEventListener('input', e => {
+    document.getElementById('genMusicVolVal').textContent = `${e.target.value}%`;
+});
+
+document.getElementById('genMusicSearchBtn').addEventListener('click', searchMusic);
+document.getElementById('genMusicQuery').addEventListener('keydown', e => { if (e.key === 'Enter') searchMusic(); });
+
+async function searchMusic() {
+    const q      = document.getElementById('genMusicQuery').value.trim();
+    const mood   = document.getElementById('genMusicMood').value;
+    const status = document.getElementById('genMusicStatus');
+    const grid   = document.getElementById('genMusicResults');
+    const btn    = document.getElementById('genMusicSearchBtn');
+
+    btn.disabled = true;
+    status.style.display = 'block';
+    status.textContent = 'Searching Jamendo…';
+    grid.style.display = 'none';
+    grid.innerHTML = '';
+
+    try {
+        const params = new URLSearchParams({ q, mood, type: 'music' });
+        const r = await fetch(`/api/search-music?${params}`);
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error);
+
+        const tracks = d.results || [];
+        if (!tracks.length) { status.textContent = 'No results — try different keywords.'; return; }
+
+        status.style.display = 'none';
+        grid.style.display = 'block';
+        grid.innerHTML = '';
+
+        tracks.forEach(track => {
+            const row = document.createElement('div');
+            row.className = 'music-row' + (selectedMusicTrack?.id === track.id ? ' selected' : '');
+            row.innerHTML = `
+                <button class="music-play-btn" title="Preview">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+                <div class="music-row-info">
+                    <div class="music-row-name">${track.name}</div>
+                    <div class="music-row-sub">${track.artist || 'Jamendo'} · ${track.duration ? Math.round(track.duration/60)+'min' : ''}</div>
+                </div>
+                <button style="background:none;border:1px solid var(--border);border-radius:6px;font-size:10px;padding:3px 7px;cursor:pointer;" title="Select">Use</button>
+            `;
+
+            // Preview button
+            row.querySelector('.music-play-btn').addEventListener('click', e => {
+                e.stopPropagation();
+                const preview = document.getElementById('genMusicPreview');
+                preview.src = track.previewUrl;
+                preview.play().catch(()=>{});
+            });
+
+            // "Use" / row click → select this track
+            const useBtn = row.querySelector('button:last-child');
+            const selectTrack = async () => {
+                grid.querySelectorAll('.music-row').forEach(r => r.classList.remove('selected'));
+                row.classList.add('selected');
+                await selectMusicTrack(track);
+            };
+            useBtn.addEventListener('click', e => { e.stopPropagation(); selectTrack(); });
+            row.addEventListener('click', selectTrack);
+
+            grid.appendChild(row);
+        });
+    } catch (err) {
+        status.textContent = `❌ ${err.message}`;
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function selectMusicTrack(track) {
+    const selEl = document.getElementById('genMusicSelected');
+    const nameEl = document.getElementById('genMusicSelectedName');
+    const preview = document.getElementById('genMusicPreview');
+    const status = document.getElementById('genMusicStatus');
+
+    nameEl.textContent = `${track.name}${track.artist ? ' — ' + track.artist : ''}`;
+    preview.src = track.previewUrl || '';
+    selEl.style.display = 'block';
+    selectedMusicTrack = track;
+    selectedMusicBlob  = null; // will be downloaded at pipeline time
+
+    // Download in background
+    status.style.display = 'block';
+    status.textContent = '⬇️  Downloading track…';
+    try {
+        const safe = track.id.replace(/[^a-z0-9_.-]/gi, '_');
+        const filename = `${safe}.mp3`;
+        const r = await fetch('/api/download-track', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: track.downloadUrl, filename }),
+        });
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error);
+        selectedMusicTrack.cachedUrl = d.serveUrl;
+        status.textContent = '✅ Track ready';
+        setTimeout(() => { status.style.display = 'none'; }, 2000);
+    } catch (err) {
+        status.textContent = `⚠️  ${err.message} (track will stream directly)`;
+    }
+}
+
+function clearSelectedMusic() {
+    selectedMusicTrack = null;
+    selectedMusicBlob  = null;
+    document.getElementById('genMusicSelected').style.display = 'none';
+    document.getElementById('genMusicPreview').pause();
+    document.getElementById('genMusicPreview').src = '';
+    document.querySelectorAll('#genMusicResults .music-row').forEach(r => r.classList.remove('selected'));
+}
+
+// ── Clear all temp files ──────────────────────────────────────────────────────
+document.getElementById('clearTempBtn').addEventListener('click', async () => {
+    const btn    = document.getElementById('clearTempBtn');
+    const status = document.getElementById('clearTempStatus');
+    btn.disabled = true;
+    btn.innerHTML = `${SPIN_SVG} Clearing…`;
+    status.textContent = '';
+    try {
+        const r = await fetch('/api/clear-temp', { method: 'POST' });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Failed');
+        const footageMB = d.footage ? (d.footage.bytes / 1048576).toFixed(1) : 0;
+        const parts = [];
+        if (d.footage?.count) parts.push(`${d.footage.count} footage clip${d.footage.count !== 1 ? 's' : ''} (${footageMB} MB)`);
+        if (d.pipeline?.length) parts.push(`pipeline dirs`);
+        if (d.caps) parts.push(`${d.caps} caption temp${d.caps !== 1 ? 's' : ''}`);
+        status.style.color = 'var(--green, #22c55e)';
+        status.textContent = parts.length ? `✅ Cleared: ${parts.join(', ')}` : '✅ Nothing to clear';
+        // Reset local state since all footage is gone
+        uploadedFiles = []; videoDurations = [];
+        processedVideoBlob = null; processedAudioBlob = null; processedFinalBlob = null;
+        renderFileList(); updateGenFileDisplay();
+    } catch (err) {
+        status.style.color = 'var(--red, #ef4444)';
+        status.textContent = `❌ ${err.message}`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg> Clear all temp files`;
+        setTimeout(() => { status.textContent = ''; status.style.color = ''; }, 5000);
+    }
 });
 
 // ── Script generation ─────────────────────────────────────────────────────────
@@ -2388,30 +3776,49 @@ document.getElementById('genFindFootageBtn').addEventListener('click', async () 
     btn.disabled     = true;
     btn.innerHTML    = `${SPIN_SVG} Searching…`;
     status.style.display = 'block';
-    status.textContent   = 'Searching Pexels for each scene…';
+    status.textContent   = `Searching ${genOrientation === 'portrait' ? '9:16 portrait' : '16:9 landscape'} footage…`;
     grid.style.display   = 'none';
     grid.innerHTML       = '';
     showProgress(); updateProgress(5);
+
+    const useYoutube = document.getElementById('genUseYoutube')?.checked || false;
+    const ytQuality  = document.getElementById('genYtQuality')?.value  || '720';
+
+    const sourceLabel = (() => {
+        const parts = ['Pexels/Pixabay'];
+        if (useYoutube) parts.push('YouTube');
+        return parts.join(' + ');
+    })();
 
     try {
         const r = await fetch('/api/find-footage', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ scenes: currentScript.scenes, clips_per_scene: clipsPerScene }),
+            body:    JSON.stringify({
+                scenes:         currentScript.scenes,
+                clips_per_scene: clipsPerScene,
+                orientation:    genOrientation,
+                use_youtube:    useYoutube,
+                yt_quality:     ytQuality,
+            }),
         });
         const d = await r.json();
         if (!d.ok) throw new Error(d.error);
 
         const clips = d.clips || [];
         if (!clips.length) {
-            status.textContent = '⚠️ No footage found. Add PEXELS_API_KEY to .env (free at pexels.com/api).';
+            status.textContent = `⚠️ No footage found. Check API keys in .env${useYoutube ? ' or YouTube auth' : ''}.`;
             return;
         }
 
-        status.textContent = `⬇️ Downloading ${clips.length} clip${clips.length !== 1 ? 's' : ''}…`;
+        // Server already downloaded everything — clips are in FOOTAGE_DIR.
+        // We just need to fetch them into blobs and add to the pool.
+        status.textContent = `⬇️ Loading ${clips.length} clip${clips.length !== 1 ? 's' : ''} into pool…`;
         updateProgress(30);
 
-        // Fetch each clip as a blob and add to uploadedFiles[]
+        // Source badge colours
+        const sourceBadge = { pexels: '#10b981', pixabay: '#6366f1', youtube: '#ef4444' };
+
         let loaded = 0;
         for (const clip of clips) {
             try {
@@ -2423,11 +3830,14 @@ document.getElementById('genFindFootageBtn').addEventListener('click', async () 
                 const dur = await getMediaDuration(file, 'video');
                 videoDurations.push(dur);
 
-                // Add thumbnail to grid
+                // Add thumbnail to grid with source badge
+                const badgeColor = sourceBadge[clip.source] || '#94a3b8';
+                const srcLabel   = clip.source === 'youtube' ? 'YT' : clip.source.charAt(0).toUpperCase() + clip.source.slice(1, 3);
+                const thumbSrc   = clip.thumbnail || '';
                 const card = document.createElement('div');
                 card.className = 'footage-thumb selected';
                 card.innerHTML = `
-                    <img src="${clip.thumbnail}" alt="Scene ${clip.scene_id}" loading="lazy"
+                    <img src="${thumbSrc}" alt="Scene ${clip.scene_id}" loading="lazy"
                          onerror="this.style.background='var(--surface-2)';this.style.display='block';">
                     <div class="footage-thumb-info">
                         <span>S${clip.scene_id}</span>
@@ -2435,7 +3845,8 @@ document.getElementById('genFindFootageBtn').addEventListener('click', async () 
                     </div>
                     <div class="footage-thumb-check">
                         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    </div>`;
+                    </div>
+                    <div style="position:absolute; top:4px; left:4px; background:${badgeColor}; color:#fff; font-size:9px; font-weight:700; padding:1px 5px; border-radius:4px; letter-spacing:.4px;">${srcLabel}</div>`;
                 grid.appendChild(card);
 
                 loaded++;
@@ -2452,14 +3863,14 @@ document.getElementById('genFindFootageBtn').addEventListener('click', async () 
         updateGenBalance();
         updateGenAutoBtn();
         markStep(3, 'done');
-        status.textContent = `✅ ${loaded} clip${loaded !== 1 ? 's' : ''} added from Pexels`;
-        addLog(`✅ Footage: ${loaded} clips added to pool`);
+        status.textContent = `✅ ${loaded} clip${loaded !== 1 ? 's' : ''} added from ${sourceLabel}`;
+        addLog(`✅ Footage: ${loaded} clips added to pool (${sourceLabel})`);
     } catch(err) {
         status.textContent = `❌ ${err.message}`;
         addLog(`❌ Footage error: ${err.message}`);
     } finally {
         btn.disabled  = false;
-        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Find Stock Footage`;
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Find Footage`;
     }
 });
 
@@ -2474,7 +3885,10 @@ document.getElementById('genVoiceBtn').addEventListener('click', async () => {
     addLog('🎙️ Generating voiceover…');
 
     try {
-        const voice = document.getElementById('genVoice').value;
+        const voiceSel = document.getElementById('genVoice').value;
+        const voice = voiceSel === '__custom__'
+            ? (document.getElementById('genVoiceCustom').value.trim() || 'af_heart')
+            : voiceSel;
         const speed = parseFloat(document.getElementById('genSpeed').value);
         const r = await fetch('/api/tts', {
             method:  'POST',
@@ -2524,13 +3938,16 @@ document.getElementById('genAutoBtn').addEventListener('click', async () => {
     if (!uploadedFiles.length || !audioFiles.length) return;
 
     const burnCaptions = document.getElementById('genBurnCaptions').checked;
+    const useMusic     = document.getElementById('genUseMusicToggle').checked && selectedMusicTrack;
     const outputFmt    = document.getElementById('genOutputFormat').value;
     const btn          = document.getElementById('genAutoBtn');
 
     btn.disabled = true;
     document.getElementById('genPipeline').classList.remove('hidden');
     document.getElementById('genResult').classList.add('hidden');
-    document.getElementById('ps4').style.display = burnCaptions ? 'flex' : 'none';
+    document.getElementById('ps4').style.display = (burnCaptions || useMusic) ? 'flex' : 'none';
+    const ps4label = document.querySelector('#ps4 span:last-child');
+    if (ps4label) ps4label.textContent = burnCaptions ? 'Burn captions' : 'Mix music';
     showProgress(); statusLog.innerHTML = ''; updateProgress(0);
     currentSessionId = genId();
 
@@ -2544,6 +3961,9 @@ document.getElementById('genAutoBtn').addEventListener('click', async () => {
             max_cut_duration: 6,
             output_format: outputFmt,
             target_total_duration: audioDur,
+            orientation: genOrientation,
+            transition: genTransition,
+            transition_duration: genTransitionDur,
         };
         const aCfg = {
             session_id: currentSessionId,
@@ -2562,22 +3982,49 @@ document.getElementById('genAutoBtn').addEventListener('click', async () => {
 
         setPipelineStep(3, 'active'); addLog('🎛️ Muxing video + audio…'); updateProgress(70);
         processedFinalBlob = await processMuxing(currentSessionId);
-        setPipelineStep(3, 'done'); updateProgress(burnCaptions ? 80 : 100); addLog('✅ Muxed');
+        setPipelineStep(3, 'done'); addLog('✅ Muxed');
 
+        const needsStep4 = burnCaptions || useMusic;
+        updateProgress(needsStep4 ? 75 : 100);
+
+        // Step 4a: mix music
+        if (useMusic) {
+            const musicLabel = selectedMusicTrack ? `🎵 Mixing music — "${selectedMusicTrack.name}"…` : '🎵 Mixing music…';
+            if (ps4label) ps4label.textContent = 'Mix music';
+            setPipelineStep(4, 'active'); addLog(musicLabel); updateProgress(80);
+            const musicFd = new FormData();
+            musicFd.append('video', new File([processedFinalBlob], 'muxed.mp4', { type: 'video/mp4' }));
+
+            // Fetch music from cache or direct URL
+            const musicSrc = selectedMusicTrack.cachedUrl || selectedMusicTrack.downloadUrl;
+            const mRes = await fetch(musicSrc);
+            if (!mRes.ok) throw new Error(`Music fetch failed: ${mRes.status}`);
+            const mBlob = await mRes.blob();
+            musicFd.append('music', new File([mBlob], 'music.mp3', { type: 'audio/mpeg' }));
+            musicFd.append('volume', String(document.getElementById('genMusicVolume').value / 100));
+            musicFd.append('fade_in', '2');
+            musicFd.append('fade_out', '3');
+
+            const mxR = await fetch('/api/mix-music', { method: 'POST', body: musicFd });
+            if (!mxR.ok) { const t = await mxR.text().catch(()=>''); throw new Error(`Music mix ${mxR.status}: ${t.slice(0,200)}`); }
+            processedFinalBlob = await mxR.blob();
+            if (!processedFinalBlob.size) throw new Error('Empty music mix result');
+            if (!burnCaptions) { setPipelineStep(4, 'done'); updateProgress(100); addLog('✅ Music mixed'); }
+        }
+
+        // Step 4b: burn captions (after music, so captions go on top)
         if (burnCaptions) {
-            setPipelineStep(4, 'active'); addLog('📝 Burning captions…');
-            const muxed = new File([processedFinalBlob], 'muxed.mp4', { type: 'video/mp4' });
-            const annotFd = new FormData(); annotFd.append('video', muxed);
-            const annotR  = await fetch('/api/annotate', { method: 'POST', body: annotFd });
-            if (!annotR.ok) throw new Error(`Annotate ${annotR.status}`);
-            const annotData = await annotR.json();
-            updateProgress(90);
-            const renderFd = new FormData(); renderFd.append('video', muxed);
-            renderFd.append('annotations', JSON.stringify(annotData.annotations || []));
-            const renderR = await fetch('/api/annotate/render', { method: 'POST', body: renderFd });
-            if (!renderR.ok) throw new Error(`Render ${renderR.status}`);
-            genFinalBlob = await renderR.blob();
-            if (!genFinalBlob.size) throw new Error('Empty render result');
+            const selectedTemplate = document.querySelector('.caption-card.selected')?.dataset?.id || 'impact';
+            if (ps4label) ps4label.textContent = 'Burn captions';
+            if (!useMusic) setPipelineStep(4, 'active');
+            addLog(`📝 Burning captions [${selectedTemplate}]…`); updateProgress(90);
+            const captionFd = new FormData();
+            captionFd.append('video', new File([processedFinalBlob], 'muxed.mp4', { type: 'video/mp4' }));
+            captionFd.append('template', selectedTemplate);
+            const capR = await fetch('/api/burn-captions', { method: 'POST', body: captionFd });
+            if (!capR.ok) { const t = await capR.text().catch(()=>''); throw new Error(`Captions ${capR.status}: ${t.slice(0,200)}`); }
+            genFinalBlob = await capR.blob();
+            if (!genFinalBlob.size) throw new Error('Empty captions result');
             setPipelineStep(4, 'done'); updateProgress(100); addLog('✅ Captions burned');
         } else {
             genFinalBlob = processedFinalBlob;
@@ -2603,6 +4050,784 @@ document.getElementById('genAutoBtn').addEventListener('click', async () => {
         updateGenAutoBtn();
     }
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SCHEDULER
+// ══════════════════════════════════════════════════════════════════════════════
+
+let schedJobs      = [];
+let schedEditingId = null;   // null = new, string = editing existing
+let schedLogEs     = null;   // active EventSource for live log
+
+// ── Status dot colour ─────────────────────────────────────────────────────────
+function schedStatusColor(status) {
+    return { idle:'#22c55e', running:'#6366f1', error:'#ef4444', disabled:'#94a3b8' }[status] || '#94a3b8';
+}
+
+// ── Relative time helper ──────────────────────────────────────────────────────
+function schedRelTime(isoOrMs) {
+    if (!isoOrMs) return '—';
+    const diff = Date.now() - new Date(isoOrMs).getTime();
+    const abs  = Math.abs(diff);
+    const future = diff < 0;
+    if (abs < 60_000)    return future ? 'in <1m' : 'just now';
+    if (abs < 3_600_000) return (future ? 'in ' : '') + Math.round(abs/60_000) + 'm' + (future ? '' : ' ago');
+    if (abs < 86_400_000) return (future ? 'in ' : '') + Math.round(abs/3_600_000) + 'h' + (future ? '' : ' ago');
+    return (future ? 'in ' : '') + Math.round(abs/86_400_000) + 'd' + (future ? '' : ' ago');
+}
+
+// ── Render jobs list ──────────────────────────────────────────────────────────
+function schedRender() {
+    const list  = document.getElementById('schedJobsList');
+    const empty = document.getElementById('schedJobsEmpty');
+    list.innerHTML = '';
+
+    if (!schedJobs.length) {
+        list.style.display  = 'none';
+        empty.style.display = 'flex';
+        schedRenderUpcoming();
+        return;
+    }
+    list.style.display  = 'flex';
+    empty.style.display = 'none';
+
+    for (const job of schedJobs) {
+        const statusColor = schedStatusColor(!job.enabled ? 'disabled' : job.status);
+        const steps = job.steps || {};
+        const stepLabels = [
+            steps.brainstorm      && { label: '💡 Brainstorm', on: true },
+            steps.validate        && { label: '🔍 Validate',   on: true },
+            steps.generate_script && { label: '📝 Script',     on: true },
+            steps.voiceover       && { label: '🎙️ Voice',      on: true },
+            steps.find_footage    && { label: '🎥 Footage',    on: true },
+            steps.combine         && { label: '🎬 Combine',    on: true },
+        ].filter(Boolean);
+
+        const schedSummary = (() => {
+            const s = job.schedule || {};
+            if (s.type === 'manual')  return 'Manual only';
+            if (s.type === 'hourly')  return `Every ${s.interval_hours || 24}h`;
+            if (s.type === 'daily')   return `Daily at ${s.time || '09:00'}`;
+            if (s.type === 'weekly') {
+                const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                return `${days[s.day_of_week ?? 1]} at ${s.time || '09:00'}`;
+            }
+            return '—';
+        })();
+
+        const lastRun = job.last_run ? schedRelTime(job.last_run) : 'Never';
+        const nextRun = job.next_run_ms ? schedRelTime(job.next_run_ms) : '—';
+
+        const card = document.createElement('div');
+        card.className = `sched-job-card${job.status === 'running' ? ' running' : ''}${job.status === 'error' ? ' error' : ''}`;
+        card.innerHTML = `
+            <div class="sched-job-header">
+                <div class="sched-status-dot" style="background:${statusColor};" title="${job.enabled ? job.status : 'disabled'}"></div>
+                <div class="sched-job-name">${job.name}</div>
+                <label class="sched-toggle" title="${job.enabled ? 'Enabled — click to pause' : 'Disabled — click to enable'}">
+                    <input type="checkbox" ${job.enabled ? 'checked' : ''} onchange="schedToggle('${job.id}')">
+                    <div class="sched-toggle-track"></div>
+                    <div class="sched-toggle-thumb"></div>
+                </label>
+            </div>
+            <div class="sched-job-body">
+                <div class="sched-job-meta">
+                    <span>${job.niche || '—'}</span>
+                    <span>·</span><span>${job.platform || 'YouTube'}</span>
+                    <span>·</span><span>${job.duration_minutes || 2} min</span>
+                    <span>·</span><span>${schedSummary}</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:2px;">
+                    ${stepLabels.map(s => `<span class="sched-step-pill on">${s.label}</span>`).join('')}
+                </div>
+                <div style="font-size:11px; color:var(--text-3); display:flex; gap:12px; margin-top:2px;">
+                    <span>Last run: <strong>${lastRun}</strong></span>
+                    ${job.next_run_ms ? `<span>Next: <strong>${nextRun}</strong></span>` : ''}
+                </div>
+                ${job.status === 'error' && job.run_history?.[0]?.error ? `<div style="font-size:11px; color:#ef4444; margin-top:2px;">❌ ${job.run_history[0].error.slice(0,100)}</div>` : ''}
+            </div>
+            <div class="sched-job-actions">
+                <button class="btn btn-primary" onclick="schedRunNow('${job.id}')" ${job.status==='running'?'disabled':''}>
+                    ${job.status==='running' ? SPIN_SVG + ' Running…' : '▶ Run Now'}
+                </button>
+                <button class="btn btn-ghost" onclick="schedViewLogs('${job.id}')">📋 Logs</button>
+                <button class="btn btn-ghost" onclick="schedEditJob('${job.id}')">✏️</button>
+                <button class="btn btn-ghost" onclick="schedDeleteJob('${job.id}')" style="color:#ef4444;">🗑</button>
+            </div>`;
+        list.appendChild(card);
+    }
+    schedRenderUpcoming();
+}
+
+function schedRenderUpcoming() {
+    const el = document.getElementById('schedUpcoming');
+    const upcoming = schedJobs
+        .filter(j => j.enabled && j.next_run_ms)
+        .sort((a, b) => a.next_run_ms - b.next_run_ms)
+        .slice(0, 5);
+    if (!upcoming.length) { el.textContent = 'No scheduled runs.'; return; }
+    el.innerHTML = upcoming.map(j => `
+        <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border); font-size:11.5px;">
+            <span style="color:var(--text); font-weight:600;">${j.name}</span>
+            <span style="color:var(--text-3);">${schedRelTime(j.next_run_ms)}</span>
+        </div>`).join('');
+}
+
+// ── Fetch jobs from server ────────────────────────────────────────────────────
+async function schedRefresh() {
+    try {
+        const r = await fetch('/api/scheduler/jobs');
+        const d = await r.json();
+        if (d.ok) { schedJobs = d.jobs; schedRender(); }
+    } catch(_) {}
+}
+
+// ── Form show/hide ────────────────────────────────────────────────────────────
+function schedShowForm(job = null) {
+    schedEditingId = job?.id || null;
+    const form = document.getElementById('schedJobForm');
+    document.getElementById('schedFormTitle').innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        ${job ? 'Edit Job' : 'New Job'}`;
+
+    // Populate fields
+    document.getElementById('sfName').value         = job?.name         || '';
+    document.getElementById('sfNiche').value        = job?.niche        || '';
+    document.getElementById('sfPlatform').value     = job?.platform     || 'YouTube';
+    document.getElementById('sfTone').value         = job?.tone         || 'calm';
+    document.getElementById('sfStyle').value        = job?.style        || 'storytelling';
+    document.getElementById('sfDuration').value     = job?.duration_minutes || 2;
+    document.getElementById('sfVoice').value        = job?.voice        || 'narrator_warm';
+    document.getElementById('sfOrientation').value  = job?.orientation  || 'landscape';
+    document.getElementById('sfStepBrainstorm').checked = job?.steps?.brainstorm      ?? true;
+    document.getElementById('sfStepValidate').checked   = job?.steps?.validate         ?? true;
+    document.getElementById('sfStepScript').checked     = job?.steps?.generate_script  ?? true;
+    document.getElementById('sfStepVoiceover').checked  = job?.steps?.voiceover         ?? true;
+    document.getElementById('sfStepFootage').checked    = job?.steps?.find_footage      ?? true;
+    document.getElementById('sfStepCombine').checked    = job?.steps?.combine            ?? false;
+    document.getElementById('sfSchedType').value        = job?.schedule?.type        || 'manual';
+    document.getElementById('sfIntervalHours').value    = job?.schedule?.interval_hours ?? 24;
+    document.getElementById('sfTime').value             = job?.schedule?.time        || '09:00';
+    document.getElementById('sfDayOfWeek').value        = job?.schedule?.day_of_week ?? 1;
+    schedUpdateScheduleUI();
+    form.style.display = 'block';
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function schedHideForm() {
+    document.getElementById('schedJobForm').style.display = 'none';
+    schedEditingId = null;
+}
+
+function schedUpdateScheduleUI() {
+    const type = document.getElementById('sfSchedType').value;
+    const hoursEl  = document.getElementById('sfSchedHours');
+    const timeEl   = document.getElementById('sfSchedTime');
+    const dayEl    = document.getElementById('sfSchedDay');
+    hoursEl.style.display = type === 'hourly'  ? 'flex' : 'none';
+    timeEl.style.display  = (type === 'daily' || type === 'weekly') ? 'flex' : 'none';
+    dayEl.style.display   = type === 'weekly'  ? 'flex' : 'none';
+}
+
+// ── Save job ──────────────────────────────────────────────────────────────────
+async function schedSaveJob() {
+    const name = document.getElementById('sfName').value.trim();
+    if (!name) { alert('Job name required'); return; }
+
+    const payload = {
+        name,
+        niche:             document.getElementById('sfNiche').value.trim(),
+        platform:          document.getElementById('sfPlatform').value,
+        tone:              document.getElementById('sfTone').value,
+        style:             document.getElementById('sfStyle').value,
+        duration_minutes:  parseInt(document.getElementById('sfDuration').value),
+        voice:             document.getElementById('sfVoice').value,
+        orientation:       document.getElementById('sfOrientation').value,
+        steps: {
+            brainstorm:      document.getElementById('sfStepBrainstorm').checked,
+            validate:        document.getElementById('sfStepValidate').checked,
+            generate_script: document.getElementById('sfStepScript').checked,
+            voiceover:       document.getElementById('sfStepVoiceover').checked,
+            find_footage:    document.getElementById('sfStepFootage').checked,
+            combine:         document.getElementById('sfStepCombine').checked,
+        },
+        schedule: {
+            type:           document.getElementById('sfSchedType').value,
+            interval_hours: parseInt(document.getElementById('sfIntervalHours').value) || 24,
+            time:           document.getElementById('sfTime').value,
+            day_of_week:    parseInt(document.getElementById('sfDayOfWeek').value),
+        },
+    };
+
+    try {
+        let r;
+        if (schedEditingId) {
+            r = await fetch(`/api/scheduler/jobs/${schedEditingId}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+        } else {
+            r = await fetch('/api/scheduler/jobs', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+        }
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error);
+        schedHideForm();
+        await schedRefresh();
+        addLog(`✅ Scheduler: job "${name}" ${schedEditingId ? 'updated' : 'created'}`);
+    } catch(err) {
+        alert(`Save failed: ${err.message}`);
+    }
+}
+
+// ── Edit, delete, toggle ──────────────────────────────────────────────────────
+function schedEditJob(id) {
+    const job = schedJobs.find(j => j.id === id);
+    if (job) schedShowForm(job);
+}
+
+async function schedDeleteJob(id) {
+    const job = schedJobs.find(j => j.id === id);
+    if (!confirm(`Delete job "${job?.name}"?`)) return;
+    await fetch(`/api/scheduler/jobs/${id}`, { method: 'DELETE' });
+    await schedRefresh();
+}
+
+async function schedToggle(id) {
+    await fetch(`/api/scheduler/jobs/${id}/toggle`, { method: 'POST' });
+    await schedRefresh();
+}
+
+// ── Run now ───────────────────────────────────────────────────────────────────
+async function schedRunNow(id) {
+    const r = await fetch(`/api/scheduler/jobs/${id}/run`, { method: 'POST' });
+    const d = await r.json();
+    if (!d.ok) { addLog(`❌ Scheduler: ${d.error}`); return; }
+    addLog(`▶ Triggered job ${id}`);
+    await schedRefresh();
+    // Open live log automatically
+    setTimeout(() => schedViewLogs(id), 800);
+}
+
+// ── Live log viewer ───────────────────────────────────────────────────────────
+function schedViewLogs(id) {
+    const job = schedJobs.find(j => j.id === id) || { name: id };
+    const logCard   = document.getElementById('schedLogCard');
+    const logTitle  = document.getElementById('schedLogTitle');
+    const logStatus = document.getElementById('schedLogStatus');
+    const logBody   = document.getElementById('schedLogBody');
+    const logActions = document.getElementById('schedLogActions');
+
+    logTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> ${job.name}`;
+    logStatus.className = 'badge badge-amber';
+    logStatus.textContent = 'Connecting…';
+    logBody.innerHTML  = '';
+    logActions.innerHTML = '';
+    logCard.style.display = 'block';
+    logCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Close existing stream
+    if (schedLogEs) { schedLogEs.close(); schedLogEs = null; }
+
+    schedLogEs = new EventSource(`/api/scheduler/jobs/${id}/logs`);
+    schedLogEs.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.log) {
+            const line = document.createElement('div');
+            line.className = 'run-log-line' + (data.log.includes('❌') ? ' err' : '');
+            line.textContent = data.log;
+            logBody.appendChild(line);
+            logBody.scrollTop = logBody.scrollHeight;
+        }
+        if (data.done) {
+            schedLogEs.close(); schedLogEs = null;
+            const ok = data.status === 'completed';
+            logStatus.className = ok ? 'badge badge-green' : 'badge badge-red';
+            logStatus.textContent = ok ? 'Completed' : 'Failed';
+
+            // Show download button if video was produced
+            if (data.output?.video_path) {
+                const fname = data.output.video_path.split('/').pop();
+                logActions.innerHTML = `
+                    <a href="/api/scheduler/output/${fname}" class="btn btn-primary" download style="flex:1;">
+                        ⬇️ Download Video
+                    </a>`;
+                // Also show last run card
+                schedShowLastRun(job, data.output);
+            }
+            schedRefresh();
+        }
+    };
+    schedLogEs.onerror = () => {
+        logStatus.className = 'badge badge-red';
+        logStatus.textContent = 'Disconnected';
+        schedLogEs?.close();
+        schedLogEs = null;
+    };
+}
+
+function schedShowLastRun(job, output) {
+    const card = document.getElementById('schedLastRunCard');
+    const body = document.getElementById('schedLastRunBody');
+    card.style.display = 'block';
+    body.innerHTML = `
+        ${output.idea_title ? `<div><strong>Idea:</strong> ${output.idea_title}</div>` : ''}
+        ${output.clip_count ? `<div><strong>Footage:</strong> ${output.clip_count} clip(s)</div>` : ''}
+        ${output.audio_path ? `<div style="color:#22c55e;">✅ Voiceover generated</div>` : ''}
+        ${output.video_path ? `
+            <a href="/api/scheduler/output/${output.video_path.split('/').pop()}" class="btn btn-primary" download style="width:100%; margin-top:4px;">
+                ⬇️ Download Final Video
+            </a>` : '<div style="color:var(--text-3);">No video output (combine step not enabled)</div>'}`;
+}
+
+// ── Auto-refresh jobs every 15s when scheduler tab is visible ─────────────────
+document.querySelector('[data-tab="scheduler"]')?.addEventListener('click', () => {
+    schedRefresh();
+});
+
+// Initial load
+schedRefresh();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PLANNER
+// ══════════════════════════════════════════════════════════════════════════════
+
+let plannerIdeas     = [];   // current brainstorm results
+let plannerQueue     = JSON.parse(localStorage.getItem('plannerQueue') || '[]');  // persisted queue
+let plannerActiveId  = null; // which idea card has the detail panel open
+let plannerValidations = {}; // cache: idea.id → validation result
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function plannerSaveQueue() {
+    try { localStorage.setItem('plannerQueue', JSON.stringify(plannerQueue)); } catch(_) {}
+}
+
+function scoreColor(s) {
+    if (s >= 8) return '#22c55e';
+    if (s >= 6) return '#f59e0b';
+    return '#ef4444';
+}
+function verdictBadge(verdict) {
+    if (!verdict) return '';
+    const map = { greenlight: 'badge-green', refine: 'badge-amber', skip: 'badge-red' };
+    const emoji = { greenlight: '✅', refine: '⚠️', skip: '❌' };
+    return `<span class="badge ${map[verdict] || ''}">${emoji[verdict] || ''} ${verdict}</span>`;
+}
+function competitionBadge(c) {
+    if (!c) return '';
+    const map = { low: 'idea-tag-green', medium: 'idea-tag-amber', high: 'idea-tag-red' };
+    return `<span class="idea-tag ${map[c] || ''}">${c} competition</span>`;
+}
+
+// ── Render a single idea card ─────────────────────────────────────────────────
+function plannerRenderIdeaCard(idea) {
+    const isQueued = plannerQueue.some(q => q.id === idea.id && q._brainstormId === plannerBrainstormId);
+    const val      = plannerValidations[idea.id];
+    const score    = val?.overall_score || idea.viral_score || 0;
+    const sc       = scoreColor(score);
+
+    const card = document.createElement('div');
+    card.className = `idea-card${isQueued ? ' queued' : ''}`;
+    card.id = `idea-card-${idea.id}`;
+
+    card.innerHTML = `
+        <div class="idea-card-header">
+            <div style="display:flex; align-items:flex-start; gap:12px;">
+                <div class="score-ring" style="border-color:${sc}; color:${sc};">${score || '?'}</div>
+                <div style="flex:1; min-width:0;">
+                    <div class="idea-card-title">${idea.title}</div>
+                    <div class="idea-card-hook">"${idea.hook}"</div>
+                </div>
+            </div>
+        </div>
+        <div class="idea-card-body">
+            <div class="idea-card-meta">
+                <span class="idea-tag idea-tag-blue">${idea.niche || ''}</span>
+                <span class="idea-tag">${idea.tone || ''}</span>
+                <span class="idea-tag">${idea.style || ''}</span>
+                <span class="idea-tag">${idea.duration_minutes || '?'} min</span>
+                ${competitionBadge(idea.competition)}
+                ${val ? verdictBadge(val.verdict) : ''}
+            </div>
+            ${idea.angle ? `<div style="font-size:11.5px; color:var(--text-2); line-height:1.45;"><strong style="color:var(--text-3); font-size:10.5px; text-transform:uppercase; letter-spacing:.5px;">Angle</strong><br>${idea.angle}</div>` : ''}
+            ${!val ? `<div class="idea-score-bar"><div class="idea-score-fill" style="width:${(score/10*100).toFixed(0)}%; background:${sc};"></div></div>` : ''}
+        </div>
+        <div class="idea-card-actions">
+            <button class="btn btn-ghost" onclick="plannerValidate(${idea.id})" id="val-btn-${idea.id}" ${val ? 'style="opacity:.5;"' : ''}>
+                ${val ? '🔄 Re-validate' : '🔍 Validate'}
+            </button>
+            ${val ? `<button class="btn btn-ghost" onclick="plannerShowDetail(${idea.id})">📄 Report</button>` : ''}
+            <button class="btn ${isQueued ? 'btn-danger' : 'btn-primary'}" onclick="plannerToggleQueue(${idea.id})" id="queue-btn-${idea.id}">
+                ${isQueued ? '✓ Queued' : '＋ Queue'}
+            </button>
+        </div>`;
+    return card;
+}
+
+// ── Current brainstorm session ID (so queued items link to the right ideas) ──
+let plannerBrainstormId = Date.now();
+
+// ── Render all idea cards ─────────────────────────────────────────────────────
+function plannerRenderIdeas() {
+    const grid  = document.getElementById('plannerIdeasGrid');
+    const empty = document.getElementById('plannerIdeasEmpty');
+    grid.innerHTML = '';
+
+    if (!plannerIdeas.length) {
+        grid.style.display  = 'none';
+        empty.style.display = 'flex';
+        return;
+    }
+    grid.style.display  = 'flex';
+    empty.style.display = 'none';
+
+    for (const idea of plannerIdeas) {
+        grid.appendChild(plannerRenderIdeaCard(idea));
+    }
+}
+
+// ── Brainstorm ─────────────────────────────────────────────────────────────────
+document.getElementById('plannerBrainstormBtn').addEventListener('click', async () => {
+    const niche    = document.getElementById('plannerNiche').value.trim();
+    const platform = document.getElementById('plannerPlatform').value;
+    const goal     = document.getElementById('plannerGoal').value;
+    const tone     = document.getElementById('plannerTone').value;
+    const avoid    = document.getElementById('plannerAvoid').value.trim();
+    const count    = parseInt(document.getElementById('plannerCount').value);
+
+    if (!niche) {
+        document.getElementById('plannerBrainstormStatus').style.display = 'block';
+        document.getElementById('plannerBrainstormStatus').textContent = '⚠️ Enter your channel niche first';
+        return;
+    }
+
+    const btn    = document.getElementById('plannerBrainstormBtn');
+    const status = document.getElementById('plannerBrainstormStatus');
+
+    btn.disabled     = true;
+    btn.innerHTML    = `${SPIN_SVG} Brainstorming…`;
+    status.style.display = 'block';
+    status.textContent   = `Asking Groq for ${count} ideas…`;
+    plannerBrainstormId  = Date.now();
+    plannerValidations   = {};
+
+    try {
+        const r = await fetch('/api/planner/brainstorm', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ niche, platform, goal, tone, avoid, count }),
+        });
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error);
+
+        plannerIdeas = d.ideas;
+        plannerRenderIdeas();
+        status.textContent = `✅ ${d.ideas.length} ideas generated — validate and queue the best ones.`;
+        addLog(`💡 Planner: ${d.ideas.length} ideas for "${niche}"`);
+    } catch(err) {
+        status.textContent = `❌ ${err.message}`;
+        addLog(`❌ Planner brainstorm: ${err.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Brainstorm Ideas`;
+    }
+});
+
+// ── Validate an idea ──────────────────────────────────────────────────────────
+async function plannerValidate(ideaId) {
+    const idea  = plannerIdeas.find(i => i.id === ideaId);
+    if (!idea) return;
+
+    const btn    = document.getElementById(`val-btn-${ideaId}`);
+    const card   = document.getElementById(`idea-card-${ideaId}`);
+    if (btn) btn.textContent = '⏳ Validating…';
+    card?.classList.add('validating');
+
+    try {
+        const niche    = document.getElementById('plannerNiche').value.trim();
+        const platform = document.getElementById('plannerPlatform').value;
+
+        const r = await fetch('/api/planner/validate', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ idea, niche, platform }),
+        });
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error);
+
+        plannerValidations[ideaId] = d.validation;
+        // Re-render just this card
+        const newCard = plannerRenderIdeaCard(idea);
+        card.replaceWith(newCard);
+        // Auto-open detail
+        plannerShowDetail(ideaId);
+        addLog(`✅ Validated "${idea.title}" — ${d.validation.verdict} (${d.validation.overall_score}/10)`);
+    } catch(err) {
+        if (btn) btn.textContent = '🔍 Validate';
+        card?.classList.remove('validating');
+        addLog(`❌ Validation error: ${err.message}`);
+    }
+}
+
+// ── Show validation detail panel ──────────────────────────────────────────────
+function plannerShowDetail(ideaId) {
+    const idea = plannerIdeas.find(i => i.id === ideaId);
+    const val  = plannerValidations[ideaId];
+    if (!idea) return;
+
+    plannerActiveId = ideaId;
+    const panel = document.getElementById('plannerDetailPanel');
+    const body  = document.getElementById('plannerDetailBody');
+    const title = document.getElementById('plannerDetailTitle');
+
+    title.textContent = idea.title;
+    panel.style.display = 'block';
+
+    if (!val) {
+        body.innerHTML = `<p style="color:var(--text-3); font-size:12px;">Click <strong>Validate</strong> on this idea card to get a detailed analysis.</p>`;
+        return;
+    }
+
+    const sc = scoreColor(val.overall_score);
+    const listHTML = (items, icon = '•') =>
+        `<ul class="val-list">${(items || []).map(i => `<li>${i}</li>`).join('')}</ul>`;
+
+    body.innerHTML = `
+        <!-- Score + verdict -->
+        <div style="display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:10px; background:var(--surface-2);">
+            <div class="score-ring" style="border-color:${sc}; color:${sc}; width:52px; height:52px; font-size:18px;">${val.overall_score}</div>
+            <div>
+                <div style="font-size:13px; font-weight:700; color:var(--text);">${verdictBadge(val.verdict)}</div>
+                <div style="font-size:11.5px; color:var(--text-2); margin-top:3px;">${val.verdict_reason || ''}</div>
+            </div>
+        </div>
+
+        ${val.refined_title && val.refined_title !== idea.title ? `
+        <div>
+            <div class="val-section-title">Refined Title</div>
+            <div style="font-size:12px; font-weight:600; color:var(--text); padding:6px 10px; background:var(--surface-2); border-radius:7px;">${val.refined_title}</div>
+        </div>` : ''}
+
+        ${val.refined_hook && val.refined_hook !== idea.hook ? `
+        <div>
+            <div class="val-section-title">Refined Hook</div>
+            <div style="font-size:11.5px; font-style:italic; color:var(--text-2); padding:6px 10px; background:var(--surface-2); border-radius:7px;">"${val.refined_hook}"</div>
+        </div>` : ''}
+
+        <div>
+            <div class="val-section-title">Strengths</div>
+            ${listHTML(val.strengths)}
+        </div>
+        <div>
+            <div class="val-section-title">Risks</div>
+            ${listHTML(val.risks)}
+        </div>
+        <div>
+            <div class="val-section-title">Improvements</div>
+            ${listHTML(val.improvements)}
+        </div>
+        <div>
+            <div class="val-section-title">Thumbnail Concept</div>
+            <div style="font-size:11.5px; color:var(--text-2);">${val.thumbnail_concept || '—'}</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div>
+                <div class="val-section-title">Est. Reach (30d)</div>
+                <div style="font-size:12px; font-weight:600; color:var(--text);">${val.estimated_reach || '—'}</div>
+            </div>
+            <div>
+                <div class="val-section-title">Monetisation</div>
+                <div style="font-size:11.5px; color:var(--text-2);">${val.monetisation_fit || '—'}</div>
+            </div>
+        </div>
+        ${val.keywords?.length ? `
+        <div>
+            <div class="val-section-title">Keywords</div>
+            <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                ${val.keywords.map(k => `<span class="idea-tag">${k}</span>`).join('')}
+            </div>
+        </div>` : ''}
+        <div>
+            <div class="val-section-title">Production Notes</div>
+            <div style="font-size:11.5px; color:var(--text-2); line-height:1.5;">${val.production_notes || '—'}</div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex; flex-direction:column; gap:6px; padding-top:4px; border-top:1px solid var(--border);">
+            <button class="btn btn-primary" style="width:100%;" onclick="plannerQueueFromDetail(${ideaId})">
+                ＋ Add to Production Queue
+            </button>
+            <button class="btn btn-ghost" style="width:100%;" onclick="plannerSendToGenerate(${ideaId})">
+                🎬 Send to Generate Tab
+            </button>
+            <button class="btn btn-ghost" style="width:100%; font-size:11px;" onclick="plannerRefine(${ideaId})">
+                ✏️ Refine this idea with AI
+            </button>
+        </div>`;
+}
+
+function plannerCloseDetail() {
+    document.getElementById('plannerDetailPanel').style.display = 'none';
+    plannerActiveId = null;
+}
+
+// ── Queue management ──────────────────────────────────────────────────────────
+function plannerToggleQueue(ideaId) {
+    const idea    = plannerIdeas.find(i => i.id === ideaId);
+    if (!idea) return;
+
+    const key     = JSON.stringify({ id: idea.id, _brainstormId: plannerBrainstormId });
+    const idx     = plannerQueue.findIndex(q => q.id === idea.id && q._brainstormId === plannerBrainstormId);
+
+    if (idx === -1) {
+        const val = plannerValidations[ideaId];
+        plannerQueue.push({
+            ...idea,
+            _brainstormId: plannerBrainstormId,
+            _validation:   val || null,
+            _queuedAt:     Date.now(),
+        });
+    } else {
+        plannerQueue.splice(idx, 1);
+    }
+    plannerSaveQueue();
+
+    // Re-render card
+    const card    = document.getElementById(`idea-card-${ideaId}`);
+    const newCard = plannerRenderIdeaCard(idea);
+    card?.replaceWith(newCard);
+    plannerRenderQueue();
+}
+
+function plannerQueueFromDetail(ideaId) {
+    const isQueued = plannerQueue.some(q => q.id === ideaId && q._brainstormId === plannerBrainstormId);
+    if (!isQueued) plannerToggleQueue(ideaId);
+}
+
+function plannerRenderQueue() {
+    const list  = document.getElementById('plannerQueueList');
+    const card  = document.getElementById('plannerQueueCard');
+    const count = document.getElementById('plannerQueueCount');
+
+    count.textContent = plannerQueue.length;
+    card.style.display = plannerQueue.length ? 'block' : 'none';
+
+    list.innerHTML = '';
+    for (const item of [...plannerQueue].reverse()) {
+        const val    = item._validation;
+        const sc     = val ? scoreColor(val.overall_score) : '#94a3b8';
+        const div    = document.createElement('div');
+        div.className = 'queue-item';
+        div.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div class="score-ring" style="border-color:${sc}; color:${sc}; width:30px; height:30px; font-size:11px; border-width:2px;">
+                    ${val?.overall_score || '?'}
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div class="queue-item-title" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${item.title}">${item.title}</div>
+                    <div class="queue-item-meta">${item.niche || ''} · ${item.duration_minutes || '?'} min · ${item.tone || ''}</div>
+                </div>
+            </div>
+            <div class="queue-item-actions">
+                <button class="btn btn-ghost btn-sm" style="flex:1; font-size:10.5px;" onclick="plannerSendToGenerate('${item.id}','${item._brainstormId}')">🎬 Produce</button>
+                <button class="btn btn-ghost btn-sm" style="font-size:10.5px; color:#ef4444;" onclick="plannerRemoveFromQueue('${item.id}','${item._brainstormId}')">✕</button>
+            </div>`;
+        list.appendChild(div);
+    }
+}
+
+function plannerRemoveFromQueue(ideaId, brainstormId) {
+    plannerQueue = plannerQueue.filter(q => !(q.id == ideaId && q._brainstormId == brainstormId));
+    plannerSaveQueue();
+    plannerRenderQueue();
+    // Re-render the card if visible
+    const idea = plannerIdeas.find(i => i.id == ideaId);
+    if (idea) {
+        const card    = document.getElementById(`idea-card-${idea.id}`);
+        const newCard = plannerRenderIdeaCard(idea);
+        card?.replaceWith(newCard);
+    }
+}
+
+// ── Send idea to Generate tab ─────────────────────────────────────────────────
+function plannerSendToGenerate(ideaId, brainstormId) {
+    let idea;
+    if (brainstormId !== undefined) {
+        idea = plannerQueue.find(q => q.id == ideaId && q._brainstormId == brainstormId);
+    } else {
+        idea = plannerIdeas.find(i => i.id == ideaId);
+    }
+    if (!idea) return;
+
+    const val = plannerValidations[ideaId] || idea._validation;
+
+    // Pre-fill Generate tab fields
+    const topicEl   = document.getElementById('genTopic');
+    const nicheEl   = document.getElementById('genNiche');
+    const toneEl    = document.getElementById('genTone');
+    const styleEl   = document.getElementById('genStyle');
+    const durEl     = document.getElementById('genDuration');
+
+    if (topicEl) topicEl.value = val?.refined_title || idea.title;
+    if (nicheEl) nicheEl.value = idea.niche || document.getElementById('plannerNiche').value;
+    if (toneEl)  { for (const o of toneEl.options)  { if (o.value === idea.tone)  { toneEl.value  = idea.tone;  break; } } }
+    if (styleEl) { for (const o of styleEl.options) { if (o.value === idea.style) { styleEl.value = idea.style; break; } } }
+    if (durEl)   durEl.value = Math.min(5, Math.max(1, idea.duration_minutes || 2));
+
+    // Switch to Generate tab
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-dropdown-item').forEach(i => i.classList.remove('active'));
+    document.getElementById('toolsDropdownBtn')?.classList.remove('has-active');
+    document.getElementById('toolsSubRow')?.classList.remove('open');
+    document.querySelector('[data-tab="generate"]')?.classList.add('active');
+    document.getElementById('tab-generate')?.classList.add('active');
+
+    addLog(`🎬 Loaded "${idea.title}" into Generate tab`);
+}
+
+// ── Refine idea with AI ───────────────────────────────────────────────────────
+async function plannerRefine(ideaId) {
+    const idea = plannerIdeas.find(i => i.id === ideaId);
+    const val  = plannerValidations[ideaId];
+    if (!idea) return;
+
+    const body = document.getElementById('plannerDetailBody');
+    const orig = body.innerHTML;
+    body.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-3);">${SPIN_SVG} Refining with AI…</div>`;
+
+    try {
+        const platform = document.getElementById('plannerPlatform').value;
+        const r = await fetch('/api/planner/refine', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ idea, validation: val, platform }),
+        });
+        const d = await r.json();
+        if (!d.ok) throw new Error(d.error);
+
+        // Replace the idea in the list and re-render
+        const idx = plannerIdeas.findIndex(i => i.id === ideaId);
+        if (idx !== -1) {
+            plannerIdeas[idx] = { ...d.idea, id: ideaId };
+            const card    = document.getElementById(`idea-card-${ideaId}`);
+            const newCard = plannerRenderIdeaCard(plannerIdeas[idx]);
+            card?.replaceWith(newCard);
+        }
+        addLog(`✅ Refined: "${d.idea.title}"`);
+        // Re-show detail
+        body.innerHTML = orig;
+        plannerShowDetail(ideaId);
+    } catch(err) {
+        body.innerHTML = orig;
+        addLog(`❌ Refine error: ${err.message}`);
+    }
+}
+
+// ── Init queue on load ────────────────────────────────────────────────────────
+plannerRenderQueue();
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 checkKokoro();

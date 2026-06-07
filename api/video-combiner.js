@@ -87,66 +87,60 @@ async function mapWithConcurrency(items, limit, worker) {
   return results;
 }
 
-function buildScalePadFilter() {
-  return 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2';
+// Returns [W, H] for the requested orientation
+function orientationDims(orientation) {
+  return orientation === 'portrait' ? [1080, 1920] : [1920, 1080];
 }
 
-async function extractSegment({ inputPath, startTime, durationSeconds, outputPath, preset, logger }) {
-  const args = [
-    '-y',
-    '-ss', String(startTime),
-    '-i', inputPath,
+function buildScalePadFilter(orientation = 'landscape') {
+  const [w, h] = orientationDims(orientation);
+  return `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:black`;
+}
+
+function hasAudioStream(inputPath) {
+  try {
+    const { execFileSync } = require('child_process');
+    const out = execFileSync('ffprobe', [
+      '-v', 'error',
+      '-select_streams', 'a:0',
+      '-show_entries', 'stream=codec_type',
+      '-of', 'default=noprint_wrappers=1:nokey=1',
+      inputPath,
+    ], { timeout: 6000 }).toString().trim();
+    return out.includes('audio');
+  } catch (_) {
+    return false; // assume no audio on probe failure
+  }
+}
+
+async function extractSegment({ inputPath, startTime, durationSeconds, outputPath, preset, logger, orientation = 'landscape' }) {
+  const audioExists = hasAudioStream(inputPath);
+
+  // Base args: seek + input
+  const args = ['-y', '-ss', String(startTime), '-i', inputPath];
+
+  // If no audio stream, inject a lavfi silent source so every segment has audio.
+  // This is critical for xfade/acrossfade to work on mute stock footage.
+  if (!audioExists) {
+    args.push('-f', 'lavfi', '-i', `anullsrc=r=44100:cl=stereo`);
+  }
+
+  args.push(
     '-t', String(durationSeconds),
-    '-vf', buildScalePadFilter(),
+    '-vf', buildScalePadFilter(orientation),
     '-r', '25',
     '-c:v', 'libx264',
     '-preset', preset.preset,
     '-crf', String(preset.crf),
     '-pix_fmt', 'yuv420p',
+    '-map', '0:v:0',
+    '-map', audioExists ? '0:a:0' : '1:a:0',
     '-c:a', 'aac',
     '-b:a', preset.audioBitrate,
     '-avoid_negative_ts', '1',
     '-movflags', '+faststart',
     outputPath
-  ];
-
-  await runFfmpeg(args, {
-    logger,
-    onLine: (line) => {
-      if (line.includes('frame=') || line.includes('time=')) return; // noisy
-      logger?.log?.(line);
-    }
-  });
-}
-
-async function combineVideos({ segmentPaths, listPath, outputPath, preset, logger, outputFormat }) {
-  const fileListContent = segmentPaths
-    .map(p => `file '${p.replace(/'/g, "'\"'\"'")}'`)
-    .join('\n');
-
-  fs.writeFileSync(listPath, fileListContent);
-  logger?.log?.(`[FFMPEG] Combining ${segmentPaths.length} segments into: ${outputPath}`);
-
-  const args = [
-    '-y',
-    '-f', 'concat',
-    '-safe', '0',
-    '-i', listPath,
-    '-fflags', '+genpts',
-    '-c:v', 'libx264',
-    '-preset', preset.preset,
-    '-crf', String(preset.crf),
-    '-pix_fmt', 'yuv420p',
-    '-c:a', 'aac',
-    '-b:a', preset.audioBitrate,
-  ];
-
-  // faststart only applies to mp4/mov (harmless elsewhere but keep explicit)
-  if (outputFormat === 'mp4' || outputFormat === 'mov') {
-    args.push('-movflags', '+faststart');
-  }
-
-  args.push(outputPath);
+  );
 
   await runFfmpeg(args, {
     logger,
@@ -155,6 +149,139 @@ async function combineVideos({ segmentPaths, listPath, outputPath, preset, logge
       logger?.log?.(line);
     }
   });
+}
+
+// Valid xfade transition names supported by FFmpeg libavfilter
+const XFADE_TRANSITIONS = new Set([
+  'fade','fadeblack','fadewhite','fadegrays',
+  'wipeleft','wiperight','wipeup','wipedown',
+  'slideleft','slideright','slideup','slidedown',
+  'smoothleft','smoothright','smoothup','smoothdown',
+  'circlecrop','rectcrop','circleopen','circleclose',
+  'vertopen','vertclose','horzopen','horzclose',
+  'dissolve','pixelize','distance','zoomin',
+  'diagtl','diagtr','diagbl','diagbr',
+  'hlslice','hrslice','vuslice','vdslice',
+  'coverleft','coverright','revealleft','revealright',
+]);
+
+// Get duration of a video file in seconds using ffprobe
+async function getSegmentDuration(filePath) {
+  try {
+    const { stdout } = await require('child_process').execFileSync
+      ? (() => { throw new Error('use execFile'); })()
+      : { stdout: '' };
+  } catch(_) {}
+  // Use synchronous approach for simplicity inside combineVideos
+  try {
+    const { execFileSync } = require('child_process');
+    const out = execFileSync('ffprobe', [
+      '-v', 'error',
+      '-show_entries', 'format=duration',
+      '-of', 'default=noprint_wrappers=1:nokey=1',
+      filePath,
+    ], { timeout: 8000 }).toString().trim();
+    return parseFloat(out) || 0;
+  } catch(_) { return 0; }
+}
+
+async function combineVideos({ segmentPaths, listPath, outputPath, preset, logger, outputFormat, transition = 'none', transitionDuration = 0.5 }) {
+  const n = segmentPaths.length;
+  logger?.log?.(`[FFMPEG] Combining ${n} segments → ${outputPath} [transition: ${transition}]`);
+
+  // ── Simple concat (no transitions) ──────────────────────────────────────────
+  if (transition === 'none' || !XFADE_TRANSITIONS.has(transition) || n < 2) {
+    const fileListContent = segmentPaths
+      .map(p => `file '${p.replace(/'/g, "'\"'\"'")}'`)
+      .join('\n');
+    fs.writeFileSync(listPath, fileListContent);
+
+    const args = [
+      '-y', '-f', 'concat', '-safe', '0',
+      '-i', listPath, '-fflags', '+genpts',
+      '-c:v', 'libx264', '-preset', preset.preset, '-crf', String(preset.crf),
+      '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', preset.audioBitrate,
+    ];
+    if (outputFormat === 'mp4' || outputFormat === 'mov') args.push('-movflags', '+faststart');
+    args.push(outputPath);
+
+    await runFfmpeg(args, {
+      logger,
+      onLine: line => { if (!line.includes('frame=') && !line.includes('time=')) logger?.log?.(line); }
+    });
+    return;
+  }
+
+  // ── xfade transitions ────────────────────────────────────────────────────────
+  // Get durations of each segment to calculate xfade offsets
+  const td = Math.max(0.1, Math.min(1.5, transitionDuration));
+  logger?.log?.(`   xfade: ${transition} × ${td}s between ${n} segments — measuring durations…`);
+
+  const durations = [];
+  for (const p of segmentPaths) {
+    durations.push(await getSegmentDuration(p));
+  }
+
+  // Build filter_complex for chained xfade
+  // [0:v][1:v]xfade=...:offset=D0-td[v01]; [v01][2:v]xfade=...:offset=(D0+D1-2*td)[v012]; ...
+  // Audio: acrossfade between each pair
+  const inputs = segmentPaths.flatMap(p => ['-i', p]);
+
+  const vParts = [];
+  const aParts = [];
+  let cumulativeDur = 0;
+
+  for (let i = 0; i < n - 1; i++) {
+    const offset = Math.max(0.01, cumulativeDur + durations[i] - td);
+    const vIn  = i === 0 ? `[${i}:v]` : `[v${i}]`;
+    const vOut = i === n - 2 ? '[vout]' : `[v${i + 1}]`;
+    vParts.push(`${vIn}[${i + 1}:v]xfade=transition=${transition}:duration=${td}:offset=${offset.toFixed(3)}${vOut}`);
+
+    const aIn  = i === 0 ? `[${i}:a]` : `[a${i}]`;
+    const aOut = i === n - 2 ? '[aout]' : `[a${i + 1}]`;
+    aParts.push(`${aIn}[${i + 1}:a]acrossfade=d=${td}${aOut}`);
+
+    cumulativeDur += durations[i] - td;
+  }
+
+  const filterComplex = [...vParts, ...aParts].join(';');
+
+  const args = [
+    '-y',
+    ...inputs,
+    '-filter_complex', filterComplex,
+    '-map', '[vout]', '-map', '[aout]',
+    '-c:v', 'libx264', '-preset', preset.preset, '-crf', String(preset.crf),
+    '-pix_fmt', 'yuv420p',
+    '-c:a', 'aac', '-b:a', preset.audioBitrate,
+  ];
+  if (outputFormat === 'mp4' || outputFormat === 'mov') args.push('-movflags', '+faststart');
+  args.push(outputPath);
+
+  try {
+    await runFfmpeg(args, {
+      logger,
+      onLine: line => { if (!line.includes('frame=') && !line.includes('time=')) logger?.log?.(line); }
+    });
+  } catch (xfadeErr) {
+    // xfade can fail if clips have mismatched streams or are too short.
+    // Fall back to simple concat so the pipeline always completes.
+    logger?.log?.(`⚠️  xfade failed (${xfadeErr.message.slice(0, 120)}), falling back to concat…`);
+    const fileListContent = segmentPaths.map(p => `file '${p.replace(/'/g, "'\"'\"'")}'`).join('\n');
+    fs.writeFileSync(listPath, fileListContent);
+    const concatArgs = [
+      '-y', '-f', 'concat', '-safe', '0',
+      '-i', listPath, '-fflags', '+genpts',
+      '-c:v', 'libx264', '-preset', preset.preset, '-crf', String(preset.crf),
+      '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', preset.audioBitrate,
+    ];
+    if (outputFormat === 'mp4' || outputFormat === 'mov') concatArgs.push('-movflags', '+faststart');
+    concatArgs.push(outputPath);
+    await runFfmpeg(concatArgs, {
+      logger,
+      onLine: line => { if (!line.includes('frame=') && !line.includes('time=')) logger?.log?.(line); }
+    });
+  }
 }
 
 function validateFile(file) {
@@ -311,7 +438,8 @@ async function handleVideoCombiner(req, res, { files, fields }, logger = console
         durationSeconds,
         outputPath: task.segmentPath,
         preset,
-        logger
+        logger,
+        orientation: config.orientation || 'landscape',
       });
       return true;
     });
@@ -330,7 +458,9 @@ async function handleVideoCombiner(req, res, { files, fields }, logger = console
       outputPath,
       preset,
       logger,
-      outputFormat
+      outputFormat,
+      transition:         config.transition || 'none',
+      transitionDuration: parseFloat(config.transition_duration) || 0.5,
     });
 
     if (!fs.existsSync(outputPath)) {
@@ -371,4 +501,4 @@ async function handleVideoCombiner(req, res, { files, fields }, logger = console
   }
 }
 
-module.exports = { handleVideoCombiner, CONFIG };
+module.exports = { handleVideoCombiner, combineVideos, extractSegment, getSegmentDuration, CONFIG };

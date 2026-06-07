@@ -116,37 +116,38 @@ async function getDurationSeconds(inputPath) {
         if (videoDuration > audioDuration) {
           // Video exceeds audio - handle based on user preference
           if (config.add_video_tail_with_fade) {
-            // Add tail with fade effect: trim video to audio + tail, fade to black
+            // Add tail with fade effect: trim video to audio + tail, always fade last 2s to black
             const tailSeconds = config.tail_duration || 5;
-            const fadeDuration = config.fade_duration || 1;
             const targetVideo = audioDuration + tailSeconds;
-            const fadeStart = Math.max(audioDuration, targetVideo - fadeDuration);
-            const videoFilter = `[0:v]trim=duration=${targetVideo.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p,fade=t=out:st=${fadeStart.toFixed(3)}:d=${fadeDuration}:color=black[vout]`;
-            const audioFilter = `[1:a]atrim=duration=${audioDuration.toFixed(3)},asetpts=PTS-STARTPTS,apad=pad_dur=${tailSeconds}[aout]`;
+            const fadeStart = Math.max(0, targetVideo - 2);
+            const videoFilter = `[0:v]trim=duration=${targetVideo.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p,fade=t=out:st=${fadeStart.toFixed(3)}:d=2:color=black[vout]`;
+            const audioFilter = `[1:a]atrim=duration=${audioDuration.toFixed(3)},asetpts=PTS-STARTPTS,apad=pad_dur=${tailSeconds},afade=t=out:st=${fadeStart.toFixed(3)}:d=2[aout]`;
             const filterComplex = `${videoFilter};${audioFilter}`;
             cmd = `ffmpeg -y -i "${videoInputPath}" -i "${audioInputPath}" -filter_complex "${filterComplex}" -map "[vout]" -map "[aout]" -c:v libx264 -c:a aac -b:a 160k -movflags +faststart "${outputPath}"`;
-            log(`[FFMPEG-MUX] Video exceeds audio - adding ${tailSeconds}s tail with ${fadeDuration}s fade`);
+            log(`[FFMPEG-MUX] Video exceeds audio - adding ${tailSeconds}s tail with 2s fade to black`);
           } else {
-            // Trim video exactly to audio length (user requested behavior)
-            const videoFilter = `[0:v]trim=duration=${audioDuration.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p[vout]`;
-            const audioFilter = `[1:a]asetpts=PTS-STARTPTS[aout]`;
+            // Trim video to audio length, always fade last 2s to black
+            const fadeStart = Math.max(0, audioDuration - 2);
+            const videoFilter = `[0:v]trim=duration=${audioDuration.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p,fade=t=out:st=${fadeStart.toFixed(3)}:d=2:color=black[vout]`;
+            const audioFilter = `[1:a]asetpts=PTS-STARTPTS,afade=t=out:st=${fadeStart.toFixed(3)}:d=2[aout]`;
             const filterComplex = `${videoFilter};${audioFilter}`;
             cmd = `ffmpeg -y -i "${videoInputPath}" -i "${audioInputPath}" -filter_complex "${filterComplex}" -map "[vout]" -map "[aout]" -c:v libx264 -c:a aac -b:a 160k -movflags +faststart "${outputPath}"`;
-            log(`[FFMPEG-MUX] Video exceeds audio - trimming video to match audio length (${audioDuration.toFixed(2)}s)`);
+            log(`[FFMPEG-MUX] Video exceeds audio - trimming to ${audioDuration.toFixed(2)}s with 2s fade to black`);
           }
         } else {
-          // Audio exceeds video - pad video to match audio length
+          // Audio exceeds video - pad video to match audio length, fade last 2s to black
           const videoPadSeconds = audioDuration - videoDuration;
           const videoPadFilter = videoPadSeconds > 0
             ? `,tpad=stop_mode=clone:stop_duration=${videoPadSeconds.toFixed(3)}`
             : '';
-          const audioFilter = `[1:a]asetpts=PTS-STARTPTS[aout]`;
-          const filterComplex = `[0:v]format=yuv420p${videoPadFilter}[vout];${audioFilter}`;
+          const fadeStart = Math.max(0, audioDuration - 2);
+          const audioFilter = `[1:a]asetpts=PTS-STARTPTS,afade=t=out:st=${fadeStart.toFixed(3)}:d=2[aout]`;
+          const filterComplex = `[0:v]format=yuv420p${videoPadFilter},fade=t=out:st=${fadeStart.toFixed(3)}:d=2:color=black[vout];${audioFilter}`;
           cmd = `ffmpeg -y -i "${videoInputPath}" -i "${audioInputPath}" -filter_complex "${filterComplex}" -map "[vout]" -map "[aout]" -c:v libx264 -c:a aac -b:a 160k -movflags +faststart "${outputPath}"`;
-          log(`[FFMPEG-MUX] Audio exceeds video - padding video by ${videoPadSeconds.toFixed(2)}s`);
+          log(`[FFMPEG-MUX] Audio exceeds video - padding by ${videoPadSeconds.toFixed(2)}s with 2s fade to black`);
         }
       } else {
-        // Fallback: basic combine without duration checks
+        // Fallback: basic combine without duration checks (no fade since duration unknown)
         const filterComplex = `[0:v]format=yuv420p[vout];[1:a]anull[aout]`;
         cmd = `ffmpeg -y -i "${videoInputPath}" -i "${audioInputPath}" -filter_complex "${filterComplex}" -map "[vout]" -map "[aout]" -c:v libx264 -c:a aac -b:a 160k -movflags +faststart "${outputPath}"`;
         log(`[FFMPEG-MUX] Basic combine (duration probe failed)`);
