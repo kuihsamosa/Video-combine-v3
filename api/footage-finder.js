@@ -214,52 +214,117 @@ async function findFootageForScenes(
     }
   } catch (_) {}
 
+  // ── Build tiered query list for a scene ────────────────────────────────────
+  function buildQueryTiers(scene) {
+    const kw   = (scene.visual_keywords  || []).filter(Boolean);
+    const sq   = (scene.search_queries   || []).filter(Boolean);
+    const desc = (scene.description      || '').split(/\s+/).slice(0, 4).join(' ');
+    const tiers = [];
+
+    // Tier 0: pre-built search_queries from the LLM (most reliable)
+    sq.forEach(q => tiers.push(q.trim()));
+
+    // Tier 1: all keywords joined (specific combo)
+    if (kw.length >= 2) tiers.push(kw.slice(0, 3).join(' '));
+
+    // Tier 2: first keyword alone (still specific, fewer words)
+    if (kw.length >= 1) tiers.push(kw[0]);
+
+    // Tier 3: second keyword (medium specificity)
+    if (kw.length >= 2) tiers.push(kw[1]);
+
+    // Tier 4: description snippet
+    if (desc) tiers.push(desc);
+
+    // Tier 5: third keyword (broad category)
+    if (kw.length >= 3) tiers.push(kw[2]);
+
+    // Tier 6: fourth keyword (broad fallback)
+    if (kw.length >= 4) tiers.push(kw[3]);
+
+    // Tier 7: fifth keyword (universal fallback)
+    if (kw.length >= 5) tiers.push(kw[4]);
+
+    // Ultimate fallback: something always returns results
+    tiers.push('cinematic nature');
+
+    // Deduplicate while preserving order
+    return [...new Set(tiers.map(t => t.toLowerCase().trim()))].filter(Boolean);
+  }
+
+  // ── Try each query tier until we have enough clips for a scene ──────────────
+  async function downloadForScene(scene, want) {
+    const tiers    = buildQueryTiers(scene);
+    const sources  = [usePexels && 'Pexels', usePixabay && 'Pixabay', useYoutube && 'YouTube'].filter(Boolean).join(' + ');
+    const seenUrls = new Set();
+    const clips    = [];
+
+    for (const query of tiers) {
+      if (clips.length >= want) break;
+      const still = want - clips.length;
+      logger.log(`🔍 Scene ${scene.id}: "${query}" [${orientation}] (${sources})…`);
+
+      let candidates;
+      try {
+        candidates = await searchAll(query, env, still + 3, logger, orientation, useYoutube, usePexels, usePixabay);
+      } catch (e) {
+        logger.log(`   ⚠️  Search error (${query}): ${e.message}`);
+        continue;
+      }
+
+      // Filter out already-seen URLs to avoid duplicate clips
+      const fresh = candidates.filter(c => !seenUrls.has(c.url));
+      fresh.forEach(c => seenUrls.add(c.url));
+
+      if (!fresh.length) continue;
+
+      for (const clip of fresh) {
+        if (clips.length >= want) break;
+        try {
+          const filename  = `footage_s${scene.id}_${clip.source}_${crypto.randomBytes(4).toString('hex')}.mp4`;
+          const localPath = clip.source === 'youtube'
+            ? await downloadClipYT(clip.ytUrl, filename, ytQuality, logger)
+            : await downloadClipHTTP(clip.url, filename, logger);
+          clips.push({ ...clip, filename, localPath, scene_id: scene.id, serveUrl: `/api/footage-file/${filename}` });
+        } catch (err) {
+          logger.log(`   ⚠️  Download failed (${clip.source}): ${err.message}`);
+        }
+      }
+    }
+    return clips;
+  }
+
   const results = [];
 
+  // ── Pass 1: one scene at a time, tiered queries ─────────────────────────────
   for (const scene of scenes) {
-    const keywords = (scene.visual_keywords || []).slice(0, 3);
-    const query    = keywords.join(' ') ||
-                     (scene.description || '').split(' ').slice(0, 4).join(' ') ||
-                     'cinematic nature';
+    const clips = await downloadForScene(scene, clipsPerScene);
+    if (!clips.length) logger.log(`   ⚠️  No clips found for scene ${scene.id} after all query tiers`);
+    results.push(...clips);
+  }
 
-    const sources = [usePexels && 'Pexels', usePixabay && 'Pixabay', useYoutube && 'YouTube'].filter(Boolean).join(' + ');
-    logger.log(`🔍 Scene ${scene.id}: "${query}" [${orientation}] (${sources})…`);
-
-    const candidates = await searchAll(query, env, clipsPerScene + 2, logger, orientation, useYoutube, usePexels, usePixabay);
-
-    if (!candidates.length) {
-      logger.log(`   ⚠️  No results for scene ${scene.id} — skipping`);
-      continue;
-    }
-
-    let downloaded = 0;
-    for (const clip of candidates) {
-      if (downloaded >= clipsPerScene) break;
-      try {
-        const filename = `footage_s${scene.id}_${clip.source}_${crypto.randomBytes(4).toString('hex')}.mp4`;
-
-        let localPath;
-        if (clip.source === 'youtube') {
-          localPath = await downloadClipYT(clip.ytUrl, filename, ytQuality, logger);
-        } else {
-          localPath = await downloadClipHTTP(clip.url, filename, logger);
-        }
-
-        results.push({
-          ...clip,
-          filename,
-          localPath,
-          scene_id: scene.id,
-          serveUrl: `/api/footage-file/${filename}`,
-        });
-        downloaded++;
-      } catch (err) {
-        logger.log(`   ⚠️  Download failed (${clip.source}): ${err.message}`);
+  // ── Pass 2: coverage top-up ─────────────────────────────────────────────────
+  // If a targetDurationSeconds was provided (set by scheduler from audio length),
+  // keep pulling extra clips (with broader queries) until total clip seconds ≥ target.
+  const targetSecs = clipsPerScene._targetDurationSeconds || 0; // smuggled in via property
+  if (targetSecs > 0) {
+    const totalClipSecs = results.reduce((s, c) => s + (c.duration || 8), 0);
+    const deficit = targetSecs - totalClipSecs;
+    if (deficit > 0) {
+      const extraNeeded = Math.ceil(deficit / 8);
+      logger.log(`📐 Coverage gap: ${deficit.toFixed(0)}s short — fetching ${extraNeeded} extra clip(s)…`);
+      // Rotate through scenes requesting extras
+      for (let i = 0; i < Math.min(extraNeeded, scenes.length * 2); i++) {
+        const scene = scenes[i % scenes.length];
+        const extra = await downloadForScene(scene, 1);
+        results.push(...extra);
+        if (!extra.length) break;
       }
     }
   }
 
-  logger.log(`✅ Footage finder done — ${results.length} clip(s) ready`);
+  const totalDur = results.reduce((s, c) => s + (c.duration || 8), 0);
+  logger.log(`✅ Footage finder done — ${results.length} clip(s), ~${totalDur.toFixed(0)}s raw footage`);
   return results;
 }
 

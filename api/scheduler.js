@@ -267,11 +267,26 @@ async function runJob(jobId) {
     // ── Step 4: Find footage ──────────────────────────────────────────────────
     if (job.steps?.find_footage && output.script?.scenes?.length) {
       log(`🎥 Step 4: Finding footage for ${output.script.scenes.length} scenes…`);
+
+      // Estimate target duration from audio so footage-finder can top-up if needed
+      let targetFootageSecs = (job.duration_minutes || 2) * 60 * 1.3; // 30% headroom
+      if (output.audio_path && fs.existsSync(output.audio_path)) {
+        try {
+          const { runFfprobeDurationSeconds } = require('./ffmpeg');
+          const d = await runFfprobeDurationSeconds(output.audio_path, {}).catch(() => 0);
+          if (d > 0) targetFootageSecs = d * 1.3;
+        } catch (_) {}
+      }
+
+      // Smuggle targetDurationSeconds into the clipsPerScene param as a property
+      // (avoids changing the function signature which is also used by server.js)
+      const clipsParam = Object.assign(job.clips_per_scene || 2, { _targetDurationSeconds: targetFootageSecs });
+
       const clips = await findFootageForScenes(
         output.script.scenes,
         process.env,
         { log },
-        job.clips_per_scene || 2,
+        clipsParam,
         job.orientation || 'landscape',
         job.use_youtube || false,
         job.use_pexels  !== false,
@@ -286,6 +301,9 @@ async function runJob(jobId) {
     if (job.steps?.combine && output.clips.length && output.audio_path) {
       log('🎬 Step 5: Combining video + audio…');
 
+      const { runFfprobeDurationSeconds } = require('./ffmpeg');
+      const audioDurForCombine = await runFfprobeDurationSeconds(output.audio_path, {}).catch(() => 0);
+
       // Use combineVideos / extractSegment directly from video-combiner
       const { combineVideos, extractSegment } = (() => {
         try { return require('./video-combiner'); } catch(_) { return {}; }
@@ -295,29 +313,62 @@ async function runJob(jobId) {
 
       // We have localPath on each clip — use combineVideos directly if available
       if (typeof combineVideos === 'function') {
-        // Extract segments first
-        const { getSegmentDuration } = require('./video-combiner');
-        const segPaths = [];
-        const tmpDir   = path.join(os.tmpdir(), `sched_seg_${runId}`);
+        const tmpDir = path.join(os.tmpdir(), `sched_seg_${runId}`);
         fs.mkdirSync(tmpDir, { recursive: true });
 
-        for (let i = 0; i < output.clips.length; i++) {
-          const clip    = output.clips[i];
-          const segOut  = path.join(tmpDir, `seg_${i}.mp4`);
+        // ── Extract segments at up to 12s per clip (was 5s — 2.4× more coverage) ──
+        const baseClips = output.clips;
+        let segPaths = [];
+
+        const extractOne = async (clip, idx, cutSecs) => {
+          const segOut = path.join(tmpDir, `seg_${idx}.mp4`);
+          const dur    = clip.duration || 12;
+          await extractSegment({
+            inputPath:       clip.localPath,
+            startTime:       0,
+            durationSeconds: Math.min(cutSecs, dur),
+            outputPath:      segOut,
+            preset:          resolvedPreset,
+            orientation:     job.orientation || 'landscape',
+            logger:          { log, error: log },
+          });
+          return segOut;
+        };
+
+        for (let i = 0; i < baseClips.length; i++) {
           try {
-            const dur = clip.duration || 4;
-            await extractSegment({
-              inputPath:       clip.localPath,
-              startTime:       0,
-              durationSeconds: Math.min(5, dur),
-              outputPath:      segOut,
-              preset:          resolvedPreset,
-              orientation:     job.orientation || 'landscape',
-              logger:          { log, error: log },
-            });
-            segPaths.push(segOut);
+            segPaths.push(await extractOne(baseClips[i], i, 12));
           } catch(e) {
             log(`   ⚠️  Segment ${i}: ${e.message}`);
+          }
+        }
+
+        // ── Coverage check: loop clips until we have enough to cover the audio ──
+        if (audioDurForCombine > 0 && segPaths.length > 0) {
+          // Probe total segment duration
+          let totalSegSecs = 0;
+          for (const p of segPaths) {
+            totalSegSecs += await runFfprobeDurationSeconds(p, {}).catch(() => 12);
+          }
+          log(`📐 Segment coverage: ${totalSegSecs.toFixed(1)}s / ${audioDurForCombine.toFixed(1)}s audio`);
+
+          // Loop existing segments (in round-robin) until covered + 20% buffer
+          const needed = audioDurForCombine * 1.2;
+          if (totalSegSecs < needed) {
+            log(`🔁 Looping clips to fill ${(needed - totalSegSecs).toFixed(1)}s gap…`);
+            let loopIdx = 0;
+            let loopCounter = baseClips.length; // continue numbering from after originals
+            while (totalSegSecs < needed && loopIdx < 200) {
+              const clip = baseClips[loopIdx % baseClips.length];
+              try {
+                const segOut = await extractOne(clip, loopCounter, 12);
+                segPaths.push(segOut);
+                totalSegSecs += await runFfprobeDurationSeconds(segOut, {}).catch(() => 12);
+                loopCounter++;
+              } catch (_) {}
+              loopIdx++;
+            }
+            log(`📐 After loop: ${totalSegSecs.toFixed(1)}s total segments`);
           }
         }
 
@@ -338,8 +389,8 @@ async function runJob(jobId) {
 
           log('🔊 Muxing video + voiceover…');
           const muxOutPath = path.join(OUTPUTS_DIR, `sched_final_${runId}.mp4`);
-          const { runFfmpeg, runFfprobeDurationSeconds } = require('./ffmpeg');
-          const audioDur = await runFfprobeDurationSeconds(output.audio_path, {}).catch(() => 0);
+          const { runFfmpeg } = require('./ffmpeg');
+          const audioDur  = audioDurForCombine || 0;
           const fadeStart = Math.max(0, audioDur - 2);
           const muxArgs = [
             '-y',
