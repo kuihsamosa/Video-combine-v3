@@ -15,6 +15,59 @@ function ensureDir() {
   if (!fs.existsSync(FOOTAGE_DIR)) fs.mkdirSync(FOOTAGE_DIR, { recursive: true });
 }
 
+// ── #17 AI Scene-to-Keyword Rewriter ─────────────────────────────────────────
+// Rewrites abstract scene descriptions → concrete, searchable visual terms.
+// One batched Groq call for all scenes; enriches scene.visual_keywords in-place.
+async function rewriteSceneKeywords(scenes, env, logger) {
+  const groqKey = env.GROQ_API_KEY || env.GROQ_API_KEY_2 || env.GROQ_API_KEY_3;
+  if (!groqKey || !scenes?.length) return scenes;
+  try {
+    const { callGroq } = require('./script-generator');
+    const sceneList = scenes.map((s, i) =>
+      `Scene ${i + 1} (id:${s.id}): "${s.description || s.narration?.slice(0, 120) || ''}"`
+    ).join('\n');
+
+    const { content } = await callGroq([
+      {
+        role: 'system',
+        content: 'You convert abstract video scene descriptions into concrete, searchable stock-footage keywords. Return ONLY a JSON array of objects.',
+      },
+      {
+        role: 'user',
+        content:
+          `For each scene below, return 4-6 concrete visual search terms that would find great b-roll footage.\n` +
+          `Rules:\n` +
+          `- Terms must be visually concrete (e.g. "person typing laptop office" not "productivity")\n` +
+          `- Prefer terms that return results on Pexels / Pixabay\n` +
+          `- No abstract nouns alone (success, growth, future)\n` +
+          `- Max 3 words per term\n\n` +
+          `${sceneList}\n\n` +
+          `Return JSON array: [{"id": sceneId, "keywords": ["term1","term2","term3","term4"]}]\n` +
+          `Return ONLY the JSON array, no markdown.`,
+      },
+    ], 'llama-3.3-70b-versatile', env, { log: () => {} });
+
+    const raw = content.trim().replace(/^```(?:json)?|```$/gm, '').trim();
+    const enriched = JSON.parse(raw);
+    if (!Array.isArray(enriched)) return scenes;
+
+    enriched.forEach(({ id, keywords }) => {
+      const scene = scenes.find(s => String(s.id) === String(id));
+      if (scene && Array.isArray(keywords)) {
+        // Prepend AI-generated concrete keywords before existing ones
+        scene.visual_keywords = [
+          ...keywords.filter(Boolean),
+          ...(scene.visual_keywords || []),
+        ].slice(0, 8);
+      }
+    });
+    logger?.log?.(`🔍 Scene keywords rewritten for ${enriched.length} scenes`);
+  } catch (e) {
+    logger?.log?.(`   ⚠️  Keyword rewrite failed (non-fatal): ${e.message}`);
+  }
+  return scenes;
+}
+
 // ── Pexels ────────────────────────────────────────────────────────────────────
 async function searchPexels(query, apiKey, perPage = 4, orientation = 'landscape') {
   const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=${perPage}&orientation=${orientation}&size=medium`;
@@ -164,6 +217,7 @@ async function downloadClipYT(ytUrl, filename, quality = '720', logger, scene = 
     '--merge-output-format', 'mp4',
     '--output', dest,
     '--no-playlist',
+    '--force-keyframes-at-cuts',   // cut exactly at the requested timestamp
     '--quiet',
     '--no-warnings',
     '--no-progress',
@@ -275,6 +329,11 @@ async function findFootageForScenes(
 
   ensureDir();
 
+  // #17 Rewrite abstract scene descriptions → concrete visual keywords
+  if (env.GROQ_API_KEY || env.GROQ_API_KEY_2 || env.GROQ_API_KEY_3) {
+    scenes = await rewriteSceneKeywords(scenes, env, logger);
+  }
+
   // Evict footage older than 2 hours
   try {
     const cutoff = Date.now() - 2 * 3600_000;
@@ -322,12 +381,15 @@ async function findFootageForScenes(
     return [...new Set(tiers.map(t => t.toLowerCase().trim()))].filter(Boolean);
   }
 
+  // Global dedup sets shared across ALL scenes — prevents same clip appearing twice
+  const globalSeenUrls  = new Set();
+  const globalSeenIds   = new Set(); // Pexels/Pixabay video IDs
+
   // ── Try each query tier until we have enough clips for a scene ──────────────
   async function downloadForScene(scene, want) {
-    const tiers    = buildQueryTiers(scene);
-    const sources  = [usePexels && 'Pexels', usePixabay && 'Pixabay', useYoutube && 'YouTube'].filter(Boolean).join(' + ');
-    const seenUrls = new Set();
-    const clips    = [];
+    const tiers   = buildQueryTiers(scene);
+    const sources = [usePexels && 'Pexels', usePixabay && 'Pixabay', useYoutube && 'YouTube'].filter(Boolean).join(' + ');
+    const clips   = [];
 
     for (const query of tiers) {
       if (clips.length >= want) break;
@@ -336,15 +398,26 @@ async function findFootageForScenes(
 
       let candidates;
       try {
-        candidates = await searchAll(query, env, still + 3, logger, orientation, useYoutube, usePexels, usePixabay);
+        candidates = await searchAll(query, env, still + 5, logger, orientation, useYoutube, usePexels, usePixabay);
       } catch (e) {
         logger.log(`   ⚠️  Search error (${query}): ${e.message}`);
         continue;
       }
 
-      // Filter out already-seen URLs to avoid duplicate clips
-      const fresh = candidates.filter(c => !seenUrls.has(c.url));
-      fresh.forEach(c => seenUrls.add(c.url));
+      // #12 B-Roll Shuffle: randomize candidate order on every run
+      for (let i = candidates.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+      }
+
+      // Filter against global seen sets to guarantee no cross-scene duplicates
+      const fresh = candidates.filter(c => {
+        const id = c.id || c.url;
+        if (globalSeenUrls.has(c.url) || globalSeenIds.has(id)) return false;
+        globalSeenUrls.add(c.url);
+        globalSeenIds.add(id);
+        return true;
+      });
 
       if (!fresh.length) continue;
 
@@ -355,8 +428,6 @@ async function findFootageForScenes(
           const localPath = clip.source === 'youtube'
             ? await downloadClipYT(clip.ytUrl, filename, ytQuality, logger, scene, 15)
             : await downloadClipHTTP(clip.url, filename, logger);
-          // For YouTube, the downloaded file is a short section, not the full video.
-          // Override duration to the section length so extractOne doesn't overshoot.
           const effectiveDuration = clip.source === 'youtube' ? 18 : (clip.duration || null);
           clips.push({ ...clip, filename, localPath, scene_id: scene.id, duration: effectiveDuration, serveUrl: `/api/footage-file/${filename}` });
         } catch (err) {
@@ -367,57 +438,34 @@ async function findFootageForScenes(
     return clips;
   }
 
-  const results = [];
+  // ── Download all scenes in parallel ─────────────────────────────────────────
+  const { findImagesForScene } = (() => { try { return require('./image-finder'); } catch(_) { return {}; } })();
 
-  // ── Pass 1: one scene at a time, tiered queries ─────────────────────────────
-  for (const scene of scenes) {
-    const clips = await downloadForScene(scene, clipsPerScene);
+  const settled = await Promise.allSettled(scenes.map(scene => downloadForScene(scene, clipsPerScene)));
+
+  const results = [];
+  for (let i = 0; i < scenes.length; i++) {
+    const scene  = scenes[i];
+    const result = settled[i];
+    const clips  = result.status === 'fulfilled' ? result.value : [];
+
     if (!clips.length) {
       logger.log(`   ⚠️  No video clips for scene ${scene.id} — falling back to image search…`);
-      // Image fallback: convert still photos to Ken Burns video clips
-      try {
-        const { findImagesForScene } = require('./image-finder');
-        const imageClips = await findImagesForScene(scene, env, logger, clipsPerScene, orientation, 5);
-        if (imageClips.length) {
-          logger.log(`   🖼️  Image fallback: ${imageClips.length} still(s) → video clips for scene ${scene.id}`);
-          results.push(...imageClips);
-        } else {
-          logger.log(`   ⚠️  Image fallback also empty for scene ${scene.id}`);
+      if (typeof findImagesForScene === 'function') {
+        try {
+          const imageClips = await findImagesForScene(scene, env, logger, clipsPerScene, orientation, 5);
+          if (imageClips.length) {
+            logger.log(`   🖼️  Image fallback: ${imageClips.length} still(s) → video clips for scene ${scene.id}`);
+            results.push(...imageClips);
+          } else {
+            logger.log(`   ⚠️  Image fallback also empty for scene ${scene.id}`);
+          }
+        } catch (imgErr) {
+          logger.log(`   ⚠️  Image fallback error scene ${scene.id}: ${imgErr.message}`);
         }
-      } catch (imgErr) {
-        logger.log(`   ⚠️  Image fallback error scene ${scene.id}: ${imgErr.message}`);
       }
     } else {
       results.push(...clips);
-    }
-  }
-
-  // ── Pass 2: coverage top-up ─────────────────────────────────────────────────
-  // If a targetDurationSeconds was provided (set by scheduler from audio length),
-  // keep pulling extra clips (with broader queries) until total clip seconds >= target.
-  const targetSecs = clipsPerScene._targetDurationSeconds || 0; // smuggled in via property
-  if (targetSecs > 0) {
-    const totalClipSecs = results.reduce((s, c) => s + (c.duration || 8), 0);
-    const deficit = targetSecs - totalClipSecs;
-    if (deficit > 0) {
-      const extraNeeded = Math.ceil(deficit / 8);
-      logger.log(`📐 Coverage gap: ${deficit.toFixed(0)}s short — fetching ${extraNeeded} extra clip(s)…`);
-      for (let i = 0; i < Math.min(extraNeeded, scenes.length * 2); i++) {
-        const scene = scenes[i % scenes.length];
-        const extra = await downloadForScene(scene, 1);
-        if (extra.length) {
-          results.push(...extra);
-        } else {
-          // Last resort: image for top-up too
-          try {
-            const { findImagesForScene } = require('./image-finder');
-            const imgExtra = await findImagesForScene(scene, env, logger, 1, orientation, 5);
-            results.push(...imgExtra);
-          } catch (_) {}
-        }
-        const nowSecs = results.reduce((s, c) => s + (c.duration || 8), 0);
-        if (nowSecs >= targetSecs) break;
-      }
     }
   }
 
@@ -448,4 +496,4 @@ function removeClip(filename) {
   try { fs.unlinkSync(path.join(FOOTAGE_DIR, filename)); } catch (_) {}
 }
 
-module.exports = { findFootageForScenes, removeClip, clearAllFootage, FOOTAGE_DIR };
+module.exports = { findFootageForScenes, rewriteSceneKeywords, removeClip, clearAllFootage, FOOTAGE_DIR };

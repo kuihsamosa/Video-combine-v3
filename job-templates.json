@@ -1,0 +1,57 @@
+[
+  {
+    "id": "6ae7e84c",
+    "name": "Rowdy",
+    "created_at": "2026-06-08T03:13:53.293Z",
+    "config": {
+      "name": "AI Lies",
+      "niche": "ai recognition",
+      "topic": "AI Lies",
+      "platform": "YouTube",
+      "goal": "grow audience",
+      "tone": "conversational",
+      "style": "podcast_dual",
+      "duration_minutes": 4,
+      "orientation": "landscape",
+      "voice": "narrator_warm",
+      "speed": 0.92,
+      "model": "llama-3.3-70b-versatile",
+      "clips_per_scene": 2,
+      "use_youtube": false,
+      "use_pexels": true,
+      "use_pixabay": true,
+      "podcast_host_voice": "narrator_warm",
+      "podcast_guest_voice": "narrator_confident",
+      "auto_captions": false,
+      "caption_template": null,
+      "color_grade": true,
+      "title_cards": true,
+      "cut_duration_seconds": 3.5,
+      "tts_provider": "omnivoice",
+      "auto_loop": false,
+      "background_music": false,
+      "music_volume": 0.15,
+      "steps": {
+        "brainstorm": false,
+        "validate": false,
+        "generate_script": true,
+        "voiceover": true,
+        "find_footage": true,
+        "combine": true
+      },
+      "schedule": {
+        "type": "manual",
+        "time": "09:00",
+        "day_of_week": 1,
+        "interval_hours": 24
+      },
+      "enabled": true,
+      "_from_planner": true,
+      "_planner_idea_id": 1,
+      "last_run": "2026-06-08T02:33:29.504Z",
+      "last_run_id": "caeb8792",
+      "next_run_ms": null,
+      "current_run_id": null
+    }
+  }
+]

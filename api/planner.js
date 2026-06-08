@@ -1,31 +1,7 @@
 // Content Planner — AI-powered brainstorm + validation.
-// Reuses the same callGroq helper as script-generator so any GROQ_API_KEY works.
+// Reuses the same callGroq helper as script-generator (round-robin key rotation).
 
-const { callGroq: _callGroq } = (() => {
-  try { return require('./script-generator'); } catch (_) { return {}; }
-})();
-
-// Fallback inline callGroq in case script-generator doesn't export it yet
-async function callGroq(messages, model = 'llama-3.3-70b-versatile', env = process.env, logger = console) {
-  if (typeof _callGroq === 'function') {
-    return _callGroq(messages, model, env, logger);
-  }
-  // Inline fallback
-  const key = env.GROQ_API_KEY || env.GROQ_API_KEY_2 || env.GROQ_API_KEY_3;
-  if (!key) throw new Error('No GROQ_API_KEY configured in .env');
-  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-    body:    JSON.stringify({ model, messages, temperature: 0.85, max_tokens: 4096 }),
-    signal:  AbortSignal.timeout(60_000),
-  });
-  if (!r.ok) {
-    const txt = await r.text().catch(() => r.statusText);
-    throw new Error(`Groq ${r.status}: ${txt.slice(0, 200)}`);
-  }
-  const data = await r.json();
-  return { content: data.choices?.[0]?.message?.content ?? '', tokens: data.usage?.total_tokens ?? 0 };
-}
+const { callGroq } = require('./script-generator');
 
 // ── Strip markdown fences, find and return the JSON substring ─────────────────
 function extractJSON(raw) {
@@ -38,20 +14,78 @@ function extractJSON(raw) {
   return JSON.parse(txt);
 }
 
+// ── #21 Trend Injection: fetch Reddit hot posts for a niche ──────────────────
+// Maps niche keywords to relevant subreddits and pulls top headlines.
+const NICHE_SUBREDDITS = {
+  finance:      ['personalfinance','financialindependence','investing'],
+  tech:         ['technology','gadgets','Futurology'],
+  health:       ['health','fitness','nutrition'],
+  fitness:      ['fitness','bodyweightfitness','loseit'],
+  mindset:      ['selfimprovement','productivity','getdisciplined'],
+  business:     ['Entrepreneur','smallbusiness','startups'],
+  ai:           ['artificial','MachineLearning','ChatGPT'],
+  travel:       ['travel','solotravel','backpacking'],
+  food:         ['food','recipes','MealPrepSunday'],
+  crypto:       ['CryptoCurrency','Bitcoin','ethereum'],
+  relationships:['relationship_advice','dating_advice','socialskills'],
+  education:    ['learnprogramming','learnpython','languagelearning'],
+  default:      ['videos','TrueOffMyChest','todayilearned'],
+};
+
+async function fetchTrendingTopics(niche, logger) {
+  try {
+    const nicheKey = Object.keys(NICHE_SUBREDDITS).find(k =>
+      niche.toLowerCase().includes(k)
+    ) || 'default';
+    const subs = NICHE_SUBREDDITS[nicheKey];
+    const sub  = subs[Math.floor(Math.random() * subs.length)];
+    const url  = `https://www.reddit.com/r/${sub}/hot.json?limit=15&raw_json=1`;
+    const r    = await fetch(url, {
+      headers: { 'User-Agent': 'video-combine/1.0' },
+      signal:  AbortSignal.timeout(8_000),
+    });
+    if (!r.ok) return null;
+    const data  = await r.json();
+    const posts = (data?.data?.children || [])
+      .map(c => c.data)
+      .filter(p => !p.stickied && p.score > 100)
+      .slice(0, 8)
+      .map(p => p.title);
+    if (!posts.length) return null;
+    logger?.log?.(`📈 Trend injection: ${posts.length} hot posts from r/${sub}`);
+    return { subreddit: sub, posts };
+  } catch (e) {
+    logger?.log?.(`   ⚠️  Trend fetch failed (non-fatal): ${e.message}`);
+    return null;
+  }
+}
+
 // ── Brainstorm: generate N video ideas ───────────────────────────────────────
 async function brainstormIdeas(params, logger) {
   const {
-    niche     = '',
-    platform  = 'YouTube',
-    goal      = 'grow audience',
-    count     = 8,
-    tone      = '',
-    avoid     = '',
-    model     = 'llama-3.3-70b-versatile',
-    env       = process.env,
+    niche      = '',
+    platform   = 'YouTube',
+    goal       = 'grow audience',
+    count      = 8,
+    tone       = '',
+    avoid      = '',
+    model      = 'llama-3.3-70b-versatile',
+    env        = process.env,
+    use_trends = true,  // #21 trend injection (default on)
   } = params;
 
   logger?.log?.(`💡 Brainstorming ${count} ideas for "${niche}" on ${platform}…`);
+
+  // #21 Fetch trending context
+  let trendContext = '';
+  if (use_trends && niche) {
+    const trends = await fetchTrendingTopics(niche, logger);
+    if (trends?.posts?.length) {
+      trendContext =
+        `\nCurrently trending on Reddit (r/${trends.subreddit}) — use these as inspiration for timely angles:\n` +
+        trends.posts.map((t, i) => `  ${i+1}. "${t}"`).join('\n') + '\n';
+    }
+  }
 
   const systemPrompt =
     'You are an expert faceless YouTube content strategist who specialises in viral video ideas. ' +
@@ -64,6 +98,7 @@ async function brainstormIdeas(params, logger) {
     `Primary goal: ${goal}\n` +
     `Preferred tone: ${tone || 'any'}\n` +
     (avoid ? `Avoid: ${avoid}\n` : '') +
+    trendContext +
     `\nEach idea object must have EXACTLY these fields:\n` +
     `{\n` +
     `  "id": number (1-${count}),\n` +

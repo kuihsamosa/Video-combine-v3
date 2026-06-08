@@ -1,7 +1,7 @@
 // Express Server for Video Combiner
 // Serves a static browser UI + provides local API endpoints that run FFmpeg.
 
-// Load .env if present (GROQ_API_KEY, PORT, KOKORO_URL, etc.)
+// Load .env if present (GROQ_API_KEY, PORT, OMNIVOICE_URL, etc.)
 try {
   const envPath = require('path').join(__dirname, '../.env');
   if (require('fs').existsSync(envPath)) {
@@ -700,12 +700,12 @@ app.post('/api/generate-script', async (req, res) => {
 
 // Brainstorm: generate video ideas
 app.post('/api/planner/brainstorm', async (req, res) => {
-  const { niche, platform = 'YouTube', goal, count = 8, tone, avoid, model } = req.body || {};
+  const { niche, platform = 'YouTube', goal, count = 8, tone, avoid, model, use_trends } = req.body || {};
   const sessionId = crypto.randomBytes(4).toString('hex');
   const logger = createSessionLogger(sessionId);
   try {
     const ideas = await brainstormIdeas(
-      { niche, platform, goal, count, tone, avoid, model, env: process.env },
+      { niche, platform, goal, count, tone, avoid, model, use_trends: use_trends !== false, env: process.env },
       logger,
     );
     res.json({ ok: true, session_id: sessionId, ideas });
@@ -815,32 +815,176 @@ app.get('/api/scheduler/jobs/:id/logs', (req, res) => {
   req.on('close', () => schedulerModule.unsubscribeRunLog(runId, res));
 });
 
+// ── #22 Script Archive endpoints ─────────────────────────────────────────────
+const scriptStore = require('./script-store');
+app.get('/api/scripts', (req, res) => {
+  const { job_id } = req.query;
+  res.json({ ok: true, scripts: scriptStore.listScripts({ jobId: job_id }) });
+});
+app.get('/api/scripts/:id', (req, res) => {
+  const s = scriptStore.getScript(req.params.id);
+  if (!s) return res.status(404).json({ ok: false, error: 'not found' });
+  res.json({ ok: true, script: s });
+});
+app.delete('/api/scripts/:id', (req, res) => {
+  scriptStore.deleteScript(req.params.id);
+  res.json({ ok: true });
+});
+
+// ── #25 Job Templates ─────────────────────────────────────────────────────────
+const TEMPLATES_FILE = path.join(__dirname, '../job-templates.json');
+function loadTemplates() { try { return JSON.parse(fs.readFileSync(TEMPLATES_FILE, 'utf8')) || []; } catch(_) { return []; } }
+function saveTemplates(t) { fs.writeFileSync(TEMPLATES_FILE, JSON.stringify(t, null, 2)); }
+
+app.get('/api/scheduler/templates', (req, res) => {
+  res.json({ ok: true, templates: loadTemplates() });
+});
+app.post('/api/scheduler/templates', (req, res) => {
+  const { name, job_id } = req.body || {};
+  const job = job_id ? schedulerModule.getJob(job_id) : req.body?.config;
+  if (!job) return res.status(400).json({ ok: false, error: 'job_id or config required' });
+  const templates = loadTemplates();
+  const tmpl = {
+    id:         require('crypto').randomBytes(4).toString('hex'),
+    name:       name || job.name || 'Template',
+    created_at: new Date().toISOString(),
+    config:     { ...job, id: undefined, status: undefined, run_history: undefined, created_at: undefined },
+  };
+  templates.push(tmpl);
+  saveTemplates(templates);
+  res.json({ ok: true, template: tmpl });
+});
+app.delete('/api/scheduler/templates/:id', (req, res) => {
+  saveTemplates(loadTemplates().filter(t => t.id !== req.params.id));
+  res.json({ ok: true });
+});
+app.post('/api/scheduler/templates/:id/spawn', (req, res) => {
+  const tmpl = loadTemplates().find(t => t.id === req.params.id);
+  if (!tmpl) return res.status(404).json({ ok: false, error: 'template not found' });
+  const overrides = req.body || {};
+  const job = schedulerModule.createJob({ ...tmpl.config, ...overrides });
+  res.json({ ok: true, job });
+});
+
+// ── #27 Social posting status ─────────────────────────────────────────────────
+app.get('/api/social/status', (req, res) => {
+  const { tiktokConfigured, instagramConfigured } = require('./tiktok-uploader');
+  res.json({
+    ok: true,
+    tiktok:    { configured: tiktokConfigured() },
+    instagram: { configured: instagramConfigured() },
+  });
+});
+
+// ── #28 YouTube stats — manual refresh ────────────────────────────────────────
+app.post('/api/scheduler/jobs/:id/fetch-stats', async (req, res) => {
+  const job    = schedulerModule.getJob(req.params.id);
+  if (!job) return res.status(404).json({ ok: false, error: 'not found' });
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  const vidId  = job._last_youtube_video_id;
+  if (!apiKey || !vidId) return res.json({ ok: false, error: 'YOUTUBE_API_KEY or youtube video ID missing' });
+  try {
+    const r = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${vidId}&key=${apiKey}`);
+    const d = await r.json();
+    const stats = d?.items?.[0]?.statistics;
+    if (!stats) return res.json({ ok: false, error: 'No stats returned' });
+    const updated = schedulerModule.updateJob(req.params.id, {
+      _youtube_stats: { ...stats, fetched_at: new Date().toISOString() },
+      _youtube_stats_fetched: true,
+    });
+    res.json({ ok: true, stats, job: updated });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ── #24 Batch Topic Queue — create many jobs from a topic list ────────────────
+app.post('/api/scheduler/batch-jobs', (req, res) => {
+  const { topics, base_config } = req.body || {};
+  if (!Array.isArray(topics) || !topics.length)
+    return res.status(400).json({ ok: false, error: 'topics array required' });
+
+  const created = [];
+  const skipped = [];
+  for (const rawTopic of topics) {
+    const topic = (rawTopic || '').trim();
+    if (!topic) { skipped.push(rawTopic); continue; }
+    try {
+      const job = schedulerModule.createJob({
+        ...(base_config || {}),
+        name:  base_config?.name ? `${base_config.name} — ${topic}` : topic,
+        topic,
+      });
+      created.push({ id: job.id, topic });
+    } catch (e) {
+      skipped.push(topic);
+    }
+  }
+  res.json({ ok: true, created: created.length, skipped: skipped.length, jobs: created });
+});
+
+// ── #26 Output delete ─────────────────────────────────────────────────────────
+app.post('/api/scheduler/output-delete', (req, res) => {
+  const { name } = req.body || {};
+  if (!name || !/^[\w\-]+\.(mp4|jpg|jpeg)$/i.test(name))
+    return res.status(400).json({ ok: false, error: 'invalid name' });
+  const fp = path.join(__dirname, '../output', name);
+  try {
+    if (fs.existsSync(fp)) fs.unlinkSync(fp);
+    // Also delete associated thumbnail if deleting video
+    if (/\.mp4$/i.test(name)) {
+      const thumb = fp.replace(/\.mp4$/i, '_thumb.jpg');
+      if (fs.existsSync(thumb)) fs.unlinkSync(thumb);
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ── #10 Scheduler config (concurrency) ───────────────────────────────────────
+app.get('/api/scheduler/status', (req, res) => {
+  res.json({ ok: true, ...schedulerModule.getSchedulerStatus() });
+});
+
+app.post('/api/scheduler/config', (req, res) => {
+  const { max_concurrent } = req.body || {};
+  if (max_concurrent !== undefined) {
+    schedulerModule.setMaxConcurrent(max_concurrent);
+  }
+  res.json({ ok: true, ...schedulerModule.getSchedulerStatus() });
+});
+
+// ── #11 Thumbnail download ────────────────────────────────────────────────────
+app.get('/api/scheduler/output/:filename', (req, res) => {
+  // Handles both .mp4 and .jpg thumbnails
+  const filename = path.basename(req.params.filename);
+  if (!/^[\w\-]+\.(mp4|jpg|jpeg|png)$/i.test(filename))
+    return res.status(400).end();
+  const fp = path.join(__dirname, '../output', filename);
+  if (!fs.existsSync(fp)) return res.status(404).end();
+  const ext = path.extname(filename).toLowerCase();
+  const ct  = ext === '.mp4' ? 'video/mp4' : 'image/jpeg';
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', ct);
+  res.sendFile(fp);
+});
+
 // List completed output videos
 app.get('/api/scheduler/outputs', (req, res) => {
   const outputDir = path.join(__dirname, '../output');
   if (!fs.existsSync(outputDir)) return res.json({ files: [] });
   const files = fs.readdirSync(outputDir)
-    .filter(f => /^sched_final_[a-f0-9]+\.mp4$/i.test(f))
+    .filter(f => /^[\w\-]+\.(mp4|jpg|jpeg)$/i.test(f) && !/_raw\.mp4$/i.test(f))
     .map(f => {
       const fp   = path.join(outputDir, f);
       const stat = fs.statSync(fp);
-      return { name: f, size: stat.size, mtime: stat.mtime.toISOString() };
+      return { name: f, size: stat.size, mtime: stat.mtime.toISOString(), type: /\.mp4$/i.test(f) ? 'video' : 'image' };
     })
     .sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
   res.json({ files });
 });
 
-// Download a completed run's video
-app.get('/api/scheduler/output/:filename', (req, res) => {
-  const filename = path.basename(req.params.filename);
-  if (!/^sched_final_[a-f0-9]+\.mp4$/i.test(filename))
-    return res.status(400).end();
-  const fp = path.join(__dirname, '../output', filename);
-  if (!fs.existsSync(fp)) return res.status(404).end();
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  res.setHeader('Content-Type', 'video/mp4');
-  res.sendFile(fp);
-});
 
 // Footage sources config status
 app.get('/api/config/footage-sources', (req, res) => {
@@ -1087,47 +1231,37 @@ app.post('/api/mix-music', async (req, res) => {
   });
 });
 
-// Kokoro TTS status check
-app.get('/api/kokoro-status', async (req, res) => {
-  const KOKORO_URL = process.env.KOKORO_URL || 'http://localhost:8880';
+
+// ── OmniVoice TTS status + voices ────────────────────────────────────────────
+const OMNIVOICE_VOICE_PRESETS = [
+  { id: 'omni_narrator_warm',       name: 'Nova — Warm Narrator',        description: 'nova' },
+  { id: 'omni_narrator_confident',  name: 'Cedar — Confident Narrator',  description: 'cedar' },
+  { id: 'omni_narrator_calm',       name: 'Marin — Calm Narrator',       description: 'marin' },
+  { id: 'omni_narrator_energetic',  name: 'Verse — Energetic Narrator',  description: 'verse' },
+  { id: 'omni_narrator_deep',       name: 'Onyx — Deep Narrator',        description: 'onyx' },
+  { id: 'omni_narrator_crisp',      name: 'Fable — Crisp Narrator',      description: 'fable' },
+  { id: 'omni_narrator_young_m',    name: 'Ash — Young Male',            description: 'ash' },
+  { id: 'omni_narrator_young_f',    name: 'Shimmer — Young Female',      description: 'shimmer' },
+  { id: 'omni_podcast_host',        name: 'Echo — Podcast Host',         description: 'echo' },
+  { id: 'omni_podcast_guest',       name: 'Alloy — Podcast Guest',       description: 'alloy' },
+];
+
+app.get('/api/omnivoice-status', async (req, res) => {
+  const OMNIVOICE_URL = process.env.OMNIVOICE_URL || 'http://localhost:8881';
   try {
-    const response = await fetch(`${KOKORO_URL}/v1/models`, { signal: AbortSignal.timeout(3000) });
+    const response = await fetch(`${OMNIVOICE_URL}/v1/models`, { signal: AbortSignal.timeout(3000) });
     if (response.ok) {
-      res.json({ ok: true, url: KOKORO_URL });
+      res.json({ ok: true, url: OMNIVOICE_URL });
     } else {
-      res.json({ ok: false, url: KOKORO_URL, error: `HTTP ${response.status}` });
+      res.json({ ok: false, url: OMNIVOICE_URL, error: `HTTP ${response.status}` });
     }
   } catch (err) {
-    res.json({ ok: false, url: KOKORO_URL, error: err.message });
+    res.json({ ok: false, url: OMNIVOICE_URL, error: err.message });
   }
 });
 
-// Kokoro voices list
-app.get('/api/kokoro-voices', async (req, res) => {
-  const KOKORO_URL = process.env.KOKORO_URL || 'http://localhost:8880';
-  const FALLBACK_VOICES = [
-    { id: 'af_heart', name: 'Heart (US Female)', lang: 'en-us' },
-    { id: 'af_bella', name: 'Bella (US Female)', lang: 'en-us' },
-    { id: 'af_nicole', name: 'Nicole (US Female)', lang: 'en-us' },
-    { id: 'af_sky', name: 'Sky (US Female)', lang: 'en-us' },
-    { id: 'am_adam', name: 'Adam (US Male)', lang: 'en-us' },
-    { id: 'am_michael', name: 'Michael (US Male)', lang: 'en-us' },
-    { id: 'bf_emma', name: 'Emma (UK Female)', lang: 'en-gb' },
-    { id: 'bf_isabella', name: 'Isabella (UK Female)', lang: 'en-gb' },
-    { id: 'bm_george', name: 'George (UK Male)', lang: 'en-gb' },
-    { id: 'bm_lewis', name: 'Lewis (UK Male)', lang: 'en-gb' },
-  ];
-  try {
-    const response = await fetch(`${KOKORO_URL}/v1/voices`, { signal: AbortSignal.timeout(3000) });
-    if (response.ok) {
-      const data = await response.json();
-      res.json({ ok: true, voices: data.voices || data || FALLBACK_VOICES });
-    } else {
-      res.json({ ok: true, voices: FALLBACK_VOICES, source: 'fallback' });
-    }
-  } catch (err) {
-    res.json({ ok: true, voices: FALLBACK_VOICES, source: 'fallback' });
-  }
+app.get('/api/omnivoice-voices', (req, res) => {
+  res.json({ ok: true, voices: OMNIVOICE_VOICE_PRESETS });
 });
 
 // ── YouTube downloader endpoints ──────────────────────────────────────────────
@@ -1198,6 +1332,35 @@ app.post('/api/youtube-auth/clear', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── #14 YouTube Upload OAuth setup endpoints ──────────────────────────────────
+app.get('/api/youtube-upload/auth-url', (req, res) => {
+  try {
+    const { getConsentUrl } = require('./youtube-uploader');
+    const url = getConsentUrl(process.env);
+    res.json({ ok: true, url });
+  } catch (e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
+app.post('/api/youtube-upload/exchange-code', async (req, res) => {
+  try {
+    const { exchangeCodeForTokens } = require('./youtube-uploader');
+    const { code } = req.body || {};
+    if (!code) return res.status(400).json({ ok: false, error: 'code required' });
+    const tokens = await exchangeCodeForTokens(code, process.env);
+    // Tell user to add the refresh_token to their .env
+    res.json({ ok: true, refresh_token: tokens.refresh_token, message: 'Add YOUTUBE_REFRESH_TOKEN to your .env file' });
+  } catch (e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
+app.get('/api/youtube-upload/status', (req, res) => {
+  const configured = !!(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET && process.env.YOUTUBE_REFRESH_TOKEN);
+  res.json({ ok: true, configured });
+});
+
 // ── YouTube search endpoint ───────────────────────────────────────────────────
 app.get('/api/youtube-search', async (req, res) => {
   const { q = '', limit = '12', filter = 'any' } = req.query;
@@ -1228,7 +1391,7 @@ app.get('/api/youtube-file/:filename', (req, res) => {
 });
 
 // ── TTS text preprocessor ─────────────────────────────────────────────────────
-// Cleans narration text so Kokoro produces natural-sounding speech instead of
+// Cleans narration text so OmniVoice produces natural-sounding speech instead of
 // robotic literal readings of symbols, markdown, numbers, and punctuation.
 // Delegate to shared tts-utils module
 function preprocessTTS(raw) { return _preprocessTTS(raw); }
@@ -1249,7 +1412,7 @@ function _preprocessTTS_UNUSED(raw) {
   // 2. Punctuation that sounds robotic when read literally
   t = t.replace(/—/g, ', ');          // em-dash → comma pause
   t = t.replace(/–/g, ', ');          // en-dash
-  t = t.replace(/…/g, '... ');        // ellipsis → spaced dots Kokoro handles
+  t = t.replace(/…/g, '... ');        // ellipsis → spaced dots
   t = t.replace(/’/g, "'");      // curly apostrophe
   t = t.replace(/[“”]/g, '"'); // curly quotes
   t = t.replace(/·|•|●/g, '. '); // bullet symbols → sentence break
@@ -1336,67 +1499,34 @@ function _chunkTTS_UNUSED(text, maxChars = 500) {
   return chunks.length > 0 ? chunks : [text];
 }
 
-// ── Voice presets — map a friendly preset name to a Kokoro voice blend string ──
-// Kokoro supports weighted blends: "voice1(w1)+voice2(w2)" or "v1+v2" (equal weight).
-// Weights are arbitrary positive floats (Kokoro normalises them internally).
+// ── OmniVoice voice presets — mapped to named character voices ────────────────
 const VOICE_PRESETS = {
-  // Narration styles
-  'narrator_warm':      'af_heart(0.65)+af_jessica(0.35)',    // warm, intimate
-  'narrator_confident': 'am_adam(0.55)+am_michael(0.45)',     // authoritative male
-  'narrator_calm':      'af_bella(0.6)+af_heart(0.4)',        // smooth, soothing female
-  'narrator_energetic': 'am_fenrir(0.6)+am_puck(0.4)',        // punchy, dynamic male
-  'narrator_deep':      'bm_george(0.7)+am_adam(0.3)',        // deep, cinematic
-  'narrator_crisp':     'bf_emma(0.55)+af_jessica(0.45)',     // clear, British-lite
-  // Base voices (pass-through, no blend)
-  'af_heart': 'af_heart', 'af_bella': 'af_bella', 'af_jessica': 'af_jessica',
-  'af_nicole': 'af_nicole', 'af_sky': 'af_sky', 'af_river': 'af_river',
-  'am_adam': 'am_adam', 'am_michael': 'am_michael', 'am_echo': 'am_echo',
-  'am_liam': 'am_liam', 'am_fenrir': 'am_fenrir', 'am_puck': 'am_puck',
-  'bm_george': 'bm_george', 'bm_daniel': 'bm_daniel', 'bm_lewis': 'bm_lewis',
-  'bf_emma': 'bf_emma', 'bf_alice': 'bf_alice',
+  'narrator_warm':      'nova',    // female, warm american
+  'narrator_confident': 'cedar',   // male, steady american
+  'narrator_calm':      'marin',   // female, soft canadian
+  'narrator_energetic': 'verse',   // male, upbeat british
+  'narrator_deep':      'onyx',    // male, deep british
+  'narrator_crisp':     'fable',   // female, crisp british
+  'narrator_young_m':   'ash',     // male, young american
+  'narrator_young_f':   'shimmer', // female, bright american
+  'podcast_host':       'echo',    // male, conversational canadian
+  'podcast_guest':      'alloy',   // female, clear american
 };
 
 function resolveVoice(input) {
-  // If it's a preset name, expand it. If it's already a blend (contains + or ()),
-  // pass through as-is. Otherwise use as a direct voice name.
-  return VOICE_PRESETS[input] || input || 'af_heart';
+  return VOICE_PRESETS[input] || input || 'nova';
 }
 
-// List voice presets
+// List OmniVoice voice presets
 app.get('/api/voice-presets', (req, res) => {
-  const presets = [
-    { id: 'narrator_warm',      label: 'Narrator — Warm & Intimate',    blend: VOICE_PRESETS['narrator_warm'] },
-    { id: 'narrator_confident', label: 'Narrator — Confident Male',      blend: VOICE_PRESETS['narrator_confident'] },
-    { id: 'narrator_calm',      label: 'Narrator — Calm & Smooth',       blend: VOICE_PRESETS['narrator_calm'] },
-    { id: 'narrator_energetic', label: 'Narrator — Energetic & Punchy',  blend: VOICE_PRESETS['narrator_energetic'] },
-    { id: 'narrator_deep',      label: 'Narrator — Deep & Cinematic',    blend: VOICE_PRESETS['narrator_deep'] },
-    { id: 'narrator_crisp',     label: 'Narrator — Crisp & Clear',       blend: VOICE_PRESETS['narrator_crisp'] },
-    // Single voices
-    { id: 'af_heart',    label: 'Heart (US Female)'    },
-    { id: 'af_bella',    label: 'Bella (US Female)'    },
-    { id: 'af_jessica',  label: 'Jessica (US Female)'  },
-    { id: 'af_nicole',   label: 'Nicole (US Female)'   },
-    { id: 'af_sky',      label: 'Sky (US Female)'      },
-    { id: 'af_river',    label: 'River (US Female)'    },
-    { id: 'am_adam',     label: 'Adam (US Male)'       },
-    { id: 'am_michael',  label: 'Michael (US Male)'    },
-    { id: 'am_echo',     label: 'Echo (US Male)'       },
-    { id: 'am_liam',     label: 'Liam (US Male)'       },
-    { id: 'am_fenrir',   label: 'Fenrir (US Male)'     },
-    { id: 'am_puck',     label: 'Puck (US Male)'       },
-    { id: 'bm_george',   label: 'George (UK Male)'     },
-    { id: 'bm_daniel',   label: 'Daniel (UK Male)'     },
-    { id: 'bm_lewis',    label: 'Lewis (UK Male)'      },
-    { id: 'bf_emma',     label: 'Emma (UK Female)'     },
-    { id: 'bf_alice',    label: 'Alice (UK Female)'    },
-  ];
+  const presets = Object.entries(VOICE_PRESETS).map(([id, description]) => ({ id, description }));
   res.json({ ok: true, presets });
 });
 
-// Kokoro TTS proxy — cleans + chunks text then stitches audio, streams back to client
+// OmniVoice TTS proxy — cleans + chunks text then stitches audio back to client
 app.post('/api/tts', async (req, res) => {
-  const KOKORO_URL = process.env.KOKORO_URL || 'http://localhost:8880';
-  const { text, voice = 'af_heart', speed = 1.0, format = 'wav' } = req.body || {};
+  const OMNIVOICE_URL = process.env.OMNIVOICE_URL || 'http://localhost:8881';
+  const { text, voice = 'narrator_warm', speed = 1.0, format = 'wav' } = req.body || {};
   if (!text || typeof text !== 'string' || text.trim().length === 0) {
     return res.status(400).json({ error: 'text is required' });
   }
@@ -1404,125 +1534,222 @@ app.post('/api/tts', async (req, res) => {
     return res.status(400).json({ error: 'text too long (max 50000 chars)' });
   }
 
-  const cleaned     = preprocessTTS(text.trim());
-  const chunks      = chunkTTS(cleaned, 480);
-  const resolvedVoice = resolveVoice(voice);
-  // Slightly slower default speed improves naturalness (0.92 if caller sends 1.0)
+  const cleaned       = preprocessTTS(text.trim());
+  const chunks        = chunkTTS(cleaned, 480);
+  const description   = resolveVoice(voice);
   const effectiveSpeed = speed === 1.0 ? 0.92 : speed;
 
-  // Kokoro normalization options — let Kokoro handle what it can natively
-  const normOpts = {
-    normalize: true,
-    unit_normalization: true,
-    url_normalization: true,
-    email_normalization: true,
-    optional_pluralization_normalization: true,
-    phone_normalization: true,
-    replace_remaining_symbols: true,
-  };
-
   try {
-    // If single chunk, simple passthrough (no concat needed)
-    if (chunks.length === 1) {
-      const kokoroRes = await fetch(`${KOKORO_URL}/v1/audio/speech`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'kokoro', input: chunks[0].text,
-          voice: resolvedVoice, speed: effectiveSpeed,
-          response_format: format, stream: false,
-          normalization_options: normOpts,
-        }),
-        signal: AbortSignal.timeout(180000)
-      });
-      if (!kokoroRes.ok) {
-        const errText = await kokoroRes.text().catch(() => '');
-        return res.status(502).json({ error: 'Kokoro TTS failed', details: errText });
-      }
-      const contentType = kokoroRes.headers.get('content-type') || `audio/${format}`;
-      res.set('Content-Type', contentType);
-      res.set('Content-Disposition', `attachment; filename="tts.${format}"`);
-      const buf = await kokoroRes.arrayBuffer();
-      return res.send(Buffer.from(buf));
-    }
-
-    // Multiple chunks — call Kokoro per chunk then stitch with paragraph silences
     const wavChunks = [];
     for (let i = 0; i < chunks.length; i++) {
       const { text: chunkText, paragraphEnd } = chunks[i];
       if (!chunkText.trim()) continue;
-      const kokoroRes = await fetch(`${KOKORO_URL}/v1/audio/speech`, {
-        method: 'POST',
+      const r = await fetch(`${OMNIVOICE_URL}/v1/audio/speech`, {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'kokoro', input: chunkText,
-          voice: resolvedVoice, speed: effectiveSpeed,
-          response_format: format, stream: false,
-          normalization_options: normOpts,
-        }),
-        signal: AbortSignal.timeout(180000)
+        body:    JSON.stringify({ model: 'omnivoice', input: chunkText, voice: description, speed: effectiveSpeed, response_format: 'wav' }),
+        signal:  AbortSignal.timeout(180_000),
       });
-      if (!kokoroRes.ok) {
-        const errText = await kokoroRes.text().catch(() => '');
-        return res.status(502).json({ error: `Kokoro chunk ${i + 1} failed`, details: errText });
+      if (!r.ok) {
+        const errText = await r.text().catch(() => '');
+        return res.status(502).json({ error: `OmniVoice chunk ${i + 1} failed`, details: errText });
       }
-      wavChunks.push({ buf: Buffer.from(await kokoroRes.arrayBuffer()), paragraphEnd });
+      wavChunks.push({ buf: Buffer.from(await r.arrayBuffer()), paragraphEnd });
     }
 
-    if (wavChunks.length === 0) {
-      return res.status(500).json({ error: 'No audio generated' });
-    }
+    if (!wavChunks.length) return res.status(500).json({ error: 'No audio generated' });
 
-    // Stitch: WAV gets 350ms silence at paragraph breaks; MP3 is raw concat
-    let combined;
-    if (format === 'wav') {
-      combined = stitchWavBuffers(wavChunks, 350);
-    } else {
-      combined = Buffer.concat(wavChunks.map(c => c.buf));
-    }
+    const combined = format === 'wav'
+      ? stitchWavBuffers(wavChunks, 350)
+      : Buffer.concat(wavChunks.map(c => c.buf));
 
     res.set('Content-Type', format === 'wav' ? 'audio/wav' : 'audio/mpeg');
     res.set('Content-Disposition', `attachment; filename="tts.${format}"`);
     res.set('Content-Length', combined.length);
     res.send(combined);
-
   } catch (err) {
-    if (err.name === 'TimeoutError') {
-      return res.status(504).json({ error: 'Kokoro TTS timed out' });
-    }
-    res.status(502).json({ error: 'Kokoro unreachable', details: err.message });
-  }
-});
-
-// Phonemize proxy — calls Kokoro /dev/phonemize and returns {phonemes, tokens}
-app.post('/api/phonemize', async (req, res) => {
-  const KOKORO_URL = process.env.KOKORO_URL || 'http://localhost:8880';
-  const { text, language = 'a' } = req.body || {};
-  if (!text || typeof text !== 'string' || !text.trim()) {
-    return res.status(400).json({ ok: false, error: 'text is required' });
-  }
-  try {
-    const r = await fetch(`${KOKORO_URL}/dev/phonemize`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: text.trim(), language }),
-      signal: AbortSignal.timeout(15000)
-    });
-    if (!r.ok) {
-      const errText = await r.text().catch(() => '');
-      return res.status(502).json({ ok: false, error: `Kokoro phonemize error ${r.status}`, details: errText });
-    }
-    const data = await r.json();
-    return res.json({ ok: true, phonemes: data.phonemes, tokens: data.tokens, token_count: data.tokens?.length ?? 0 });
-  } catch (err) {
-    if (err.name === 'TimeoutError') return res.status(504).json({ ok: false, error: 'Kokoro phonemize timed out' });
-    res.status(502).json({ ok: false, error: 'Kokoro unreachable', details: err.message });
+    if (err.name === 'TimeoutError') return res.status(504).json({ error: 'OmniVoice TTS timed out' });
+    res.status(502).json({ error: 'OmniVoice unreachable', details: err.message });
   }
 });
 
 // Serve index.html as default
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../index.html'));
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REMOTE WORKER API
+// Workers (e.g. T440p) poll these endpoints to claim jobs, stream logs back,
+// and report completion. Authentication is via a shared WORKER_SECRET env var.
+// ─────────────────────────────────────────────────────────────────────────────
+const WORKER_SECRET  = process.env.WORKER_SECRET || 'videocombine-worker';
+const _workers       = new Map(); // workerId → { id, host, capacity, running:[], lastSeen }
+const _workerLogSubs = new Map(); // jobId    → Set of SSE res objects (from UI subscribers)
+
+function workerAuth(req, res, next) {
+  const secret = req.headers['x-worker-secret'] || req.query.secret;
+  if (secret !== WORKER_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  next();
+}
+
+// Worker registers / heartbeats
+app.post('/api/workers/register', workerAuth, (req, res) => {
+  const { worker_id, host, capacity = 2, running = [] } = req.body;
+  if (!worker_id) return res.status(400).json({ ok: false, error: 'worker_id required' });
+  const existing = _workers.get(worker_id) || {};
+  _workers.set(worker_id, {
+    id:       worker_id,
+    host:     host || req.ip,
+    capacity: parseInt(capacity) || 2,
+    running:  running,
+    lastSeen: Date.now(),
+    connectedAt: existing.connectedAt || Date.now(),
+  });
+  res.json({ ok: true });
+});
+
+// UI: list workers
+app.get('/api/workers', (req, res) => {
+  const now = Date.now();
+  const list = [..._workers.values()].map(w => ({
+    ...w,
+    online: (now - w.lastSeen) < 20_000,
+  }));
+  res.json({ ok: true, workers: list });
+});
+
+// Worker polls for the next available job
+app.get('/api/workers/poll', workerAuth, (req, res) => {
+  const { worker_id, capacity: cap } = req.query;
+  if (!worker_id) return res.status(400).json({ ok: false, error: 'worker_id required' });
+
+  // Update heartbeat
+  const w = _workers.get(worker_id);
+  if (w) { w.lastSeen = Date.now(); w.capacity = parseInt(cap) || w.capacity; }
+
+  const runningCount = (w?.running || []).length;
+  const maxCap       = w?.capacity || 2;
+  if (runningCount >= maxCap) return res.json({ ok: true, job: null, reason: 'at capacity' });
+
+  // Find a pending job not already assigned to any worker
+  const assignedIds = new Set([..._workers.values()].flatMap(x => x.running));
+  const jobs        = schedulerModule.loadJobs();
+  const next        = jobs.find(j =>
+    j.enabled &&
+    j.status === 'idle' &&
+    j.assigned_worker === worker_id &&  // explicitly assigned, OR...
+    !assignedIds.has(j.id)
+  ) || jobs.find(j =>
+    j.enabled &&
+    j.status === 'idle' &&
+    !j.assigned_worker &&               // ...unassigned (any worker can take it)
+    !assignedIds.has(j.id)
+  );
+
+  if (!next) return res.json({ ok: true, job: null });
+
+  // Mark as claimed
+  schedulerModule.upsertJob({ ...next, status: 'running', _claimed_by: worker_id });
+  if (w) { if (!w.running.includes(next.id)) w.running.push(next.id); }
+  console.log(`[Worker] "${next.name}" claimed by ${worker_id}`);
+  res.json({ ok: true, job: next });
+});
+
+// Worker streams a log line back
+app.post('/api/workers/log', workerAuth, (req, res) => {
+  const { worker_id, job_id, line } = req.body;
+  if (!job_id || !line) return res.status(400).json({ ok: false });
+
+  // Forward to any SSE subscribers watching this job
+  const subs = _workerLogSubs.get(job_id);
+  if (subs) {
+    const payload = JSON.stringify({ log: line, worker_id });
+    for (const r of subs) {
+      try { r.write(`data: ${payload}\n\n`); } catch (_) {}
+    }
+  }
+  res.json({ ok: true });
+});
+
+// Worker reports job completion (and where to fetch the output file)
+app.post('/api/workers/complete', workerAuth, async (req, res) => {
+  const { worker_id, job_id, status, output, error: errMsg } = req.body;
+  if (!job_id) return res.status(400).json({ ok: false });
+
+  const job = schedulerModule.getJob(job_id);
+  if (!job) return res.status(404).json({ ok: false, error: 'Job not found' });
+
+  // Update worker's running list
+  const w = _workers.get(worker_id);
+  if (w) w.running = w.running.filter(id => id !== job_id);
+
+  // If worker provided an output_url, download the video to our output dir
+  let localOutput = output || {};
+  if (output?.video_url) {
+    try {
+      const http  = require(output.video_url.startsWith('https') ? 'https' : 'http');
+      const fname = output.video_url.split('/').pop();
+      const dest  = path.join(OUTPUT_DIR, fname);
+      await new Promise((resolve, reject) => {
+        const file = require('fs').createWriteStream(dest);
+        http.get(output.video_url, r => { r.pipe(file); file.on('finish', resolve); }).on('error', reject);
+      });
+      localOutput = { ...output, video_path: dest };
+      console.log(`[Worker] Downloaded output: ${fname}`);
+    } catch (e) {
+      console.error('[Worker] Failed to download output:', e.message);
+    }
+  }
+
+  // Update job status
+  const updated = {
+    ...job,
+    status:         status === 'completed' ? 'idle' : 'error',
+    _last_output:   localOutput,
+    _last_run_at:   Date.now(),
+    _claimed_by:    null,
+    error_message:  errMsg || null,
+  };
+  schedulerModule.upsertJob(updated);
+
+  // Notify SSE subscribers: done
+  const subs = _workerLogSubs.get(job_id);
+  if (subs) {
+    const payload = JSON.stringify({ done: true, status, output: localOutput });
+    for (const r of subs) {
+      try { r.write(`data: ${payload}\n\n`); r.end(); } catch (_) {}
+    }
+    _workerLogSubs.delete(job_id);
+  }
+
+  console.log(`[Worker] "${job.name}" ${status} by ${worker_id}`);
+  res.json({ ok: true });
+});
+
+// SSE endpoint: browser subscribes to a worker-run job's log stream
+// (same path as the local log stream so the UI works identically)
+// The existing /api/scheduler/jobs/:id/logs route already handles local jobs.
+// For worker jobs, we register an SSE subscriber here.
+app.get('/api/workers/jobs/:id/logs', (req, res) => {
+  const jobId = req.params.id;
+  res.setHeader('Content-Type',  'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection',    'keep-alive');
+  res.flushHeaders();
+
+  if (!_workerLogSubs.has(jobId)) _workerLogSubs.set(jobId, new Set());
+  _workerLogSubs.get(jobId).add(res);
+  req.on('close', () => { _workerLogSubs.get(jobId)?.delete(res); });
+});
+
+// Assign a job to a specific worker (or clear assignment)
+app.post('/api/workers/assign', (req, res) => {
+  const { job_id, worker_id } = req.body;
+  const job = schedulerModule.getJob(job_id);
+  if (!job) return res.status(404).json({ ok: false, error: 'Job not found' });
+  schedulerModule.upsertJob({ ...job, assigned_worker: worker_id || null });
+  res.json({ ok: true });
 });
 
 // 404 handler

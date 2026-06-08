@@ -16,6 +16,7 @@
             --orange: #E9762B;
 
             --bg: #F5F0E8;
+            --modal-bg: #ffffff;
             --surface: rgba(255,255,255,0.75);
             --surface-hover: rgba(255,255,255,0.9);
             --border: rgba(13,71,21,0.12);
@@ -33,6 +34,7 @@
         }
         html[data-theme="dark"] {
             --bg: #0e1a11;
+            --modal-bg: #162019;
             --surface: rgba(255,255,255,0.06);
             --surface-hover: rgba(255,255,255,0.10);
             --border: rgba(255,255,255,0.10);
@@ -644,6 +646,10 @@
         <button class="tab" data-tab="planner" role="tab">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/></svg>
             Planner
+        </button>
+        <button class="tab" data-tab="outputs" role="tab" onclick="outputsDashLoad()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            Outputs
         </button>
         <button class="tab" data-tab="files" role="tab">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -1612,6 +1618,32 @@
         </div>
     </div>
 
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- #26 OUTPUTS DASHBOARD TAB                                            -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <div class="tab-panel" id="tab-outputs">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+        <div style="font-size:15px; font-weight:700;">📹 Output Dashboard</div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" id="outputsSearch" placeholder="Filter…" oninput="outputsDashRender()" style="font-size:12px; padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-1); width:160px;">
+          <select id="outputsSort" onchange="outputsDashRender()" style="font-size:12px; padding:5px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-1);">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="largest">Largest first</option>
+            <option value="smallest">Smallest first</option>
+          </select>
+          <button class="btn btn-ghost" onclick="outputsDashLoad()" style="font-size:12px;">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="outputsStats" style="font-size:12px; color:var(--text-3); margin-bottom:12px;"></div>
+      <div id="outputsGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px;"></div>
+      <div id="outputsEmpty" style="display:none; text-align:center; padding:60px 20px; color:var(--text-3);">
+        <div style="font-size:40px; margin-bottom:12px;">🎬</div>
+        <div style="font-size:14px;">No output videos yet</div>
+        <div style="font-size:12px; margin-top:4px;">Run a job with the Combine step enabled to produce videos</div>
+      </div>
+    </div>
+
     <!-- ===== TAB: FILES ===== -->
     <div class="tab-panel" id="tab-files">
         <div style="display:flex; flex-direction:column; gap:16px;">
@@ -1672,16 +1704,52 @@
             <!-- ── Left: Jobs + New Job Form ──────────────────────────────── -->
             <div style="display:flex; flex-direction:column; gap:14px;">
 
-                <!-- Header bar -->
-                <div style="display:flex; align-items:center; gap:10px;">
+                <!-- ── Row 1: Title + primary action ──────────────────────── -->
+                <div style="display:flex; align-items:center; gap:8px;">
                     <div style="flex:1;">
                         <div style="font-size:17px; font-weight:700; color:var(--text);">Production Scheduler</div>
-                        <div style="font-size:12px; color:var(--text-3); margin-top:2px;">Automate brainstorming, scripting, voiceover and footage on a fixed schedule.</div>
                     </div>
-                    <button class="btn btn-primary" onclick="schedShowForm()">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <button class="btn btn-primary" onclick="schedShowForm()" style="white-space:nowrap;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         New Job
                     </button>
+                </div>
+
+                <!-- ── Row 2: Tools toolbar + Auto-Run ────────────────────── -->
+                <div style="display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius:10px; border:1px solid var(--border); background:var(--surface-2);">
+                    <!-- Tool buttons -->
+                    <button class="btn btn-ghost btn-sm" onclick="batchQueueOpen()" style="font-size:12px; gap:5px;">
+                        📋 <span>Batch</span>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" onclick="templateOpenPicker()" style="font-size:12px; gap:5px;">
+                        📐 <span>Templates</span>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" onclick="calendarOpen()" style="font-size:12px; gap:5px;">
+                        📅 <span>Calendar</span>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" onclick="scriptHistoryOpen()" style="font-size:12px; gap:5px;">
+                        📄 <span>Scripts</span>
+                    </button>
+
+                    <div style="flex:1;"></div>
+
+                    <!-- Auto-Run pill (right-aligned in toolbar) -->
+                    <div id="schedAutoRunBar" style="display:flex; align-items:center; gap:7px; padding:4px 10px; border-radius:20px; border:1px solid var(--border); background:var(--surface); transition:border-color .2s, box-shadow .2s;">
+                        <label class="sched-toggle" title="Auto-run queue" style="flex-shrink:0;">
+                            <input type="checkbox" id="schedAutoRunToggle" onchange="schedAutoRunChanged()">
+                            <div class="sched-toggle-track"></div>
+                            <div class="sched-toggle-thumb"></div>
+                        </label>
+                        <span style="font-size:12px; font-weight:600; color:var(--text); white-space:nowrap;">Auto-Run</span>
+                        <select id="schedAutoRunConcurrency" onchange="schedAutoRunChanged()" title="Max concurrent jobs" style="width:46px; font-size:11px; padding:2px 4px; border-radius:5px; border:1px solid var(--border); background:var(--surface-2); color:var(--text);">
+                            <option value="1">×1</option>
+                            <option value="2">×2</option>
+                            <option value="3" selected>×3</option>
+                            <option value="4">×4</option>
+                            <option value="5">×5</option>
+                        </select>
+                        <span id="schedAutoRunStatus" style="font-size:11px; color:var(--text-3); white-space:nowrap;">Off</span>
+                    </div>
                 </div>
 
                 <!-- Job cards list -->
@@ -1752,23 +1820,27 @@
                             <div>
                               <label style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:5px;">Host Voice</label>
                               <select id="sfPodcastHostVoice" style="width:100%; font-size:12px;">
-                                <option value="narrator_warm">Warm (female)</option>
-                                <option value="narrator_calm">Calm (female)</option>
-                                <option value="narrator_crisp">Crisp (female)</option>
-                                <option value="narrator_confident">Confident (male)</option>
-                                <option value="narrator_deep">Deep (male)</option>
-                                <option value="narrator_energetic">Energetic (male)</option>
+                                <option value="podcast_host">Podcast Host (Male)</option>
+                                <option value="narrator_confident">Confident (Male)</option>
+                                <option value="narrator_deep">Deep (Male)</option>
+                                <option value="narrator_energetic">Energetic (Male)</option>
+                                <option value="narrator_young_m">Young Male</option>
+                                <option value="narrator_warm">Warm (Female)</option>
+                                <option value="narrator_calm">Calm (Female)</option>
+                                <option value="narrator_crisp">Crisp (Female)</option>
                               </select>
                             </div>
                             <div id="sfPodcastGuestVoiceRow">
                               <label style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:5px;">Guest Voice <span style="font-weight:400; color:var(--text-3); font-size:10px;">(Dual Host only)</span></label>
                               <select id="sfPodcastGuestVoice" style="width:100%; font-size:12px;">
-                                <option value="narrator_confident">Confident (male)</option>
-                                <option value="narrator_deep">Deep (male)</option>
-                                <option value="narrator_energetic">Energetic (male)</option>
-                                <option value="narrator_warm">Warm (female)</option>
-                                <option value="narrator_calm">Calm (female)</option>
-                                <option value="narrator_crisp">Crisp (female)</option>
+                                <option value="podcast_guest">Podcast Guest (Female)</option>
+                                <option value="narrator_young_f">Young Female</option>
+                                <option value="narrator_warm">Warm (Female)</option>
+                                <option value="narrator_calm">Calm (Female)</option>
+                                <option value="narrator_crisp">Crisp (Female)</option>
+                                <option value="narrator_confident">Confident (Male)</option>
+                                <option value="narrator_energetic">Energetic (Male)</option>
+                                <option value="narrator_deep">Deep (Male)</option>
                               </select>
                             </div>
                           </div>
@@ -1789,12 +1861,16 @@
                         <div>
                             <label style="font-size:11.5px; color:var(--text-2); display:block; margin-bottom:4px;">Voice</label>
                             <select id="sfVoice" style="width:100%;">
-                                <option value="narrator_warm">Narrator — Warm</option>
-                                <option value="narrator_confident">Narrator — Confident</option>
-                                <option value="narrator_calm">Narrator — Calm</option>
-                                <option value="narrator_energetic">Narrator — Energetic</option>
-                                <option value="narrator_deep">Narrator — Deep</option>
-                                <option value="narrator_crisp">Narrator — Crisp</option>
+                                <option value="narrator_warm">Warm Narrator (Female)</option>
+                                <option value="narrator_confident">Confident Narrator (Male)</option>
+                                <option value="narrator_calm">Calm Narrator (Female)</option>
+                                <option value="narrator_energetic">Energetic Narrator (Male)</option>
+                                <option value="narrator_deep">Deep Narrator (Male)</option>
+                                <option value="narrator_crisp">Crisp Narrator (Female)</option>
+                                <option value="narrator_young_m">Young Male</option>
+                                <option value="narrator_young_f">Young Female</option>
+                                <option value="podcast_host">Podcast Host (Male)</option>
+                                <option value="podcast_guest">Podcast Guest (Female)</option>
                             </select>
                         </div>
                         <div>
@@ -1919,7 +1995,7 @@
       </div>
     </div>
 
-    <!-- Color grade + Title cards -->
+    <!-- Color grade + Title cards + Music -->
     <div style="display:flex; flex-wrap:wrap; gap:12px;">
       <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
         <input type="checkbox" id="sfColorGrade" checked onchange="sfUpdateProductionSummary()"> Cinematic color grade
@@ -1927,9 +2003,126 @@
       <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
         <input type="checkbox" id="sfTitleCards" checked onchange="sfUpdateProductionSummary()"> Chapter title cards
       </label>
+      <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+        <input type="checkbox" id="sfBackgroundMusic" onchange="sfToggleMusic(); sfUpdateProductionSummary()"> 🎵 Background music
+      </label>
+    </div>
+
+    <!-- Music volume (shown only when music enabled) -->
+    <div id="sfMusicVolumeRow" style="display:none;">
+      <label style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:6px;">
+        Music Volume — <span id="sfMusicVolLabel">15%</span>
+        <span style="font-weight:400; font-size:10px; margin-left:6px;">voice always wins; 10–20% = subtle, 25–35% = audible</span>
+      </label>
+      <input type="range" id="sfMusicVolume" min="5" max="40" step="1" value="15"
+        style="width:100%;"
+        oninput="document.getElementById('sfMusicVolLabel').textContent = this.value + '%'; sfUpdateProductionSummary()">
     </div>
 
     <div id="sfProductionLiveSummary" style="font-size:11px; color:var(--text-3); padding:6px 10px; background:var(--surface-2); border-radius:6px;"></div>
+
+    <!-- Quick toggles row -->
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding-top:2px;">
+      <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer;">
+        <input type="checkbox" id="sfMultiFormat"> 📐 Multi-format
+      </label>
+      <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer;">
+        <input type="checkbox" id="sfHookAB"> 🪝 A/B Hook
+      </label>
+      <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer;">
+        <input type="checkbox" id="sfLowerThirds"> 📋 Lower-thirds
+      </label>
+    </div>
+
+    <!-- Advanced section (collapsed by default) -->
+    <div style="border-top:1px solid var(--border); margin-top:6px; padding-top:6px;">
+      <button type="button" onclick="sfToggleAdvanced()" style="display:flex; align-items:center; gap:6px; background:none; border:none; cursor:pointer; font-size:12px; color:var(--text-3); padding:0;">
+        <svg id="sfAdvancedChevron" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;"><polyline points="6 9 12 15 18 9"/></svg>
+        Advanced — Intro/Outro · Face-cam · YouTube · Social post · Webhook
+      </button>
+      <div id="sfAdvancedBody" style="display:none; flex-direction:column; gap:12px; margin-top:12px;">
+
+        <!-- #2 Intro/Outro clips -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div>
+            <label style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:4px;">Intro Clip</label>
+            <input type="text" id="sfIntroClip" placeholder="/path/to/intro.mp4" style="width:100%; font-size:12px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-1);">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:4px;">Outro Clip</label>
+            <input type="text" id="sfOutroClip" placeholder="/path/to/outro.mp4" style="width:100%; font-size:12px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-1);">
+          </div>
+        </div>
+
+        <!-- #5 Talking Head -->
+        <div>
+          <label style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:4px;">Talking Head / Face Cam</label>
+          <div style="display:grid; grid-template-columns:1fr auto auto; gap:6px; align-items:center;">
+            <input type="text" id="sfTalkingHead" placeholder="/path/to/face.mp4" style="font-size:12px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-1);">
+            <select id="sfPipCorner" style="font-size:12px; padding:6px; border-radius:6px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-1);">
+              <option value="br">↘ BR</option><option value="bl">↙ BL</option>
+              <option value="tr">↗ TR</option><option value="tl">↖ TL</option>
+            </select>
+            <div style="font-size:11px; color:var(--text-3); white-space:nowrap;">
+              <input type="number" id="sfPipSize" value="280" min="100" max="600" step="20" style="width:54px; font-size:12px; padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-1);"> px
+            </div>
+          </div>
+        </div>
+
+        <!-- #14 YouTube -->
+        <div style="padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2);">
+          <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:6px;">
+            <input type="checkbox" id="sfYtUpload" onchange="sfToggleYtUpload()"> 📺 Auto-upload to YouTube
+          </label>
+          <div id="sfYtUploadFields" style="display:none; flex-direction:column; gap:6px;">
+            <div style="display:grid; grid-template-columns:1fr auto; gap:6px; align-items:center;">
+              <input type="text" id="sfYtTitle" placeholder="Title (auto from script)" style="font-size:12px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text-1);">
+              <select id="sfYtPrivacy" style="font-size:12px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text-1);">
+                <option value="private">🔒 Private</option>
+                <option value="unlisted">🔗 Unlisted</option>
+                <option value="public">🌐 Public</option>
+              </select>
+            </div>
+            <input type="text" id="sfYtTags" placeholder="Tags (comma-separated)" style="font-size:12px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text-1);">
+            <div id="sfYtAuthStatus" style="font-size:11px; color:var(--text-3);"></div>
+          </div>
+        </div>
+
+        <!-- #27 Social Auto-Post -->
+        <div style="padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2);">
+          <div style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">Auto-Post to Social</div>
+          <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:4px;">
+            <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="checkbox" id="sfTiktokPost" onchange="sfToggleSocialPost()"> 📱 TikTok
+            </label>
+            <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer;">
+              <input type="checkbox" id="sfInstagramPost" onchange="sfToggleSocialPost()"> 📸 Instagram Reels
+            </label>
+          </div>
+          <div id="sfSocialFields" style="display:none; flex-direction:column; gap:5px; margin-top:6px;">
+            <div style="display:grid; grid-template-columns:1fr auto; gap:6px;">
+              <input type="text" id="sfTiktokTitle" placeholder="TikTok title (auto from script)" style="font-size:12px; padding:5px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text-1);">
+              <select id="sfTiktokPrivacy" style="font-size:12px; padding:5px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text-1);">
+                <option value="SELF_ONLY">🔒 Only me</option>
+                <option value="FOLLOWER_OF_CREATOR">👥 Followers</option>
+                <option value="PUBLIC_TO_EVERYONE">🌐 Public</option>
+              </select>
+            </div>
+            <textarea id="sfInstagramCaption" rows="2" placeholder="Instagram caption (auto from script)" style="font-size:12px; padding:5px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text-1); resize:vertical;"></textarea>
+            <input type="url" id="sfPublicVideoUrl" placeholder="Public video URL for Instagram (required)" style="font-size:12px; padding:5px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text-1);">
+            <div id="sfSocialStatus" style="font-size:11px; color:var(--text-3);"></div>
+          </div>
+        </div>
+
+        <!-- #15 Webhook -->
+        <div>
+          <label style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:4px;">Webhook URL</label>
+          <input type="url" id="sfWebhookUrl" placeholder="https://hooks.slack.com/… or Discord webhook" style="width:100%; font-size:12px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-1);">
+          <div style="font-size:10.5px; color:var(--text-3); margin-top:2px;">POSTed on complete / fail. Works with Discord, Slack, Make, Zapier.</div>
+        </div>
+
+      </div><!-- /sfAdvancedBody -->
+    </div><!-- /advanced section -->
   </div>
 </div>
 
@@ -1978,17 +2171,48 @@
             <!-- ── Right: Live Log Panel ────────────────────────────────────── -->
             <div style="position:sticky; top:16px; display:flex; flex-direction:column; gap:14px;">
 
-                <!-- Live run log -->
-                <div class="card" id="schedLogCard" style="display:none;">
-                    <div class="card-header">
-                        <div class="card-title" id="schedLogTitle">
+                <!-- Live run log — always visible -->
+                <div class="card" id="schedLogCard">
+                    <div class="card-header" style="gap:8px;">
+                        <div class="card-title" id="schedLogTitle" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                            Run Log
+                            Terminal
                         </div>
-                        <span id="schedLogStatus" class="badge badge-amber">Running</span>
+                        <span id="schedLogStatus" class="badge" style="background:var(--surface-2);color:var(--text-3);">Idle</span>
+                        <button id="schedLogClearBtn" class="btn btn-ghost btn-sm" style="padding:2px 7px; font-size:11px;" onclick="schedLogClear()" title="Clear log">✕ Clear</button>
                     </div>
-                    <div id="schedLogBody" style="padding:10px 14px; max-height:420px; overflow-y:auto; display:flex; flex-direction:column; gap:2px; font-size:11px; font-family:monospace;"></div>
-                    <div style="padding:10px 14px; border-top:1px solid var(--border); display:flex; gap:8px;" id="schedLogActions"></div>
+                    <div id="schedLogBody" style="padding:10px 14px; height:340px; overflow-y:auto; display:flex; flex-direction:column; gap:1px; font-size:11px; font-family:monospace; background:var(--surface-2); border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius);">
+                        <div id="schedLogPlaceholder" style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-3); font-size:12px; font-family:inherit; flex-direction:column; gap:6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4;"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                            Click ▶ on a job or enable Auto-Run
+                        </div>
+                    </div>
+                    <div style="padding:8px 14px; border-top:1px solid var(--border); display:flex; gap:8px;" id="schedLogActions"></div>
+                </div>
+
+                <!-- Presets panel -->
+                <div class="card" id="schedPresetsCard" style="display:none;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            🎛 Presets
+                            <span id="schedPresetsJobName" style="font-weight:400; color:var(--text-3); font-size:11px; margin-left:6px;"></span>
+                        </div>
+                        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('schedPresetsCard').style.display='none'" style="padding:3px 7px;">✕</button>
+                    </div>
+                    <div class="card-p" style="display:flex; flex-direction:column; gap:10px;">
+                        <!-- Save current job as preset -->
+                        <div style="display:flex; gap:6px;">
+                            <input id="schedPresetNameInput" type="text" placeholder="Preset name (e.g. Podcast Cinematic)" style="flex:1; font-size:12px;">
+                            <button class="btn btn-primary btn-sm" onclick="schedSavePreset()" style="white-space:nowrap; font-size:12px;">💾 Save from Job</button>
+                        </div>
+                        <div style="font-size:11px; color:var(--text-3);">
+                            Saves all settings from the selected job (style, voices, color grade, captions, etc.) as a named preset.
+                        </div>
+                        <!-- Preset list -->
+                        <div id="schedPresetList" style="display:flex; flex-direction:column; gap:6px; max-height:360px; overflow-y:auto;">
+                            <div style="font-size:12px; color:var(--text-3); text-align:center; padding:16px;">No presets saved yet.</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Last run summary -->
@@ -1997,6 +2221,23 @@
                         <div class="card-title">Last Output</div>
                     </div>
                     <div class="card-p space-y" id="schedLastRunBody" style="font-size:12px;"></div>
+                </div>
+
+                <!-- ── Workers panel ──────────────────────────────────── -->
+                <div class="card" id="workersCard">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            Workers
+                        </div>
+                        <button class="btn btn-ghost btn-sm" onclick="workersRefresh()" style="font-size:11px;" title="Refresh worker list">↻</button>
+                    </div>
+                    <div id="workersList" class="card-p" style="display:flex; flex-direction:column; gap:8px; font-size:12px;">
+                        <div style="color:var(--text-3); font-size:11px; text-align:center; padding:10px 0;">
+                            No workers connected.<br>
+                            <span style="font-size:10.5px;">Run <code style="background:var(--surface-2);padding:1px 5px;border-radius:4px;">./worker.sh</code> on your T440p.</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Upcoming schedule -->
@@ -2081,6 +2322,10 @@
                             <textarea id="plannerAvoid" rows="2" placeholder="e.g. political content, talking-head style…" style="width:100%; box-sizing:border-box; resize:vertical; font-size:12px;"></textarea>
                         </div>
 
+                        <label style="font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom:4px;">
+                            <input type="checkbox" id="plannerUseTrends" checked>
+                            📈 Inject trending topics (Reddit)
+                        </label>
                         <button id="plannerBrainstormBtn" class="btn btn-primary" style="width:100%;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                             Brainstorm Ideas
@@ -2099,6 +2344,21 @@
                         <span id="plannerQueueCount" class="badge badge-green">0</span>
                     </div>
                     <div class="card-p" id="plannerQueueList" style="display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+
+                <!-- ── Sent to Scheduler this session ─────────────────────── -->
+                <div class="card" id="plannerSentCard" style="display:none;">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Sent to Scheduler
+                        </div>
+                        <span id="plannerSentCount" class="badge" style="background:rgba(99,102,241,.15); color:#6366f1;">0</span>
+                    </div>
+                    <div class="card-p" style="padding-top:6px;">
+                        <div id="plannerSentList" style="display:flex; flex-direction:column; gap:5px;"></div>
+                        <button onclick="plannerClearSent()" style="margin-top:8px; width:100%; font-size:11px; background:none; border:none; color:var(--text-3); cursor:pointer; padding:4px 0;">Clear history</button>
+                    </div>
                 </div>
 
             </div>
@@ -4394,18 +4654,26 @@ function schedRender() {
                     ${job.next_run_ms ? `<span>Next: <strong>${nextRun}</strong></span>` : ''}
                 </div>
                 ${job.status === 'error' && job.run_history?.[0]?.error ? `<div style="font-size:11px; color:#ef4444; margin-top:2px;">❌ ${job.run_history[0].error.slice(0,100)}</div>` : ''}
+                ${job._retry_count ? `<div style="font-size:11px;color:#f59e0b;margin-top:2px;">🔄 Retry ${job._retry_count}/3 scheduled</div>` : ''}
+                ${job.run_history?.[0]?.thumb_path ? `<img src="/api/scheduler/output/${encodeURIComponent(job.run_history[0].thumb_path.split('/').pop())}" style="width:100%;height:72px;object-fit:cover;border-radius:6px;margin-top:6px;opacity:.9;" alt="thumbnail" loading="lazy">` : ''}
+                ${job._youtube_stats ? `<div style="font-size:10.5px;color:var(--text-3);margin-top:4px;display:flex;gap:8px;">📺 <span>${Number(job._youtube_stats.viewCount||0).toLocaleString()} views</span><span>👍 ${Number(job._youtube_stats.likeCount||0).toLocaleString()}</span></div>` : ''}
             </div>
             <div class="sched-job-actions">
                 <button class="btn btn-primary" onclick="schedRunNow('${job.id}')" ${job.status==='running'?'disabled':''}>
                     ${job.status==='running' ? SPIN_SVG + ' Running…' : '▶ Run Now'}
                 </button>
-                <button class="btn btn-ghost" onclick="schedViewLogs('${job.id}')">📋 Logs</button>
+                <button class="btn ${job.auto_loop ? 'btn-primary' : 'btn-ghost'}" onclick="schedToggleAutoLoop('${job.id}')" title="${job.auto_loop ? 'Auto-loop ON' : 'Auto-loop OFF'}" style="${job.auto_loop ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:transparent;' : ''}">
+                    🔁 Auto${job.auto_loop ? ' ON' : ''}
+                </button>
+                <button class="btn btn-ghost" onclick="schedShowPresets('${job.id}')">🎛 Presets</button>
+                <button class="btn btn-ghost" onclick="templateSaveFromJob('${job.id}')" title="Save as template">📐</button>
                 <button class="btn btn-ghost" onclick="schedEditJob('${job.id}')">✏️</button>
                 <button class="btn btn-ghost" onclick="schedDeleteJob('${job.id}')" style="color:#ef4444;">🗑</button>
             </div>`;
         list.appendChild(card);
     }
     schedRenderUpcoming();
+    schedUpdateAutoRunStatus();
 }
 
 function schedRenderUpcoming() {
@@ -4427,7 +4695,7 @@ async function schedRefresh() {
     try {
         const r = await fetch('/api/scheduler/jobs');
         const d = await r.json();
-        if (d.ok) { schedJobs = d.jobs; schedRender(); }
+        if (d.ok) { schedJobs = d.jobs; schedRender(); workersRender(); }
     } catch(_) {}
 }
 
@@ -4505,7 +4773,63 @@ function schedShowForm(job = null) {
     const cutSecs = job?.cut_duration_seconds ?? 2.5;
     if (cdEl) cdEl.value   = cutSecs;
     if (clEl) clEl.textContent = cutSecs + 's';
+    // Music
+    const muEl = document.getElementById('sfBackgroundMusic');
+    const mvEl = document.getElementById('sfMusicVolume');
+    const mlEl = document.getElementById('sfMusicVolLabel');
+    if (muEl) muEl.checked = !!job?.background_music;
+    const musicVol = Math.round((job?.music_volume ?? 0.15) * 100);
+    if (mvEl) mvEl.value = musicVol;
+    if (mlEl) mlEl.textContent = musicVol + '%';
+    sfToggleMusic();
     sfUpdateProductionSummary();
+    // Multi-format + webhook
+    const mfEl = document.getElementById('sfMultiFormat');
+    const whEl = document.getElementById('sfWebhookUrl');
+    if (mfEl) mfEl.checked = !!job?.multi_format_export;
+    if (whEl) whEl.value   = job?.webhook_url || '';
+    // Hook A/B
+    const habEl = document.getElementById('sfHookAB');
+    if (habEl) habEl.checked = !!job?.hook_ab_test;
+    // Intro/Outro
+    const icEl = document.getElementById('sfIntroClip');
+    const ocEl = document.getElementById('sfOutroClip');
+    if (icEl) icEl.value = job?.intro_clip  || '';
+    if (ocEl) ocEl.value = job?.outro_clip  || '';
+    // Talking head
+    const thEl  = document.getElementById('sfTalkingHead');
+    const pcEl  = document.getElementById('sfPipCorner');
+    const psEl  = document.getElementById('sfPipSize');
+    if (thEl) thEl.value  = job?.talking_head_path || '';
+    if (pcEl) pcEl.value  = job?.pip_corner || 'br';
+    if (psEl) psEl.value  = job?.pip_size   || 280;
+    // YouTube upload
+    const ytUEl = document.getElementById('sfYtUpload');
+    const ytPEl = document.getElementById('sfYtPrivacy');
+    const ytTEl = document.getElementById('sfYtTitle');
+    const ytGEl = document.getElementById('sfYtTags');
+    if (ytUEl) ytUEl.checked = !!job?.youtube_auto_upload;
+    if (ytPEl) ytPEl.value   = job?.youtube_privacy  || 'private';
+    if (ytTEl) ytTEl.value   = job?.youtube_title    || '';
+    if (ytGEl) ytGEl.value   = job?.youtube_tags     || '';
+    sfToggleYtUpload();
+    sfCheckYtAuthStatus();
+    // Lower-thirds + Social auto-post
+    const ltEl  = document.getElementById('sfLowerThirds');
+    const ttEl  = document.getElementById('sfTiktokPost');
+    const tpEl  = document.getElementById('sfTiktokPrivacy');
+    const ttlEl = document.getElementById('sfTiktokTitle');
+    const igEl  = document.getElementById('sfInstagramPost');
+    const icapEl= document.getElementById('sfInstagramCaption');
+    const pvuEl = document.getElementById('sfPublicVideoUrl');
+    if (ltEl)  ltEl.checked  = !!job?.auto_lower_thirds;
+    if (ttEl)  ttEl.checked  = !!job?.tiktok_auto_post;
+    if (tpEl)  tpEl.value    = job?.tiktok_privacy  || 'SELF_ONLY';
+    if (ttlEl) ttlEl.value   = job?.tiktok_title    || '';
+    if (igEl)  igEl.checked  = !!job?.instagram_auto_post;
+    if (icapEl)icapEl.value  = job?.instagram_caption || '';
+    if (pvuEl) pvuEl.value   = job?.public_video_url  || '';
+    sfToggleSocialPost();
     // Auto-expand production panel if non-default
     const prodNonDefault = !!job?.auto_captions || job?.color_grade || job?.title_cards || (job?.cut_duration_seconds && job.cut_duration_seconds !== 2.5);
     if (prodNonDefault) {
@@ -4658,16 +4982,52 @@ function sfApplyProductionPreset(key) {
     sfUpdateProductionSummary();
 }
 
+function sfToggleMusic() {
+    const on  = document.getElementById('sfBackgroundMusic')?.checked;
+    const row = document.getElementById('sfMusicVolumeRow');
+    if (row) row.style.display = on ? 'block' : 'none';
+}
+
+function sfToggleYtUpload() {
+    const on     = document.getElementById('sfYtUpload')?.checked;
+    const fields = document.getElementById('sfYtUploadFields');
+    if (fields) { fields.style.display = on ? 'flex' : 'none'; }
+    if (on) sfCheckYtAuthStatus();
+}
+
+async function sfCheckYtAuthStatus() {
+    const el = document.getElementById('sfYtAuthStatus');
+    if (!el) return;
+    try {
+        const r    = await fetch('/api/youtube-upload/status');
+        const data = await r.json();
+        if (data.configured) {
+            el.innerHTML = '<span style="color:#22c55e;">✅ YouTube OAuth configured</span>';
+        } else {
+            const authR    = await fetch('/api/youtube-upload/auth-url');
+            const authData = await authR.json();
+            el.innerHTML = authData.ok
+                ? `⚠️ Not configured. <a href="${authData.url}" target="_blank" style="color:var(--accent);">Authorize YouTube →</a> then set YOUTUBE_CLIENT_ID / CLIENT_SECRET / REFRESH_TOKEN in .env`
+                : `⚠️ Set YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN in your .env`;
+        }
+    } catch (_) {
+        el.textContent = '⚠️ Could not check YouTube auth status';
+    }
+}
+
 function sfUpdateProductionSummary() {
     const ac  = document.getElementById('sfAutoCaptions')?.checked;
     const ct  = document.getElementById('sfCaptionTemplate')?.value || 'explainer';
     const cg  = document.getElementById('sfColorGrade')?.checked;
     const tc  = document.getElementById('sfTitleCards')?.checked;
     const cd  = parseFloat(document.getElementById('sfCutDuration')?.value || '2.5');
+    const mu  = document.getElementById('sfBackgroundMusic')?.checked;
+    const mv  = document.getElementById('sfMusicVolume')?.value || '15';
     const parts = [];
     if (ac) parts.push(`Captions: ${ct}`);
     if (cg) parts.push('Color grade');
     if (tc) parts.push('Title cards');
+    if (mu) parts.push(`🎵 Music ${mv}%`);
     parts.push(`${cd}s cuts`);
     const sumEl = document.getElementById('sfProductionSummary');
     const liveEl = document.getElementById('sfProductionLiveSummary');
@@ -4677,6 +5037,7 @@ function sfUpdateProductionSummary() {
 }
 
 // ── Style selector ────────────────────────────────────────────────────────────
+
 function sfOnStyleChange() {
     const style = document.getElementById('sfStyle')?.value || '';
     const isPodcast = style === 'podcast' || style === 'podcast_dual';
@@ -4684,7 +5045,7 @@ function sfOnStyleChange() {
     const panel     = document.getElementById('sfPodcastPanel');
     const guestRow  = document.getElementById('sfPodcastGuestVoiceRow');
     const desc      = document.getElementById('sfPodcastStyleDesc');
-    const voiceRow  = document.querySelector('label[for="sfVoice"]')?.closest('div');
+    const voiceRow  = document.getElementById('sfVoice')?.closest('div');
 
     if (panel) panel.style.display = isPodcast ? 'flex' : 'none';
     if (guestRow) guestRow.style.opacity = isDual ? '1' : '0.4';
@@ -4771,6 +5132,27 @@ async function schedSaveJob() {
         color_grade:           document.getElementById('sfColorGrade')?.checked ?? true,
         title_cards:           document.getElementById('sfTitleCards')?.checked  ?? true,
         cut_duration_seconds:  parseFloat(document.getElementById('sfCutDuration')?.value || '2.5'),
+        background_music:      !!document.getElementById('sfBackgroundMusic')?.checked,
+        music_volume:          parseFloat(document.getElementById('sfMusicVolume')?.value || '15') / 100,
+        multi_format_export:   !!document.getElementById('sfMultiFormat')?.checked,     // #13
+        webhook_url:           document.getElementById('sfWebhookUrl')?.value?.trim() || null, // #15
+        hook_ab_test:          !!document.getElementById('sfHookAB')?.checked,          // #4
+        intro_clip:            document.getElementById('sfIntroClip')?.value?.trim() || null,  // #2
+        outro_clip:            document.getElementById('sfOutroClip')?.value?.trim() || null,  // #2
+        talking_head_path:     document.getElementById('sfTalkingHead')?.value?.trim() || null, // #5
+        pip_corner:            document.getElementById('sfPipCorner')?.value || 'br',   // #5
+        pip_size:              parseInt(document.getElementById('sfPipSize')?.value) || 280,    // #5
+        youtube_auto_upload:   !!document.getElementById('sfYtUpload')?.checked,        // #14
+        youtube_privacy:       document.getElementById('sfYtPrivacy')?.value || 'private',     // #14
+        youtube_title:         document.getElementById('sfYtTitle')?.value?.trim() || null,    // #14
+        youtube_tags:          document.getElementById('sfYtTags')?.value?.trim() || null,     // #14
+        auto_lower_thirds:     !!document.getElementById('sfLowerThirds')?.checked,            // #20
+        tiktok_auto_post:      !!document.getElementById('sfTiktokPost')?.checked,             // #27
+        tiktok_privacy:        document.getElementById('sfTiktokPrivacy')?.value || 'SELF_ONLY', // #27
+        tiktok_title:          document.getElementById('sfTiktokTitle')?.value?.trim() || null, // #27
+        instagram_auto_post:   !!document.getElementById('sfInstagramPost')?.checked,          // #27
+        instagram_caption:     document.getElementById('sfInstagramCaption')?.value?.trim() || null, // #27
+        public_video_url:      document.getElementById('sfPublicVideoUrl')?.value?.trim() || null,   // #27
     };
     // Preserve planner origin metadata if editing an existing planner job
     if (schedEditingId) {
@@ -4826,67 +5208,475 @@ async function schedToggle(id) {
 async function schedRunNow(id) {
     const r = await fetch(`/api/scheduler/jobs/${id}/run`, { method: 'POST' });
     const d = await r.json();
-    if (!d.ok) { addLog(`❌ Scheduler: ${d.error}`); return; }
-    addLog(`▶ Triggered job ${id}`);
+    if (!d.ok) {
+        _schedLogAppend(`✗ Could not start job: ${d.error}`, true);
+        addLog(`❌ Scheduler: ${d.error}`);
+        return;
+    }
+    const job = schedJobs.find(j => j.id === id);
+    _schedLogAppend(`▶ Triggered: "${job?.name || id}"`);
     await schedRefresh();
-    // Open live log automatically
-    setTimeout(() => schedViewLogs(id), 800);
+    setTimeout(() => schedViewLogs(id), 600);
+}
+
+// ── Global Auto-Run Queue ─────────────────────────────────────────────────────
+let _schedAutoRunTimer  = null;
+let _schedAutoRunActive = false;
+const _jobLastTriggered = {};   // jobId → timestamp, prevents immediate re-trigger
+
+
+function sfToggleAdvanced() {
+    const body = document.getElementById('sfAdvancedBody');
+    const chev = document.getElementById('sfAdvancedChevron');
+    if (!body) return;
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'flex';
+    if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+function schedAutoRunChanged() {
+    const on  = document.getElementById('schedAutoRunToggle').checked;
+    const bar = document.getElementById('schedAutoRunBar');
+    _schedAutoRunActive = on;
+    bar.style.borderColor = on ? '#6366f1' : '';
+    bar.style.boxShadow   = on ? '0 0 0 3px rgba(99,102,241,.12)' : '';
+    // Sync concurrency to backend
+    const concurrency = parseInt(document.getElementById('schedAutoRunConcurrency').value) || 3;
+    fetch('/api/scheduler/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ max_concurrent: concurrency }),
+    }).catch(() => {});
+    if (on) {
+        // On resume: clear cooldowns for jobs that are currently idle
+        // so they fire immediately rather than waiting out the 60s window
+        for (const job of schedJobs) {
+            if (job.enabled && job.status === 'idle') {
+                delete _jobLastTriggered[job.id];
+            }
+        }
+        _schedLogAppend('▶ Auto-Run enabled — scanning for idle jobs…');
+        schedAutoRunTick();
+        _schedAutoRunTimer = setInterval(schedAutoRunTick, 12_000);
+        schedUpdateAutoRunStatus();
+    } else {
+        clearInterval(_schedAutoRunTimer);
+        _schedAutoRunTimer = null;
+        _schedLogAppend('⏸ Auto-Run paused — jobs in progress will finish naturally');
+        schedUpdateAutoRunStatus();
+    }
+}
+
+async function schedAutoRunTick() {
+    if (!_schedAutoRunActive) return;
+    await schedRefresh();
+
+    const now = Date.now();
+    const COOLDOWN_MS = 60_000; // don't re-trigger a job within 60 s of last trigger
+
+    const candidates = schedJobs.filter(j =>
+        j.enabled &&
+        j.status === 'idle' &&
+        (now - (_jobLastTriggered[j.id] || 0)) > COOLDOWN_MS
+    );
+
+    if (candidates.length === 0) {
+        schedUpdateAutoRunStatus();
+        return;
+    }
+
+    let firstTriggered = null;
+    for (const job of candidates) {
+        try {
+            const r = await fetch(`/api/scheduler/jobs/${job.id}/run`, { method: 'POST' });
+            const d = await r.json();
+            if (d.ok) {
+                _jobLastTriggered[job.id] = now;
+                _schedLogAppend(`▶ Triggered: "${job.name}"`);
+                if (!firstTriggered) firstTriggered = job;
+            } else {
+                _schedLogAppend(`⚠ Skipped "${job.name}": ${d.error || 'unknown'}`);
+            }
+        } catch (err) {
+            _schedLogAppend(`✗ Error triggering "${job.name}": ${err.message}`, true);
+        }
+    }
+
+    // Auto-connect terminal to first newly-triggered job (unless already watching one)
+    if (firstTriggered && !schedLogEs) {
+        setTimeout(() => schedViewLogs(firstTriggered.id), 600);
+    }
+
+    await schedRefresh();
+    schedUpdateAutoRunStatus();
+}
+
+async function schedUpdateAutoRunStatus() {
+    const el = document.getElementById('schedAutoRunStatus');
+    if (!el) return;
+
+    if (!_schedAutoRunActive) {
+        el.textContent = 'Off';
+        el.style.color = 'var(--text-3)';
+        return;
+    }
+
+    let backendStatus = null;
+    try {
+        const r = await fetch('/api/scheduler/status');
+        backendStatus = await r.json();
+    } catch(_) {}
+
+    const running = schedJobs.filter(j => j.status === 'running').length;
+    const idle    = schedJobs.filter(j => j.enabled && j.status === 'idle').length;
+    const errored = schedJobs.filter(j => j.status === 'error').length;
+    const pending = backendStatus?.pending?.length ?? 0;
+    const maxConc = backendStatus?.max_concurrent ?? (parseInt(document.getElementById('schedAutoRunConcurrency')?.value) || 3);
+
+    const parts = [`${running}/${maxConc} running`];
+    if (idle)    parts.push(`${idle} idle`);
+    if (pending) parts.push(`${pending} queued`);
+    if (errored) parts.push(`${errored} errored`);
+
+    el.textContent = parts.join(' · ');
+    el.style.color = running > 0 ? '#6366f1' : 'var(--text-3)';
+}
+
+async function schedToggleAutoLoop(id) {
+    const job = schedJobs.find(j => j.id === id);
+    if (!job) return;
+    const newVal = !job.auto_loop;
+    const r = await fetch(`/api/scheduler/jobs/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auto_loop: newVal }),
+    });
+    const d = await r.json();
+    if (!d.ok) { addLog(`❌ ${d.error}`); return; }
+    addLog(`🔁 Auto-loop ${newVal ? 'enabled' : 'disabled'} for "${job.name}"`);
+    await schedRefresh();
 }
 
 // ── Live log viewer ───────────────────────────────────────────────────────────
+// ── Presets ───────────────────────────────────────────────────────────────────
+// Presets are stored in localStorage as an array of settings objects.
+// Each preset can be applied to any job via the Presets panel.
+
+let _schedPresetsTargetJobId = null; // job being targeted by the open presets panel
+
+// ── 5 built-in starter presets ────────────────────────────────────────────────
+const BUILTIN_PRESETS = [
+  {
+    id: '__builtin_podcast_dual',
+    builtin: true,
+    name: '🎙️ Podcast Dual — Nova & Cedar',
+    style: 'podcast_dual',
+    podcast_host_voice: 'narrator_warm',      // nova
+    podcast_guest_voice: 'narrator_confident', // cedar
+    tone: 'conversational',
+    duration_minutes: 4,
+    orientation: 'landscape',
+    color_grade: true,
+    title_cards: true,
+    auto_captions: false,
+    cut_duration_seconds: 3.5,
+    clips_per_scene: 2,
+  },
+  {
+    id: '__builtin_podcast_dual2',
+    builtin: true,
+    name: '🎙️ Podcast Dual — Fable & Onyx',
+    style: 'podcast_dual',
+    podcast_host_voice: 'narrator_crisp',  // fable
+    podcast_guest_voice: 'narrator_deep',  // onyx
+    tone: 'educational',
+    duration_minutes: 5,
+    orientation: 'landscape',
+    color_grade: true,
+    title_cards: true,
+    auto_captions: true,
+    caption_template: 'explainer',
+    cut_duration_seconds: 3.0,
+    clips_per_scene: 2,
+  },
+  {
+    id: '__builtin_female_nova',
+    builtin: true,
+    name: '👩 Single Female — Nova (Warm)',
+    style: 'storytelling',
+    voice: 'narrator_warm',  // nova
+    tone: 'inspirational',
+    duration_minutes: 3,
+    orientation: 'landscape',
+    color_grade: true,
+    title_cards: true,
+    auto_captions: false,
+    cut_duration_seconds: 2.5,
+    clips_per_scene: 2,
+  },
+  {
+    id: '__builtin_female_fable',
+    builtin: true,
+    name: '👩 Single Female — Fable (Crisp)',
+    style: 'documentary',
+    voice: 'narrator_crisp',  // fable
+    tone: 'calm',
+    duration_minutes: 3,
+    orientation: 'landscape',
+    color_grade: true,
+    title_cards: false,
+    auto_captions: true,
+    caption_template: 'impact',
+    cut_duration_seconds: 3.0,
+    clips_per_scene: 2,
+  },
+  {
+    id: '__builtin_male_onyx',
+    builtin: true,
+    name: '👨 Single Male — Onyx (Deep)',
+    style: 'storytelling',
+    voice: 'narrator_deep',  // onyx
+    tone: 'authoritative',
+    duration_minutes: 3,
+    orientation: 'landscape',
+    color_grade: true,
+    title_cards: true,
+    auto_captions: false,
+    cut_duration_seconds: 2.5,
+    clips_per_scene: 2,
+  },
+];
+
+function schedLoadPresets() {
+    try { return JSON.parse(localStorage.getItem('schedPresets') || '[]'); } catch(_) { return []; }
+}
+function schedSavePresetsToStorage(arr) {
+    localStorage.setItem('schedPresets', JSON.stringify(arr));
+}
+
+// Keys that make up a preset (production + style settings)
+const PRESET_KEYS = [
+    'style','voice','podcast_host_voice','podcast_guest_voice',
+    'tone','duration_minutes','orientation',
+    'auto_captions','caption_template','color_grade','title_cards',
+    'cut_duration_seconds','clips_per_scene',
+    'use_pexels','use_pixabay','use_youtube',
+];
+
+function schedShowPresets(jobId) {
+    _schedPresetsTargetJobId = jobId;
+    const job  = schedJobs.find(j => j.id === jobId);
+    const card = document.getElementById('schedPresetsCard');
+    const nameEl = document.getElementById('schedPresetsJobName');
+    if (nameEl) nameEl.textContent = job ? `— ${job.name}` : '';
+    if (card) { card.style.display = 'block'; card.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
+    schedRenderPresetList();
+}
+
+function schedRenderPresetList() {
+    const listEl = document.getElementById('schedPresetList');
+    if (!listEl) return;
+    const userPresets = schedLoadPresets();
+    const all = [...BUILTIN_PRESETS, ...userPresets];
+
+    const renderCard = (p) => {
+        const tags = [
+            p.style ? p.style.replace(/_/g,' ') : null,
+            p.color_grade ? 'color grade' : null,
+            p.auto_captions ? 'captions' : null,
+            p.title_cards ? 'title cards' : null,
+            p.cut_duration_seconds ? `${p.cut_duration_seconds}s cuts` : null,
+        ].filter(Boolean).join(' · ');
+        const builtinBadge = p.builtin
+            ? `<span style="font-size:10px; background:rgba(99,102,241,0.12); color:#6366f1; border:1px solid rgba(99,102,241,0.25); border-radius:4px; padding:1px 5px; margin-left:5px;">built-in</span>`
+            : '';
+        const actions = p.builtin
+            ? `<button class="btn btn-primary btn-sm" onclick="schedApplyPreset('${p.id}')" style="font-size:11px; padding:3px 9px;">Apply</button>`
+            : `<button class="btn btn-primary btn-sm" onclick="schedApplyPreset('${p.id}')" style="font-size:11px; padding:3px 9px;">Apply</button>
+               <button class="btn btn-ghost btn-sm" onclick="schedEditPreset('${p.id}')" style="font-size:11px; padding:3px 9px;" title="Edit">✏️</button>
+               <button class="btn btn-ghost btn-sm" onclick="schedDeletePreset('${p.id}')" style="font-size:11px; padding:3px 9px; color:#ef4444;">🗑</button>`;
+        return `
+        <div style="border:1px solid var(--border); border-radius:8px; padding:10px 12px; display:flex; align-items:flex-start; gap:10px; background:var(--surface-2);">
+            <div style="flex:1; min-width:0;">
+                <div style="font-size:12px; font-weight:600; color:var(--text); margin-bottom:2px;">${p.name}${builtinBadge}</div>
+                <div style="font-size:11px; color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${tags || 'Default settings'}</div>
+            </div>
+            <div style="display:flex; gap:5px; flex-shrink:0;">${actions}</div>
+        </div>`;
+    };
+
+    listEl.innerHTML = all.map(renderCard).join('');
+}
+
+function schedSavePreset() {
+    const nameEl = document.getElementById('schedPresetNameInput');
+    const name   = nameEl?.value.trim();
+    if (!name) { nameEl?.focus(); return; }
+
+    // Read settings from the job currently targeted (or from the form if open)
+    const job = schedJobs.find(j => j.id === _schedPresetsTargetJobId) || {};
+
+    const preset = { id: Date.now().toString(), name };
+    for (const k of PRESET_KEYS) {
+        if (job[k] !== undefined) preset[k] = job[k];
+    }
+
+    const arr = schedLoadPresets();
+    arr.unshift(preset);
+    schedSavePresetsToStorage(arr);
+    if (nameEl) nameEl.value = '';
+    schedRenderPresetList();
+    addLog(`✅ Preset "${name}" saved`);
+}
+
+async function schedApplyPreset(presetId) {
+    const preset = BUILTIN_PRESETS.find(p => p.id === presetId) || schedLoadPresets().find(p => p.id === presetId);
+    if (!preset || !_schedPresetsTargetJobId) return;
+    const job = schedJobs.find(j => j.id === _schedPresetsTargetJobId);
+    if (!job) return;
+
+    // Merge preset into job
+    const updated = { ...job };
+    for (const k of PRESET_KEYS) {
+        if (preset[k] !== undefined) updated[k] = preset[k];
+    }
+
+    try {
+        const r = await fetch(`/api/scheduler/jobs/${job.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated),
+        });
+        if (!r.ok) throw new Error(await r.text());
+        const saved = await r.json();
+        const idx = schedJobs.findIndex(j => j.id === job.id);
+        if (idx !== -1) schedJobs[idx] = saved;
+        schedRenderJobs();
+        addLog(`✅ Preset "${preset.name}" applied to "${job.name}"`);
+    } catch(e) {
+        addLog(`❌ Apply preset failed: ${e.message}`);
+    }
+}
+
+function schedEditPreset(presetId) {
+    const presets = schedLoadPresets();
+    const preset  = presets.find(p => p.id === presetId);
+    if (!preset) return;
+
+    const newName = prompt('Rename preset:', preset.name);
+    if (newName === null) return;
+    preset.name = newName.trim() || preset.name;
+    schedSavePresetsToStorage(presets);
+    schedRenderPresetList();
+}
+
+function schedDeletePreset(presetId) {
+    const arr = schedLoadPresets().filter(p => p.id !== presetId);
+    schedSavePresetsToStorage(arr);
+    schedRenderPresetList();
+}
+
+function schedLogClear() {
+    const body = document.getElementById('schedLogBody');
+    const placeholder = document.getElementById('schedLogPlaceholder');
+    if (!body) return;
+    // Remove all log lines but keep the placeholder
+    [...body.children].forEach(c => { if (c.id !== 'schedLogPlaceholder') c.remove(); });
+    if (placeholder) placeholder.style.display = 'flex';
+    const logStatus = document.getElementById('schedLogStatus');
+    if (logStatus) { logStatus.textContent = 'Idle'; logStatus.className = 'badge'; logStatus.style.cssText = 'background:var(--surface-2);color:var(--text-3);'; }
+    const logTitle = document.getElementById('schedLogTitle');
+    if (logTitle) logTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Terminal`;
+    const logActions = document.getElementById('schedLogActions');
+    if (logActions) logActions.innerHTML = '';
+}
+
+function _schedLogAppend(text, isErr = false) {
+    const body = document.getElementById('schedLogBody');
+    if (!body) return;
+    const placeholder = document.getElementById('schedLogPlaceholder');
+    if (placeholder) placeholder.style.display = 'none';
+    const line = document.createElement('div');
+    line.className = 'run-log-line' + (isErr ? ' err' : '');
+    line.style.cssText = 'padding:1px 0; white-space:pre-wrap; word-break:break-all;' + (isErr ? 'color:#ef4444;' : '');
+    line.textContent = text;
+    body.appendChild(line);
+    body.scrollTop = body.scrollHeight;
+}
+
 function schedViewLogs(id) {
     const job = schedJobs.find(j => j.id === id) || { name: id };
-    const logCard   = document.getElementById('schedLogCard');
     const logTitle  = document.getElementById('schedLogTitle');
     const logStatus = document.getElementById('schedLogStatus');
     const logBody   = document.getElementById('schedLogBody');
     const logActions = document.getElementById('schedLogActions');
 
+    // Update header
     logTitle.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> ${job.name}`;
     logStatus.className = 'badge badge-amber';
+    logStatus.style.cssText = '';
     logStatus.textContent = 'Connecting…';
-    logBody.innerHTML  = '';
     logActions.innerHTML = '';
-    logCard.style.display = 'block';
-    logCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Clear old lines, hide placeholder
+    [...logBody.children].forEach(c => { if (c.id !== 'schedLogPlaceholder') c.remove(); });
+    const placeholder = document.getElementById('schedLogPlaceholder');
+    if (placeholder) placeholder.style.display = 'none';
 
     // Close existing stream
     if (schedLogEs) { schedLogEs.close(); schedLogEs = null; }
 
     schedLogEs = new EventSource(`/api/scheduler/jobs/${id}/logs`);
+
+    schedLogEs.onopen = () => {
+        logStatus.textContent = 'Running';
+        logStatus.className = 'badge badge-amber';
+    };
+
     schedLogEs.onmessage = (e) => {
         const data = JSON.parse(e.data);
         if (data.log) {
-            const line = document.createElement('div');
-            line.className = 'run-log-line' + (data.log.includes('❌') ? ' err' : '');
-            line.textContent = data.log;
-            logBody.appendChild(line);
-            logBody.scrollTop = logBody.scrollHeight;
+            _schedLogAppend(data.log, data.log.includes('❌') || data.log.includes('Error'));
         }
         if (data.done) {
             schedLogEs.close(); schedLogEs = null;
             const ok = data.status === 'completed';
             logStatus.className = ok ? 'badge badge-green' : 'badge badge-red';
-            logStatus.textContent = ok ? 'Completed' : 'Failed';
+            logStatus.style.cssText = '';
+            logStatus.textContent = ok ? '✓ Done' : '✗ Failed';
 
-            // Show download button if video was produced
             if (data.output?.video_path) {
                 const fname = data.output.video_path.split('/').pop();
                 logActions.innerHTML = `
-                    <a href="/api/scheduler/output/${fname}" class="btn btn-primary" download style="flex:1;">
-                        ⬇️ Download Video
+                    <a href="/api/scheduler/output/${encodeURIComponent(fname)}" class="btn btn-primary btn-sm" download style="flex:1; font-size:12px;">
+                        ⬇️ Download
                     </a>`;
-                // Also show last run card
                 schedShowLastRun(job, data.output);
             }
-            schedRefresh();
+
+            // If auto-run is active, auto-connect to next running job after a moment
+            if (_schedAutoRunActive) {
+                setTimeout(async () => {
+                    await schedRefresh();
+                    const next = schedJobs.find(j => j.status === 'running');
+                    if (next) schedViewLogs(next.id);
+                }, 1500);
+            } else {
+                schedRefresh();
+            }
         }
     };
+
     schedLogEs.onerror = () => {
-        logStatus.className = 'badge badge-red';
-        logStatus.textContent = 'Disconnected';
-        schedLogEs?.close();
-        schedLogEs = null;
+        // Don't mark as error immediately — SSE disconnects briefly between runs
+        setTimeout(() => {
+            if (!schedLogEs) return; // already handled
+            logStatus.className = 'badge';
+            logStatus.style.cssText = 'background:var(--surface-2);color:var(--text-3);';
+            logStatus.textContent = 'Disconnected';
+            schedLogEs?.close();
+            schedLogEs = null;
+        }, 2000);
     };
 }
 
@@ -4894,12 +5684,16 @@ function schedShowLastRun(job, output) {
     const card = document.getElementById('schedLastRunCard');
     const body = document.getElementById('schedLastRunBody');
     card.style.display = 'block';
+    const thumbFile = output.thumb_path ? output.thumb_path.split('/').pop() : null;
     body.innerHTML = `
+        ${thumbFile ? `<img src="/api/scheduler/output/${encodeURIComponent(thumbFile)}" style="width:100%;border-radius:6px;margin-bottom:6px;max-height:140px;object-fit:cover;" loading="lazy">` : ''}
         ${output.idea_title ? `<div><strong>Idea:</strong> ${output.idea_title}</div>` : ''}
+        ${output.hook_winner ? `<div style="font-size:11px;color:#a78bfa;">🪝 Hook ${output.hook_winner} selected${output.hook_b ? `: "${output.hook_b.slice(0,60)}…"` : ''}</div>` : ''}
         ${output.clip_count ? `<div><strong>Footage:</strong> ${output.clip_count} clip(s)</div>` : ''}
         ${output.audio_path ? `<div style="color:#22c55e;">✅ Voiceover generated</div>` : ''}
+        ${output.youtube_url ? `<a href="${output.youtube_url}" target="_blank" class="btn btn-ghost" style="width:100%;margin-top:4px;font-size:12px;">📺 View on YouTube →</a>` : ''}
         ${output.video_path ? `
-            <a href="/api/scheduler/output/${output.video_path.split('/').pop()}" class="btn btn-primary" download style="width:100%; margin-top:4px;">
+            <a href="/api/scheduler/output/${encodeURIComponent(output.video_path.split('/').pop())}" class="btn btn-primary" download style="width:100%; margin-top:4px;">
                 ⬇️ Download Final Video
             </a>` : '<div style="color:var(--text-3);">No video output (combine step not enabled)</div>'}`;
 }
@@ -5037,10 +5831,11 @@ document.getElementById('plannerBrainstormBtn').addEventListener('click', async 
     plannerValidations   = {};
 
     try {
+        const use_trends = document.getElementById('plannerUseTrends')?.checked !== false;
         const r = await fetch('/api/planner/brainstorm', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ niche, platform, goal, tone, avoid, count }),
+            body:    JSON.stringify({ niche, platform, goal, tone, avoid, count, use_trends }),
         });
         const d = await r.json();
         if (!d.ok) throw new Error(d.error);
@@ -5202,9 +5997,10 @@ function plannerToggleQueue(ideaId) {
     if (!idea) return;
 
     const key     = JSON.stringify({ id: idea.id, _brainstormId: plannerBrainstormId });
-    const idx     = plannerQueue.findIndex(q => q.id === idea.id && q._brainstormId === plannerBrainstormId);
+    const idx = plannerQueue.findIndex(q => q.id === idea.id && q._brainstormId === plannerBrainstormId);
 
     if (idx === -1) {
+        // Add to local queue then immediately send to scheduler
         const val = plannerValidations[ideaId];
         plannerQueue.push({
             ...idea,
@@ -5212,16 +6008,22 @@ function plannerToggleQueue(ideaId) {
             _validation:   val || null,
             _queuedAt:     Date.now(),
         });
+        plannerSaveQueue();
+        // Re-render card to show queued state while we send
+        const card    = document.getElementById(`idea-card-${ideaId}`);
+        const newCard = plannerRenderIdeaCard(idea);
+        card?.replaceWith(newCard);
+        plannerRenderQueue();
+        // Fire-and-forget to scheduler
+        plannerSendToScheduler(idea.id, plannerBrainstormId);
     } else {
         plannerQueue.splice(idx, 1);
+        plannerSaveQueue();
+        const card    = document.getElementById(`idea-card-${ideaId}`);
+        const newCard = plannerRenderIdeaCard(idea);
+        card?.replaceWith(newCard);
+        plannerRenderQueue();
     }
-    plannerSaveQueue();
-
-    // Re-render card
-    const card    = document.getElementById(`idea-card-${ideaId}`);
-    const newCard = plannerRenderIdeaCard(idea);
-    card?.replaceWith(newCard);
-    plannerRenderQueue();
 }
 
 function plannerQueueFromDetail(ideaId) {
@@ -5254,7 +6056,7 @@ function plannerRenderQueue() {
                 </div>
             </div>
             <div class="queue-item-actions">
-                <button class="btn btn-ghost btn-sm" style="flex:1; font-size:10.5px;" onclick="plannerSendToScheduler('${item.id}','${item._brainstormId}')" title="Create a Scheduler job from this idea — set timing and let it run automatically">📅 Schedule</button>
+                <button class="btn btn-ghost btn-sm" style="flex:1; font-size:10.5px;" onclick="switchToTab('scheduler')" title="View in Scheduler tab">📅 View</button>
                 <button class="btn btn-ghost btn-sm" style="flex:1; font-size:10.5px;" onclick="plannerSendToGenerate('${item.id}','${item._brainstormId}')" title="Pre-fill the Generate tab and produce manually">🎬 Manual</button>
                 <button class="btn btn-ghost btn-sm" style="font-size:10.5px; color:#ef4444;" onclick="plannerRemoveFromQueue('${item.id}','${item._brainstormId}')">✕</button>
             </div>`;
@@ -5312,6 +6114,55 @@ function plannerSendToGenerate(ideaId, brainstormId) {
     addLog(`🎬 Loaded "${idea.title}" into Generate tab`);
 }
 
+function switchToTab(tabName) {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-dropdown-item').forEach(i => i.classList.remove('active'));
+    document.getElementById('toolsDropdownBtn')?.classList.remove('has-active');
+    document.getElementById('toolsSubRow')?.classList.remove('open');
+    document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
+    document.getElementById(`tab-${tabName}`)?.classList.add('active');
+}
+
+// ── Session log: ideas sent to Scheduler this page load ──────────────────────
+let plannerSentLog = []; // { title, niche, style, sentAt, jobId }
+
+function plannerAddToSentLog(title, niche, style, jobId) {
+    plannerSentLog.unshift({ title, niche, style, sentAt: Date.now(), jobId });
+    plannerRenderSentLog();
+}
+
+function plannerRenderSentLog() {
+    const card  = document.getElementById('plannerSentCard');
+    const list  = document.getElementById('plannerSentList');
+    const count = document.getElementById('plannerSentCount');
+    if (!card) return;
+    count.textContent = plannerSentLog.length;
+    card.style.display = plannerSentLog.length ? 'block' : 'none';
+    list.innerHTML = plannerSentLog.map(item => {
+        const ago = (() => {
+            const s = Math.floor((Date.now() - item.sentAt) / 1000);
+            if (s < 60) return 'just now';
+            if (s < 3600) return `${Math.floor(s/60)}m ago`;
+            return `${Math.floor(s/3600)}h ago`;
+        })();
+        return `
+        <div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border);">
+            <div style="width:7px; height:7px; border-radius:50%; background:#22c55e; flex-shrink:0; margin-top:1px;"></div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-size:11.5px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.title}">${item.title}</div>
+                <div style="font-size:10.5px; color:var(--text-3);">${item.niche || '—'} · ${(item.style||'').replace(/_/g,' ')} · ${ago}</div>
+            </div>
+            <span style="font-size:10px; background:rgba(34,197,94,.12); color:#22c55e; border:1px solid rgba(34,197,94,.25); border-radius:4px; padding:1px 5px; flex-shrink:0;">running</span>
+        </div>`;
+    }).join('');
+}
+
+function plannerClearSent() {
+    plannerSentLog = [];
+    plannerRenderSentLog();
+}
+
 // ── Send idea from Planner queue → Scheduler ─────────────────────────────────
 async function plannerSendToScheduler(ideaId, brainstormId) {
     const idea = plannerQueue.find(q => q.id == ideaId && q._brainstormId == brainstormId);
@@ -5351,23 +6202,18 @@ async function plannerSendToScheduler(ideaId, brainstormId) {
         const d = await r.json();
         if (!d.ok) throw new Error(d.error || 'Failed to create job');
 
-        // Remove from planner queue now that it's in the Scheduler
+        // Auto-run immediately — no manual trigger needed
+        await fetch(`/api/scheduler/jobs/${d.job.id}/run`, { method: 'POST' });
+
+        // Remove from planner queue — it's now in the Scheduler and running
         plannerRemoveFromQueue(ideaId, brainstormId);
-        addLog(`📅 Scheduled "${topic}" — set timing in the Scheduler tab`);
+        addLog(`✅ "${topic}" queued and running in Scheduler`);
 
-        // Switch to Scheduler tab
-        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab-dropdown-item').forEach(i => i.classList.remove('active'));
-        document.getElementById('toolsDropdownBtn')?.classList.remove('has-active');
-        document.getElementById('toolsSubRow')?.classList.remove('open');
-        document.querySelector('[data-tab="scheduler"]')?.classList.add('active');
-        document.getElementById('tab-scheduler')?.classList.add('active');
+        // Add to the session sent-log so it's visible on the Planner page
+        plannerAddToSentLog(topic, channelNiche, payload.style, d.job.id);
 
-        // Refresh scheduler list, then open the new job's edit form so user can set schedule timing
-        await schedRefresh();
-        const newJob = schedJobs.find(j => j.id === d.job.id);
-        if (newJob) schedShowForm(newJob);
+        // Refresh scheduler silently in background
+        schedRefresh();
 
     } catch (err) {
         alert(`Could not create scheduler job: ${err.message}`);
@@ -5415,6 +6261,346 @@ async function plannerRefine(ideaId) {
 // ── Init queue on load ────────────────────────────────────────────────────────
 plannerRenderQueue();
 
+// ══════════════════════════════════════════════════════════════════════════════
+// #25 JOB TEMPLATES
+// ══════════════════════════════════════════════════════════════════════════════
+let _jobTemplates = [];
+
+async function templateLoadAll() {
+    try {
+        const r = await fetch('/api/scheduler/templates');
+        const d = await r.json();
+        _jobTemplates = d.templates || [];
+    } catch(_) {}
+}
+
+async function templateSaveFromJob(jobId) {
+    const name = prompt('Template name:');
+    if (!name) return;
+    const r = await fetch('/api/scheduler/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, job_id: jobId }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+        addLog(`📐 Template "${name}" saved`);
+        await templateLoadAll();
+        templateRenderPicker();
+    }
+}
+
+async function templateSpawn(templateId) {
+    const tmpl = _jobTemplates.find(t => t.id === templateId);
+    if (!tmpl) return;
+    const topic = prompt(`New topic for template "${tmpl.name}":`, '');
+    if (topic === null) return;
+    const r = await fetch(`/api/scheduler/templates/${templateId}/spawn`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+        addLog(`📐 Job spawned from template "${tmpl.name}"`);
+        await schedRefresh();
+    }
+}
+
+async function templateDelete(templateId) {
+    if (!confirm('Delete template?')) return;
+    await fetch(`/api/scheduler/templates/${templateId}`, { method: 'DELETE' });
+    await templateLoadAll();
+    templateRenderPicker();
+}
+
+function templateRenderPicker() {
+    const el = document.getElementById('templatePickerList');
+    if (!el) return;
+    if (!_jobTemplates.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text-3);">No templates saved yet. Click 📐 on a job card to save one.</div>'; return; }
+    el.innerHTML = _jobTemplates.map(t => `
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);">
+            <div style="flex:1;font-size:12px;">${t.name}<span style="color:var(--text-3);font-size:10.5px;margin-left:6px;">${new Date(t.created_at).toLocaleDateString()}</span></div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;" onclick="templateSpawn('${t.id}')">▶ Use</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;color:#ef4444;" onclick="templateDelete('${t.id}')">🗑</button>
+        </div>`).join('');
+}
+
+function templateOpenPicker() {
+    let modal = document.getElementById('templateModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'templateModal';
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = `
+        <div style="background:var(--modal-bg);border:1px solid var(--border);border-radius:14px;padding:24px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+            <div style="font-size:16px;font-weight:700;margin-bottom:12px;">📐 Job Templates</div>
+            <div id="templatePickerList" style="min-height:40px;"></div>
+            <button class="btn btn-ghost" style="width:100%;margin-top:14px;" onclick="this.closest('#templateModal').remove()">Close</button>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }
+    modal.style.display = 'flex';
+    templateLoadAll().then(templateRenderPicker);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// #22 SCRIPT HISTORY VIEWER
+// ══════════════════════════════════════════════════════════════════════════════
+async function scriptHistoryOpen(jobId) {
+    const r    = await fetch(`/api/scripts${jobId ? '?job_id=' + jobId : ''}`);
+    const data = await r.json();
+    const scripts = data.scripts || [];
+    let modal = document.getElementById('scriptHistoryModal');
+    if (modal) modal.remove();
+    modal = document.createElement('div');
+    modal.id = 'scriptHistoryModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9010;display:flex;align-items:center;justify-content:center;';
+    const rows = scripts.length
+        ? scripts.map(s => `
+            <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="flex:1;">
+                        <div style="font-size:12px;font-weight:600;">${s.title}</div>
+                        <div style="font-size:10.5px;color:var(--text-3);">${s.job_name || ''} · ${s.word_count}w · ${s.scene_count} scenes · ${new Date(s.saved_at).toLocaleString()}</div>
+                    </div>
+                    <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;" onclick="scriptHistoryView('${s.id}')">👁 View</button>
+                    <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;color:#ef4444;" onclick="scriptHistoryDelete('${s.id}', this)">🗑</button>
+                </div>
+            </div>`).join('')
+        : '<div style="font-size:12px;color:var(--text-3);padding:20px 0;text-align:center;">No scripts archived yet</div>';
+    modal.innerHTML = `
+    <div style="background:var(--modal-bg);border:1px solid var(--border);border-radius:14px;padding:24px;width:620px;max-width:96vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-size:16px;font-weight:700;">📄 Script Archive (${scripts.length})</div>
+            <button class="btn btn-ghost" onclick="this.closest('#scriptHistoryModal').remove()">✕</button>
+        </div>
+        <div id="scriptHistoryRows">${rows}</div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function scriptHistoryView(id) {
+    const r = await fetch(`/api/scripts/${id}`);
+    const d = await r.json();
+    const s = d.script?.script;
+    if (!s) return;
+    const w = window.open('', '_blank');
+    w.document.write(`<pre style="font-family:monospace;padding:20px;white-space:pre-wrap;">${JSON.stringify(s, null, 2)}</pre>`);
+}
+
+async function scriptHistoryDelete(id, btn) {
+    if (!confirm('Delete this script?')) return;
+    await fetch(`/api/scripts/${id}`, { method: 'DELETE' });
+    btn.closest('div[style*="border-bottom"]')?.remove();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// #30 PUBLISH SCHEDULE CALENDAR
+// ══════════════════════════════════════════════════════════════════════════════
+function calendarOpen() {
+    let modal = document.getElementById('calendarModal');
+    if (modal) { modal.style.display = 'flex'; calendarRender(); return; }
+    modal = document.createElement('div');
+    modal.id = 'calendarModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9020;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML = `
+    <div style="background:var(--modal-bg);border:1px solid var(--border);border-radius:14px;padding:24px;width:700px;max-width:97vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <button class="btn btn-ghost" onclick="calendarNav(-1)">‹</button>
+                <div id="calMonthLabel" style="font-size:15px;font-weight:700;min-width:140px;text-align:center;"></div>
+                <button class="btn btn-ghost" onclick="calendarNav(1)">›</button>
+            </div>
+            <button class="btn btn-ghost" onclick="this.closest('#calendarModal').remove()">✕</button>
+        </div>
+        <div id="calGrid"></div>
+        <div id="calDayDetail" style="margin-top:14px;"></div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    calendarRender();
+}
+
+let _calYear = new Date().getFullYear(), _calMonth = new Date().getMonth();
+function calendarNav(dir) { _calMonth += dir; if (_calMonth > 11) { _calMonth = 0; _calYear++; } if (_calMonth < 0) { _calMonth = 11; _calYear--; } calendarRender(); }
+
+function calendarRender() {
+    const grid  = document.getElementById('calGrid');
+    const label = document.getElementById('calMonthLabel');
+    if (!grid || !label) return;
+    label.textContent = new Date(_calYear, _calMonth, 1).toLocaleString('default', { month:'long', year:'numeric' });
+
+    // Build day → jobs map
+    const dayJobs = {};
+    for (const job of schedJobs) {
+        if (!job.next_run_ms) continue;
+        const d = new Date(job.next_run_ms);
+        if (d.getFullYear() === _calYear && d.getMonth() === _calMonth) {
+            const day = d.getDate();
+            if (!dayJobs[day]) dayJobs[day] = [];
+            dayJobs[day].push(job);
+        }
+    }
+
+    const firstDay = new Date(_calYear, _calMonth, 1).getDay();
+    const daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
+    const today = new Date();
+    const isToday = d => d === today.getDate() && _calYear === today.getFullYear() && _calMonth === today.getMonth();
+
+    let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
+    ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
+        html += `<div style="text-align:center;font-size:11px;font-weight:600;color:var(--text-3);padding:4px 0;">${d}</div>`;
+    });
+    for (let i = 0; i < firstDay; i++) html += '<div></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+        const jobs   = dayJobs[d] || [];
+        const border = isToday(d) ? '1px solid var(--primary)' : '1px solid var(--border)';
+        const bg     = isToday(d) ? 'var(--surface-2)' : 'transparent';
+        const dots   = jobs.map(j => `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${j.status==='running'?'#6366f1':'#22c55e'};"></span>`).join('');
+        html += `<div onclick="calendarDayClick(${d})" style="border:${border};background:${bg};border-radius:6px;padding:6px 4px;cursor:pointer;min-height:52px;font-size:12px;transition:background .1s;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background='${bg}'">
+            <div style="font-weight:600;margin-bottom:3px;">${d}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:2px;">${dots}</div>
+            ${jobs.length ? `<div style="font-size:10px;color:var(--text-3);margin-top:2px;">${jobs.length} job${jobs.length>1?'s':''}</div>` : ''}
+        </div>`;
+    }
+    html += '</div>';
+    grid.innerHTML = html;
+}
+
+function calendarDayClick(d) {
+    const detail = document.getElementById('calDayDetail');
+    if (!detail) return;
+    const ts = new Date(_calYear, _calMonth, d).getTime();
+    const dayStart = new Date(_calYear, _calMonth, d, 0, 0, 0).getTime();
+    const dayEnd   = new Date(_calYear, _calMonth, d, 23, 59, 59).getTime();
+    const jobs     = schedJobs.filter(j => j.next_run_ms && j.next_run_ms >= dayStart && j.next_run_ms <= dayEnd);
+    if (!jobs.length) { detail.innerHTML = `<div style="font-size:12px;color:var(--text-3);">No jobs scheduled on ${new Date(_calYear,_calMonth,d).toDateString()}</div>`; return; }
+    detail.innerHTML = `<div style="font-size:12px;font-weight:600;margin-bottom:6px;">Scheduled: ${new Date(_calYear,_calMonth,d).toDateString()}</div>` +
+        jobs.map(j => `<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;margin-bottom:4px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:${j.status==='running'?'#6366f1':'#22c55e'};"></div>
+            <div style="flex:1;font-size:12px;">${j.name}</div>
+            <div style="font-size:11px;color:var(--text-3);">${new Date(j.next_run_ms).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+            <button class="btn btn-ghost" style="font-size:11px;padding:2px 6px;" onclick="schedRunNow('${j.id}')">▶</button>
+        </div>`).join('');
+}
+
+// ── Social post toggle ─────────────────────────────────────────────────────────
+function sfToggleSocialPost() {
+    const tt = document.getElementById('sfTiktokPost')?.checked;
+    const ig = document.getElementById('sfInstagramPost')?.checked;
+    const fields = document.getElementById('sfSocialFields');
+    if (fields) fields.style.display = (tt || ig) ? 'flex' : 'none';
+    if (tt || ig) sfCheckSocialStatus();
+}
+
+async function sfCheckSocialStatus() {
+    const el = document.getElementById('sfSocialStatus');
+    if (!el) return;
+    try {
+        const r = await fetch('/api/social/status');
+        const d = await r.json();
+        const parts = [];
+        if (document.getElementById('sfTiktokPost')?.checked)
+            parts.push(d.tiktok?.configured ? '✅ TikTok configured' : '⚠️ Set TIKTOK_ACCESS_TOKEN in .env');
+        if (document.getElementById('sfInstagramPost')?.checked)
+            parts.push(d.instagram?.configured ? '✅ Instagram configured' : '⚠️ Set INSTAGRAM_ACCESS_TOKEN + INSTAGRAM_USER_ID in .env');
+        el.innerHTML = parts.join(' · ');
+    } catch(_) {}
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// REMOTE WORKERS
+// ══════════════════════════════════════════════════════════════════════════════
+let _workers = [];
+let _workersTimer = null;
+
+async function workersRefresh() {
+    try {
+        const r = await fetch('/api/workers');
+        const d = await r.json();
+        _workers = d.workers || [];
+        workersRender();
+    } catch (_) {}
+}
+
+function workersRender() {
+    const el = document.getElementById('workersList');
+    if (!el) return;
+
+    if (!_workers.length) {
+        el.innerHTML = `<div style="color:var(--text-3);font-size:11px;text-align:center;padding:10px 0;">
+            No workers connected.<br>
+            <span style="font-size:10.5px;">Run <code style="background:var(--surface-2);padding:1px 5px;border-radius:4px;">./worker.sh</code> on your T440p.</span>
+        </div>`;
+        return;
+    }
+
+    el.innerHTML = _workers.map(w => {
+        const online  = w.online;
+        const dotClr  = online ? '#22c55e' : '#6b7280';
+        const load    = w.running?.length || 0;
+        const pct     = Math.round((load / (w.capacity || 1)) * 100);
+        const barClr  = pct >= 100 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#22c55e';
+        const since   = w.connectedAt ? timeSince(w.connectedAt) : '';
+        return `
+        <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--surface-2);">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:${dotClr};flex-shrink:0;${online?'box-shadow:0 0 0 3px rgba(34,197,94,.2)':''}"></div>
+                <div style="font-weight:600;font-size:12px;flex:1;">${w.id}</div>
+                <div style="font-size:10px;color:var(--text-3);">${online ? 'Online' : 'Offline'} · ${since}</div>
+            </div>
+            <div style="font-size:10.5px;color:var(--text-3);margin-bottom:6px;">${w.host || ''} · ${load}/${w.capacity || 2} jobs</div>
+            <!-- Load bar -->
+            <div style="height:4px;border-radius:2px;background:var(--border);overflow:hidden;margin-bottom:8px;">
+                <div style="height:100%;width:${pct}%;background:${barClr};border-radius:2px;transition:width .3s;"></div>
+            </div>
+            <!-- Running jobs -->
+            ${(w.running || []).length ? `
+            <div style="font-size:10.5px;color:var(--text-3);margin-bottom:4px;">Running:</div>
+            ${(w.running || []).map(jid => {
+                const j = schedJobs.find(x => x.id === jid);
+                return `<div style="display:flex;align-items:center;gap:5px;padding:3px 0;">
+                    <div style="width:5px;height:5px;border-radius:50%;background:#6366f1;animation:pulse 1.5s infinite;"></div>
+                    <span style="font-size:11px;">${j?.name || jid}</span>
+                    <button class="btn btn-ghost" style="padding:1px 5px;font-size:10px;margin-left:auto;" onclick="schedViewLogs('${jid}')">📺</button>
+                </div>`;
+            }).join('')}` : ''}
+            <!-- Assign jobs to this worker -->
+            <div style="margin-top:6px;border-top:1px solid var(--border);padding-top:6px;">
+                <div style="font-size:10.5px;color:var(--text-3);margin-bottom:4px;">Assign job to this worker:</div>
+                <select onchange="workerAssignJob('${w.id}', this.value); this.value=''" style="width:100%;font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+                    <option value="">— select idle job —</option>
+                    ${schedJobs.filter(j => j.enabled && j.status === 'idle').map(j =>
+                        `<option value="${j.id}">${j.name}${j.assigned_worker ? ` [→${j.assigned_worker}]` : ''}</option>`
+                    ).join('')}
+                </select>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function workerAssignJob(workerId, jobId) {
+    if (!jobId) return;
+    await fetch('/api/workers/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worker_id: workerId, job_id: jobId }),
+    });
+    addLog(`📌 Job assigned to worker "${workerId}"`);
+    await schedRefresh();
+    workersRender();
+}
+
+function timeSince(ts) {
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 60)  return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s/60)}m ago`;
+    return `${Math.floor(s/3600)}h ago`;
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 checkKokoro();
 loadAvailableModels();
@@ -5424,6 +6610,201 @@ renderFileList();
 renderAudioFileList();
 updateDurations();
 updateGenFileDisplay();
+
+// Worker polling — refresh every 8 s when scheduler tab is active
+workersRefresh();
+_workersTimer = setInterval(() => {
+    if (document.getElementById('tab-scheduler')?.classList.contains('active') ||
+        document.getElementById('tab-scheduler')?.style.display !== 'none') {
+        workersRefresh();
+    }
+}, 8_000);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// #26 OUTPUT DASHBOARD
+// ══════════════════════════════════════════════════════════════════════════════
+let _outputFiles = [];
+
+async function outputsDashLoad() {
+    try {
+        const r    = await fetch('/api/scheduler/outputs');
+        const data = await r.json();
+        _outputFiles = (data.files || []).filter(f => f.type === 'video');
+        outputsDashRender();
+    } catch (e) {
+        document.getElementById('outputsGrid').innerHTML = `<div style="color:#ef4444;">Failed to load: ${e.message}</div>`;
+    }
+}
+
+function outputsDashRender() {
+    const grid   = document.getElementById('outputsGrid');
+    const empty  = document.getElementById('outputsEmpty');
+    const stats  = document.getElementById('outputsStats');
+    const search = (document.getElementById('outputsSearch')?.value || '').toLowerCase();
+    const sort   = document.getElementById('outputsSort')?.value || 'newest';
+
+    let files = _outputFiles.filter(f => !search || f.name.toLowerCase().includes(search));
+
+    // Sort
+    files = [...files].sort((a, b) => {
+        if (sort === 'newest')   return new Date(b.mtime) - new Date(a.mtime);
+        if (sort === 'oldest')   return new Date(a.mtime) - new Date(b.mtime);
+        if (sort === 'largest')  return b.size - a.size;
+        if (sort === 'smallest') return a.size - b.size;
+        return 0;
+    });
+
+    const totalMB = (_outputFiles.reduce((s, f) => s + f.size, 0) / 1048576).toFixed(1);
+    stats.textContent = `${_outputFiles.length} video${_outputFiles.length !== 1 ? 's' : ''} · ${totalMB} MB total`;
+
+    if (!files.length) {
+        grid.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+    }
+    empty.style.display = 'none';
+
+    grid.innerHTML = files.map(f => {
+        const thumbName = f.name.replace(/\.mp4$/i, '_thumb.jpg');
+        const thumbExists = _outputFiles.find(x => x.name === thumbName) ||
+                            _outputFiles.some(x => x.name.includes('_thumb'));
+        const thumbSrc  = `/api/scheduler/output/${encodeURIComponent(thumbName)}`;
+        const sizeMB    = (f.size / 1048576).toFixed(1);
+        const dt        = new Date(f.mtime).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        const base      = f.name.replace(/\.mp4$/i, '');
+        const shortsExists = _outputFiles.some(x => x.name === base + '_shorts.mp4');
+        const squareExists = _outputFiles.some(x => x.name === base + '_square.mp4');
+
+        return `<div style="border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--surface); transition:box-shadow .15s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.3)'" onmouseout="this.style.boxShadow=''">
+            <div style="position:relative; aspect-ratio:16/9; background:#0a0a0a; overflow:hidden;">
+                <img src="${thumbSrc}" style="width:100%;height:100%;object-fit:cover;" loading="lazy"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:28px;color:var(--text-3);">🎬</div>
+                <div style="position:absolute;bottom:6px;right:7px;font-size:10px;background:rgba(0,0,0,.7);color:#fff;padding:2px 6px;border-radius:4px;">${sizeMB} MB</div>
+                ${shortsExists || squareExists ? `<div style="position:absolute;top:6px;left:7px;display:flex;gap:3px;">${shortsExists ? '<span style="font-size:9px;background:#6366f1;color:#fff;padding:1px 5px;border-radius:4px;">9:16</span>' : ''}${squareExists ? '<span style="font-size:9px;background:#0ea5e9;color:#fff;padding:1px 5px;border-radius:4px;">1:1</span>' : ''}</div>` : ''}
+            </div>
+            <div style="padding:10px 12px;">
+                <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${f.name}">${f.name.replace(/\.mp4$/i,'').replace(/^sched_/,'')}</div>
+                <div style="font-size:10.5px;color:var(--text-3);margin-top:2px;">${dt}</div>
+                <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+                    <a href="/api/scheduler/output/${encodeURIComponent(f.name)}" download class="btn btn-primary" style="flex:1;font-size:11px;padding:5px 8px;text-align:center;text-decoration:none;">⬇️ Download</a>
+                    <button class="btn btn-ghost" style="font-size:11px;padding:5px 8px;" onclick="outputsDeleteFile('${f.name}')" title="Delete">🗑</button>
+                </div>
+                ${shortsExists ? `<a href="/api/scheduler/output/${encodeURIComponent(base+'_shorts.mp4')}" download class="btn btn-ghost" style="width:100%;font-size:11px;padding:4px 8px;text-align:center;text-decoration:none;margin-top:4px;display:block;">⬇️ Shorts (9:16)</a>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function outputsDeleteFile(name) {
+    if (!confirm(`Delete "${name}"?`)) return;
+    await fetch(`/api/scheduler/output-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+    }).catch(() => {});
+    await outputsDashLoad();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// #24 BATCH TOPIC QUEUE
+// ══════════════════════════════════════════════════════════════════════════════
+function batchQueueOpen() {
+    // Create modal if not exists
+    let modal = document.getElementById('batchModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'batchModal';
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = `
+        <div style="background:var(--modal-bg);border:1px solid var(--border);border-radius:14px;padding:24px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px;">📋 Batch Topic Queue</div>
+            <div style="font-size:12px;color:var(--text-3);margin-bottom:16px;">One topic per line — creates one job per topic using the settings below as a template.</div>
+
+            <label style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Topics (one per line)</label>
+            <textarea id="batchTopics" rows="10" placeholder="The truth about morning routines&#10;Why 99% of people fail at investing&#10;5 stoic habits that changed my life&#10;…" style="width:100%;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-1);resize:vertical;font-family:inherit;"></textarea>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+                <div>
+                    <label style="font-size:11px;font-weight:600;color:var(--text-3);display:block;margin-bottom:4px;">Niche</label>
+                    <input type="text" id="batchNiche" placeholder="e.g. personal finance" style="width:100%;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-1);">
+                </div>
+                <div>
+                    <label style="font-size:11px;font-weight:600;color:var(--text-3);display:block;margin-bottom:4px;">Platform</label>
+                    <select id="batchPlatform" style="width:100%;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-1);">
+                        <option>YouTube</option><option>TikTok</option><option>Instagram</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:11px;font-weight:600;color:var(--text-3);display:block;margin-bottom:4px;">Style</label>
+                    <select id="batchStyle" style="width:100%;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-1);">
+                        <option value="storytelling">Storytelling</option>
+                        <option value="listicle">Listicle</option>
+                        <option value="explainer">Explainer</option>
+                        <option value="podcast_dual">Podcast Dual</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:11px;font-weight:600;color:var(--text-3);display:block;margin-bottom:4px;">Duration (min)</label>
+                    <input type="number" id="batchDuration" value="2" min="1" max="15" style="width:100%;font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-1);">
+                </div>
+            </div>
+            <div style="margin-top:10px;">
+                <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;">
+                    <input type="checkbox" id="batchAutoRun"> ▶ Start running immediately after creation
+                </label>
+            </div>
+            <div id="batchResult" style="font-size:12px;color:#22c55e;margin-top:8px;min-height:18px;"></div>
+            <div style="display:flex;gap:8px;margin-top:16px;">
+                <button class="btn btn-primary" onclick="batchQueueSubmit()" style="flex:1;">Create Jobs</button>
+                <button class="btn btn-ghost" onclick="this.closest('#batchModal').remove()">Cancel</button>
+            </div>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }
+    modal.style.display = 'flex';
+}
+
+async function batchQueueSubmit() {
+    const raw = document.getElementById('batchTopics')?.value || '';
+    const topics = raw.split('\n').map(t => t.trim()).filter(Boolean);
+    if (!topics.length) { document.getElementById('batchResult').textContent = '⚠️ Enter at least one topic'; return; }
+
+    const base_config = {
+        niche:            document.getElementById('batchNiche')?.value || '',
+        platform:         document.getElementById('batchPlatform')?.value || 'YouTube',
+        style:            document.getElementById('batchStyle')?.value || 'storytelling',
+        duration_minutes: parseInt(document.getElementById('batchDuration')?.value) || 2,
+        steps: { brainstorm: false, validate: false, generate_script: true, voiceover: true, find_footage: true, combine: true },
+    };
+
+    const btn = document.querySelector('#batchModal .btn-primary');
+    if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
+
+    try {
+        const r    = await fetch('/api/scheduler/batch-jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topics, base_config }),
+        });
+        const data = await r.json();
+        document.getElementById('batchResult').textContent =
+            `✅ ${data.created} job${data.created !== 1 ? 's' : ''} created${data.skipped ? ` (${data.skipped} skipped)` : ''}`;
+
+        // Auto-run if requested
+        if (document.getElementById('batchAutoRun')?.checked) {
+            for (const { id } of (data.jobs || [])) {
+                await fetch(`/api/scheduler/jobs/${id}/run`, { method: 'POST' }).catch(() => {});
+            }
+        }
+        await schedRefresh();
+    } catch (e) {
+        document.getElementById('batchResult').textContent = `❌ ${e.message}`;
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Create Jobs'; }
+    }
+}
 </script>
 </body>
 </html>

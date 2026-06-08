@@ -266,6 +266,45 @@ const TEMPLATES = {
     fade:           [0, 0],
     preview: { bg:'#0d1b2e', color:'#fff', outlineColor:'#000', text:'WHITE <span style="color:#ffdd00">YELLOW</span>', font:'Arial Black', bold:true, size:24 },
   },
+
+  // ── 9. Viral (#18) — word-by-word, pill highlight, colour-cycle ─────────────
+  // Each word pops in solo with a coloured pill background; cycling through
+  // brand accent colours every 4 words. Maximum engagement / lowest skip rate.
+  viral: {
+    label: 'Viral',
+    desc:  'One word at a time, pill bg per word — maximum engagement style',
+    fontName:       'Arial Black',
+    fontSize:       90,
+    primaryColor:   rgb(255,255,255),
+    highlightColor: rgb(255,214,0),    // rotating accent
+    highlightScale: 110,
+    outlineColor:   rgba(0,0,0,0),
+    backColor:      rgba(15,15,15,0.82),
+    bold:           true,
+    outline:        0,
+    shadow:         0,
+    borderStyle:    3,                 // opaque box (pill)
+    spacing:        2,
+    scaleX:         105,
+    scaleY:         105,
+    alignment:      2,
+    marginV:        80,
+    uppercase:      true,
+    wordsPerLine:   1,
+    renderMode:     'word',
+    popIn:          true,
+    slideUp:        true,
+    blurIn:         false,
+    fade:           [0, 30],
+    // Colour palette rotated across consecutive words for variety
+    colorCycle:     [
+      rgb(255,214,0),   // gold
+      rgb(0,220,180),   // teal
+      rgb(255,80,120),  // pink-red
+      rgb(120,180,255), // sky blue
+    ],
+    preview: { bg:'#111', color:'#fff', pill:true, pillColor:'#ffda00', text:'ONE WORD', font:'Arial Black', bold:true, size:28 },
+  },
 };
 
 // ── ASS time format ────────────────────────────────────────────────────────────
@@ -292,19 +331,22 @@ function groupWords(words, wordsPerLine) {
     });
   }
 
-  // Fix overlapping / too-short end times:
-  // Extend each group's end to just before the next group starts (minus a tiny gap).
-  // This prevents dialogue events from overlapping in ASS, which causes the
-  // "captions sitting on top of each other" bug.
-  const GAP = 0.04; // 40 ms buffer between groups
-  for (let i = 0; i < raw.length - 1; i++) {
-    const nextStart = raw[i + 1].start;
-    // If end >= next start, clamp it back
-    if (raw[i].end >= nextStart) {
-      raw[i].end = Math.max(raw[i].start + 0.05, nextStart - GAP);
-    } else {
-      // Extend to fill the silence gap — looks cleaner than an empty screen
-      raw[i].end = nextStart - GAP;
+  // Fix overlapping / too-short end times so ASS never renders two events at once.
+  const GAP     = 0.08; // 80 ms hard gap between groups — large enough to survive timestamp jitter
+  const MIN_DUR = 0.12; // every group must show for at least 120 ms
+  for (let i = 0; i < raw.length; i++) {
+    // Enforce minimum display duration
+    raw[i].end = Math.max(raw[i].end, raw[i].start + MIN_DUR);
+
+    if (i < raw.length - 1) {
+      const nextStart = raw[i + 1].start;
+      // Always clamp end to strictly before next start
+      raw[i].end = Math.min(raw[i].end, nextStart - GAP);
+      // After clamping, re-apply minimum duration (may push end forward slightly,
+      // but that only matters if groups are extremely close — still < next start)
+      if (raw[i].end < raw[i].start + MIN_DUR) {
+        raw[i].end = Math.min(raw[i].start + MIN_DUR, nextStart - GAP * 0.5);
+      }
     }
   }
 
@@ -382,12 +424,17 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
 
   // ── Render modes ──────────────────────────────────────────────────────────
   if (t.renderMode === 'word') {
-    // One word at a time
-    for (const w of words) {
+    // One word at a time — with optional color-cycle (viral template, #18)
+    const cycle = t.colorCycle || null;
+    for (let wi = 0; wi < words.length; wi++) {
+      const w    = words[wi];
       const txt  = t.uppercase ? w.word.toUpperCase() : w.word;
       const anim = animationTags(t, cx, cy);
       const shadow = shadowColorTag ? `{${shadowColorTag}}` : '';
-      emit(0, w.start, w.end, shadow + anim + txt);
+      const colorTag = cycle
+        ? `{\\c${cycle[wi % cycle.length]}}`
+        : '';
+      emit(0, w.start, w.end, shadow + colorTag + anim + txt);
     }
 
   } else if (t.renderMode === 'karaoke') {

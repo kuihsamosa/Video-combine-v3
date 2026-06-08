@@ -1,5 +1,9 @@
 // Image Finder — downloads still images and converts them to video clips with Ken Burns effect.
-// Sources: Pexels Photos (reuses existing key) + Unsplash (free, no auth for basic search via Unsplash Source).
+// Sources (in priority order):
+//   1. Google Custom Search  (GOOGLE_API_KEY + GOOGLE_CSE_ID) — actual Google Images, 100 req/day free
+//   2. Unsplash              (UNSPLASH_ACCESS_KEY)             — 50 req/hour free, top quality
+//   3. Pexels Photos         (PEXELS_API_KEY)                  — reuses existing key
+//   4. Pixabay Images        (PIXABAY_API_KEY)                 — reuses existing key
 // Used as a fallback when Pexels/Pixabay video returns 0 results for a scene.
 
 // Node 16 compatibility
@@ -17,6 +21,64 @@ const IMAGE_DIR = path.join(os.tmpdir(), 'vcombine_images');
 
 function ensureDir() {
   if (!fs.existsSync(IMAGE_DIR)) fs.mkdirSync(IMAGE_DIR, { recursive: true });
+}
+
+// ── Google Custom Search Images ───────────────────────────────────────────────
+// Free: 100 queries/day. Setup:
+//   1. https://console.cloud.google.com → enable "Custom Search JSON API" → create API key → GOOGLE_API_KEY
+//   2. https://cse.google.com → New search engine → "Search the entire web" ON → Image search ON → copy ID → GOOGLE_CSE_ID
+async function searchGoogleImages(query, apiKey, cseId, perPage = 5, orientation = 'landscape') {
+  const params = new URLSearchParams({
+    key:        apiKey,
+    cx:         cseId,
+    q:          query,
+    searchType: 'image',
+    num:        Math.min(perPage, 10), // Google max is 10
+    imgSize:    orientation === 'portrait' ? 'large' : 'xlarge',
+    safe:       'active',
+  });
+  const url = `https://www.googleapis.com/customsearch/v1?${params}`;
+  const r = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({ error: { message: r.statusText } }));
+    throw new Error(`Google CSE ${r.status}: ${err?.error?.message || r.statusText}`);
+  }
+  const data = await r.json();
+  return (data.items || []).map(item => ({
+    id:     `google_${encodeURIComponent(item.link).slice(0, 40)}`,
+    url:    item.link,
+    width:  parseInt(item.image?.width)  || 1280,
+    height: parseInt(item.image?.height) || 720,
+    source: 'google_cse',
+    query,
+  })).filter(p => p.url && /\.(jpe?g|png|webp)(\?.*)?$/i.test(p.url));
+}
+
+// ── Unsplash Photos ───────────────────────────────────────────────────────────
+// Free: 50 requests/hour. Setup:
+//   https://unsplash.com/developers → New Application → copy "Access Key" → UNSPLASH_ACCESS_KEY
+async function searchUnsplashPhotos(query, accessKey, perPage = 5, orientation = 'landscape') {
+  const params = new URLSearchParams({
+    query,
+    per_page:    perPage,
+    orientation: orientation === 'portrait' ? 'portrait' : 'landscape',
+  });
+  const url = `https://api.unsplash.com/search/photos?${params}`;
+  const r = await fetch(url, {
+    headers: { Authorization: `Client-ID ${accessKey}` },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!r.ok) throw new Error(`Unsplash ${r.status}`);
+  const data = await r.json();
+  return (data.results || []).map(p => ({
+    id:     `unsplash_${p.id}`,
+    url:    p.urls?.full || p.urls?.regular,
+    width:  p.width,
+    height: p.height,
+    source: 'unsplash',
+    query,
+    credit: `Photo by ${p.user?.name} on Unsplash`,
+  })).filter(p => p.url);
 }
 
 // ── Pexels Photos (still images, not video) ───────────────────────────────────
@@ -125,18 +187,33 @@ async function imageToVideoClip(imagePath, outputPath, durationSecs = 5, directi
  * @returns {Array} clip objects shaped like footage-finder clips
  */
 async function findImagesForScene(scene, env, logger, want = 2, orientation = 'landscape', clipDuration = 5) {
-  const pexelsKey  = env.PEXELS_API_KEY;
-  const pixabayKey = env.PIXABAY_API_KEY;
+  const pexelsKey   = env.PEXELS_API_KEY;
+  const pixabayKey  = env.PIXABAY_API_KEY;
+  const unsplashKey = env.UNSPLASH_ACCESS_KEY;
+  const googleKey   = env.GOOGLE_API_KEY;
+  const googleCseId = env.GOOGLE_CSE_ID;
+
+  const hasGoogle   = !!(googleKey && googleCseId);
+  const hasUnsplash = !!unsplashKey;
 
   ensureDir();
 
-  const pexelsOrientation  = orientation === 'portrait' ? 'portrait' : 'landscape';
+  const pexelsOrientation  = orientation === 'portrait' ? 'portrait'  : 'landscape';
   const pixabayOrientation = orientation === 'portrait' ? 'vertical'  : 'horizontal';
 
-  // Build query list (same tiered approach as footage-finder)
+  // Build query list — from most specific to broadest
   const kw  = (scene.visual_keywords || []).filter(Boolean);
   const sq  = (scene.search_queries  || []).filter(Boolean);
   const queries = [...new Set([...sq, kw.slice(0, 3).join(' '), kw[0], kw[1], 'nature landscape'].filter(Boolean))];
+
+  // Log which sources are active
+  const activeSources = [
+    hasGoogle   && 'Google Images',
+    hasUnsplash && 'Unsplash',
+    pexelsKey   && 'Pexels Photos',
+    pixabayKey  && 'Pixabay Photos',
+  ].filter(Boolean);
+  logger?.log?.(`   🖼️  Image sources: ${activeSources.join(', ') || 'none configured'}`);
 
   const seenUrls = new Set();
   const clips    = [];
@@ -147,12 +224,19 @@ async function findImagesForScene(scene, env, logger, want = 2, orientation = 'l
 
     let candidates = [];
     try {
-      const [pRes, pxRes] = await Promise.allSettled([
-        pexelsKey  ? searchPexelsPhotos(query, pexelsKey, want + 2, pexelsOrientation)   : Promise.resolve([]),
-        pixabayKey ? searchPixabayPhotos(query, pixabayKey, want + 2, pixabayOrientation) : Promise.resolve([]),
+      // Fire all available sources in parallel — priority order doesn't matter here
+      // since we deduplicate by URL and process in insertion order (Google first)
+      const searches = await Promise.allSettled([
+        hasGoogle   ? searchGoogleImages(query, googleKey, googleCseId, want + 3, orientation)       : Promise.resolve([]),
+        hasUnsplash ? searchUnsplashPhotos(query, unsplashKey, want + 3, orientation)                : Promise.resolve([]),
+        pexelsKey   ? searchPexelsPhotos(query, pexelsKey, want + 2, pexelsOrientation)              : Promise.resolve([]),
+        pixabayKey  ? searchPixabayPhotos(query, pixabayKey, want + 2, pixabayOrientation)           : Promise.resolve([]),
       ]);
-      if (pRes.status  === 'fulfilled') candidates.push(...pRes.value);
-      if (pxRes.status === 'fulfilled') candidates.push(...pxRes.value);
+      // Google first, then Unsplash, then Pexels, then Pixabay
+      for (const r of searches) {
+        if (r.status === 'fulfilled') candidates.push(...r.value);
+        else logger?.log?.(`   ⚠️  Image source error: ${r.reason?.message?.slice(0, 80)}`);
+      }
     } catch (_) {}
 
     const fresh = candidates.filter(c => !seenUrls.has(c.url));
