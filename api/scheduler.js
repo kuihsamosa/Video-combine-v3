@@ -1306,6 +1306,14 @@ function startScheduler(port = 8080) {
   tickTimer = setInterval(() => {
     const now  = Date.now();
     const jobs = loadJobs();
+
+    // Check if any workers are online (imported lazily to avoid circular deps)
+    let onlineWorkers = 0;
+    try {
+      const srv = require('./server-state');
+      onlineWorkers = srv ? srv.onlineWorkerCount() : 0;
+    } catch (_) {}
+
     for (const job of jobs) {
       if (
         job.enabled &&
@@ -1313,7 +1321,13 @@ function startScheduler(port = 8080) {
         job.next_run_ms &&
         now >= job.next_run_ms
       ) {
-        console.log(`[Scheduler] Triggering "${job.name}" (${job.id})`);
+        // If workers are online, leave the job idle for them to poll & claim.
+        // The job is already "due" — workers will pick it up on their next poll.
+        if (onlineWorkers > 0) {
+          console.log(`[Scheduler] "${job.name}" due — waiting for worker to claim`);
+          continue;
+        }
+        console.log(`[Scheduler] Triggering "${job.name}" locally (${job.id})`);
         runJob(job.id).catch(console.error);
       }
     }

@@ -1583,9 +1583,29 @@ app.get('/', (req, res) => {
 // Workers (e.g. T440p) poll these endpoints to claim jobs, stream logs back,
 // and report completion. Authentication is via a shared WORKER_SECRET env var.
 // ─────────────────────────────────────────────────────────────────────────────
-const WORKER_SECRET  = process.env.WORKER_SECRET || 'videocombine-worker';
-const _workers       = new Map(); // workerId → { id, host, capacity, running:[], lastSeen }
-const _workerLogSubs = new Map(); // jobId    → Set of SSE res objects (from UI subscribers)
+const WORKER_SECRET   = process.env.WORKER_SECRET || 'videocombine-worker';
+const _workerLogSubs  = new Map(); // jobId → Set<res>
+// _workers and WORKER_TIMEOUT live in server-state.js so scheduler.js can read them without circular deps
+const { _workers, WORKER_TIMEOUT } = require('./server-state');
+
+// Periodically clean up stale worker entries and release their claimed jobs
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, w] of _workers) {
+    if (now - w.lastSeen > WORKER_TIMEOUT * 2) {
+      // Release any jobs this worker had claimed so they can be picked up again
+      for (const jobId of w.running) { // w.running is always plain strings
+        const job = schedulerModule.getJob(jobId);
+        if (job && job._claimed_by === id) {
+          console.log(`[Worker] Releasing stale job "${job.name}" from dead worker ${id}`);
+          schedulerModule.upsertJob({ ...job, status: 'idle', _claimed_by: null });
+        }
+      }
+      _workers.delete(id);
+      console.log(`[Worker] Removed stale worker: ${id}`);
+    }
+  }
+}, 30_000);
 
 function workerAuth(req, res, next) {
   const secret = req.headers['x-worker-secret'] || req.query.secret;
@@ -1595,27 +1615,60 @@ function workerAuth(req, res, next) {
 
 // Worker registers / heartbeats
 app.post('/api/workers/register', workerAuth, (req, res) => {
-  const { worker_id, host, capacity = 2, running = [] } = req.body;
+  const { worker_id, host, capacity = 2, running = [], stats = {} } = req.body;
   if (!worker_id) return res.status(400).json({ ok: false, error: 'worker_id required' });
+
   const existing = _workers.get(worker_id) || {};
-  _workers.set(worker_id, {
-    id:       worker_id,
-    host:     host || req.ip,
-    capacity: parseInt(capacity) || 2,
-    running:  running,
-    lastSeen: Date.now(),
-    connectedAt: existing.connectedAt || Date.now(),
+
+  // Reconcile: only keep job IDs that actually exist and are still running
+  // w.running is ALWAYS an array of plain job ID strings — never objects
+  const reportedIds  = (Array.isArray(running) ? running : []).map(r => (typeof r === 'object' ? r.id : r)).filter(Boolean);
+  const validRunning = reportedIds.filter(id => {
+    const job = schedulerModule.getJob(id);
+    return job && job.status === 'running';
   });
-  res.json({ ok: true });
+
+  // Preserve any IDs the server already knows are running (in case of race)
+  const serverRunning = (existing.running || []);
+  const mergedRunning = [...new Set([...validRunning, ...serverRunning])].filter(id => {
+    const job = schedulerModule.getJob(id);
+    return job && job.status === 'running';
+  });
+
+  _workers.set(worker_id, {
+    id:          worker_id,
+    host:        host || req.ip,
+    capacity:    parseInt(capacity) || 2,
+    running:     mergedRunning,  // always plain string IDs
+    lastSeen:    Date.now(),
+    connectedAt: existing.connectedAt || Date.now(),
+    stats:       { ...existing.stats, ...stats },
+  });
+  res.json({ ok: true, server_time: Date.now() });
 });
 
 // UI: list workers
 app.get('/api/workers', (req, res) => {
-  const now = Date.now();
-  const list = [..._workers.values()].map(w => ({
-    ...w,
-    online: (now - w.lastSeen) < 20_000,
-  }));
+  const now  = Date.now();
+  const jobs = schedulerModule.loadJobs();
+  const list = [..._workers.values()].map(w => {
+    // w.running is always plain string IDs — enrich with names here for UI only
+    const runningJobs = (w.running || []).map(id => {
+      const j = jobs.find(x => x.id === id);
+      return { id, name: j?.name || id, status: j?.status || 'unknown' };
+    });
+    return {
+      id:          w.id,
+      host:        w.host,
+      capacity:    w.capacity,
+      connectedAt: w.connectedAt,
+      lastSeen:    w.lastSeen,
+      stats:       w.stats,
+      running:     runningJobs,   // enriched objects for UI
+      online:      (now - w.lastSeen) < WORKER_TIMEOUT,
+      lastSeenAgo: now - w.lastSeen,
+    };
+  });
   res.json({ ok: true, workers: list });
 });
 
@@ -1624,99 +1677,102 @@ app.get('/api/workers/poll', workerAuth, (req, res) => {
   const { worker_id, capacity: cap } = req.query;
   if (!worker_id) return res.status(400).json({ ok: false, error: 'worker_id required' });
 
-  // Update heartbeat
   const w = _workers.get(worker_id);
-  if (w) { w.lastSeen = Date.now(); w.capacity = parseInt(cap) || w.capacity; }
+  if (w) { w.lastSeen = Date.now(); if (cap) w.capacity = parseInt(cap) || w.capacity; }
 
-  const runningCount = (w?.running || []).length;
-  const maxCap       = w?.capacity || 2;
-  if (runningCount >= maxCap) return res.json({ ok: true, job: null, reason: 'at capacity' });
+  const runningCount = w ? w.running.length : 0;
+  const maxCap       = w ? w.capacity : 2;
+  if (runningCount >= maxCap) return res.json({ ok: true, job: null, reason: 'at_capacity' });
 
-  // Find a pending job not already assigned to any worker
-  const assignedIds = new Set([..._workers.values()].flatMap(x => x.running));
-  const jobs        = schedulerModule.loadJobs();
-  const next        = jobs.find(j =>
-    j.enabled &&
-    j.status === 'idle' &&
-    j.assigned_worker === worker_id &&  // explicitly assigned, OR...
-    !assignedIds.has(j.id)
-  ) || jobs.find(j =>
-    j.enabled &&
-    j.status === 'idle' &&
-    !j.assigned_worker &&               // ...unassigned (any worker can take it)
-    !assignedIds.has(j.id)
-  );
+  // Build set of job IDs already claimed by any worker (avoid double-claiming)
+  // w.running is always plain strings on the server side
+  const claimedIds = new Set([..._workers.values()].flatMap(x => x.running || []));
+
+  const jobs = schedulerModule.loadJobs();
+
+  // Priority 1: jobs explicitly assigned to this worker
+  // Priority 2: unassigned jobs (any worker can pick up)
+  const next =
+    jobs.find(j => j.enabled && j.status === 'idle' && j.assigned_worker === worker_id && !claimedIds.has(j.id)) ||
+    jobs.find(j => j.enabled && j.status === 'idle' && !j.assigned_worker               && !claimedIds.has(j.id));
 
   if (!next) return res.json({ ok: true, job: null });
 
-  // Mark as claimed
-  schedulerModule.upsertJob({ ...next, status: 'running', _claimed_by: worker_id });
-  if (w) { if (!w.running.includes(next.id)) w.running.push(next.id); }
-  console.log(`[Worker] "${next.name}" claimed by ${worker_id}`);
+  // Atomically claim: mark running + record who claimed it
+  schedulerModule.upsertJob({ ...next, status: 'running', _claimed_by: worker_id, _claim_time: Date.now() });
+  if (w && !w.running.includes(next.id)) w.running.push(next.id); // always push plain string ID
+
+  console.log(`[Worker] "${next.name}" → ${worker_id}`);
   res.json({ ok: true, job: next });
 });
 
-// Worker streams a log line back
+// Worker streams a log line (batched: accepts array or single line)
 app.post('/api/workers/log', workerAuth, (req, res) => {
-  const { worker_id, job_id, line } = req.body;
-  if (!job_id || !line) return res.status(400).json({ ok: false });
+  const { worker_id, job_id, line, lines } = req.body;
+  if (!job_id) return res.status(400).json({ ok: false });
 
-  // Forward to any SSE subscribers watching this job
-  const subs = _workerLogSubs.get(job_id);
-  if (subs) {
-    const payload = JSON.stringify({ log: line, worker_id });
-    for (const r of subs) {
-      try { r.write(`data: ${payload}\n\n`); } catch (_) {}
+  const entries = lines || (line ? [line] : []);
+  const subs    = _workerLogSubs.get(job_id);
+  if (subs && subs.size > 0) {
+    for (const entry of entries) {
+      const payload = JSON.stringify({ log: entry, worker_id });
+      for (const r of subs) {
+        try { r.write(`data: ${payload}\n\n`); } catch (_) {}
+      }
     }
   }
   res.json({ ok: true });
 });
 
-// Worker reports job completion (and where to fetch the output file)
+// Worker reports job completion
 app.post('/api/workers/complete', workerAuth, async (req, res) => {
-  const { worker_id, job_id, status, output, error: errMsg } = req.body;
+  const { worker_id, job_id, status, output, error: errMsg, stats = {} } = req.body;
   if (!job_id) return res.status(400).json({ ok: false });
 
   const job = schedulerModule.getJob(job_id);
   if (!job) return res.status(404).json({ ok: false, error: 'Job not found' });
 
-  // Update worker's running list
+  // Remove from worker's running list (always plain strings)
   const w = _workers.get(worker_id);
-  if (w) w.running = w.running.filter(id => id !== job_id);
-
-  // If worker provided an output_url, download the video to our output dir
-  let localOutput = output || {};
-  if (output?.video_url) {
-    try {
-      const http  = require(output.video_url.startsWith('https') ? 'https' : 'http');
-      const fname = output.video_url.split('/').pop();
-      const dest  = path.join(OUTPUT_DIR, fname);
-      await new Promise((resolve, reject) => {
-        const file = require('fs').createWriteStream(dest);
-        http.get(output.video_url, r => { r.pipe(file); file.on('finish', resolve); }).on('error', reject);
-      });
-      localOutput = { ...output, video_path: dest };
-      console.log(`[Worker] Downloaded output: ${fname}`);
-    } catch (e) {
-      console.error('[Worker] Failed to download output:', e.message);
-    }
+  if (w) {
+    w.running = w.running.filter(r => r !== job_id);
+    // Accumulate worker stats
+    if (status === 'completed') w.stats = { ...w.stats, jobs_done: (w.stats?.jobs_done || 0) + 1 };
+    if (status === 'failed')    w.stats = { ...w.stats, jobs_failed: (w.stats?.jobs_failed || 0) + 1 };
   }
 
-  // Update job status
+  const localOutput = output || {};
+
+  // Compute next run time (same logic as local scheduler)
+  const nextRun = status === 'completed'
+    ? schedulerModule.computeNextRun(job.schedule)
+    : job.next_run_ms;
+
+  const retryCount = status === 'failed' ? (job._retry_count || 0) + 1 : 0;
+  const MAX_RETRIES = 3;
+  const willRetry   = status === 'failed' && retryCount <= MAX_RETRIES;
+
   const updated = {
     ...job,
-    status:         status === 'completed' ? 'idle' : 'error',
+    status:         status === 'completed' ? 'idle' : (willRetry ? 'idle' : 'error'),
     _last_output:   localOutput,
     _last_run_at:   Date.now(),
     _claimed_by:    null,
-    error_message:  errMsg || null,
+    _claim_time:    null,
+    _retry_count:   willRetry ? retryCount : 0,
+    error_message:  willRetry ? null : (errMsg || null),
+    next_run_ms:    willRetry ? Date.now() + 2 * 60_000 : nextRun,
   };
   schedulerModule.upsertJob(updated);
 
-  // Notify SSE subscribers: done
+  if (willRetry) {
+    console.log(`[Worker] "${job.name}" failed — retry ${retryCount}/${MAX_RETRIES} in 2 min`);
+  }
+
+  // Notify SSE subscribers
   const subs = _workerLogSubs.get(job_id);
   if (subs) {
-    const payload = JSON.stringify({ done: true, status, output: localOutput });
+    const payload = JSON.stringify({ done: true, status, output: localOutput, error: errMsg });
     for (const r of subs) {
       try { r.write(`data: ${payload}\n\n`); r.end(); } catch (_) {}
     }
@@ -1724,50 +1780,65 @@ app.post('/api/workers/complete', workerAuth, async (req, res) => {
   }
 
   console.log(`[Worker] "${job.name}" ${status} by ${worker_id}`);
-  res.json({ ok: true });
+  res.json({ ok: true, retry: willRetry });
 });
 
-// SSE endpoint: browser subscribes to a worker-run job's log stream
-// (same path as the local log stream so the UI works identically)
-// The existing /api/scheduler/jobs/:id/logs route already handles local jobs.
-// For worker jobs, we register an SSE subscriber here.
+// SSE: browser subscribes to live logs for a worker-run job
 app.get('/api/workers/jobs/:id/logs', (req, res) => {
   const jobId = req.params.id;
   res.setHeader('Content-Type',  'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection',    'keep-alive');
   res.flushHeaders();
-
+  // Send a keep-alive comment every 15 s so the connection doesn't time out
+  const ping = setInterval(() => { try { res.write(': ping\n\n'); } catch (_) {} }, 15_000);
   if (!_workerLogSubs.has(jobId)) _workerLogSubs.set(jobId, new Set());
   _workerLogSubs.get(jobId).add(res);
-  req.on('close', () => { _workerLogSubs.get(jobId)?.delete(res); });
+  req.on('close', () => {
+    clearInterval(ping);
+    _workerLogSubs.get(jobId)?.delete(res);
+  });
 });
 
-// Worker pushes finished video file to main server (no inbound firewall rule needed on worker)
+// Worker pushes finished video to main server (no inbound firewall needed on worker)
 app.post('/api/workers/upload', workerAuth, (req, res) => {
   const jobId    = req.headers['x-job-id'];
   const workerId = req.headers['x-worker-id'] || 'unknown';
   const form     = formidable({ uploadDir: OUTPUT_DIR, keepExtensions: true, maxFileSize: 4 * 1024 * 1024 * 1024 });
   form.parse(req, (err, fields, files) => {
     if (err) { console.error('[Worker upload]', err.message); return res.status(500).json({ ok: false, error: err.message }); }
-    const f = files.file?.[0] || files.file;
+    const f = Array.isArray(files.file) ? files.file[0] : files.file;
     if (!f) return res.status(400).json({ ok: false, error: 'No file received' });
-    // Rename to original filename
-    const orig    = f.originalFilename || f.newFilename;
-    const dest    = path.join(OUTPUT_DIR, orig);
-    fs.renameSync(f.filepath, dest);
-    const url = `/api/scheduler/output/${encodeURIComponent(orig)}`;
-    console.log(`[Worker] Upload received: ${orig} from ${workerId} (job ${jobId})`);
+    const orig = f.originalFilename || f.newFilename;
+    const dest = path.join(OUTPUT_DIR, path.basename(orig)); // basename prevents traversal
+    try { fs.renameSync(f.filepath, dest); } catch (e) {
+      // rename fails across drives on Windows — fall back to copy+delete
+      fs.copyFileSync(f.filepath, dest);
+      fs.unlinkSync(f.filepath);
+    }
+    const url = `/api/scheduler/output/${encodeURIComponent(path.basename(orig))}`;
+    console.log(`[Worker] Upload: ${path.basename(orig)} from ${workerId} (job ${jobId})`);
     res.json({ ok: true, url, path: dest });
   });
 });
 
-// Assign a job to a specific worker (or clear assignment)
+// Assign / unassign a job to a specific worker
 app.post('/api/workers/assign', (req, res) => {
   const { job_id, worker_id } = req.body;
   const job = schedulerModule.getJob(job_id);
   if (!job) return res.status(404).json({ ok: false, error: 'Job not found' });
   schedulerModule.upsertJob({ ...job, assigned_worker: worker_id || null });
+  console.log(`[Worker] Job "${job.name}" assigned to ${worker_id || 'any'}`);
+  res.json({ ok: true });
+});
+
+// Kick a specific worker job immediately (force-claim)
+app.post('/api/workers/kick', (req, res) => {
+  const { job_id, worker_id } = req.body;
+  const job = schedulerModule.getJob(job_id);
+  if (!job) return res.status(404).json({ ok: false, error: 'Job not found' });
+  if (job.status === 'running') return res.status(409).json({ ok: false, error: 'Already running' });
+  schedulerModule.upsertJob({ ...job, assigned_worker: worker_id || null, status: 'idle' });
   res.json({ ok: true });
 });
 

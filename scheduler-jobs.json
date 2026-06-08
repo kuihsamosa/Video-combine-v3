@@ -42,15 +42,37 @@
       "day_of_week": 1,
       "interval_hours": 24
     },
-    "enabled": true,
-    "status": "error",
+    "enabled": false,
+    "status": "idle",
     "created_at": "2026-06-08T02:29:16.588Z",
     "_from_planner": true,
     "_planner_idea_id": 1,
-    "last_run": "2026-06-08T02:33:29.504Z",
-    "last_run_id": "caeb8792",
+    "last_run": "2026-06-08T05:47:34.434Z",
+    "last_run_id": "ff1e610f",
     "next_run_ms": null,
     "run_history": [
+      {
+        "id": "ff1e610f",
+        "status": "completed",
+        "started_at": "2026-06-08T05:41:10.362Z",
+        "elapsed_s": 384.1,
+        "idea_title": "Uncovering AI Lies",
+        "video_path": "/Users/macbukbiru/Desktop/Code/Video-combine/output/uncovering-ai-lies_ff1e610f.mp4",
+        "thumb_path": "/Users/macbukbiru/Desktop/Code/Video-combine/output/uncovering-ai-lies_ff1e610f_thumb.jpg",
+        "audio_path": "/var/folders/rq/6tpf993d5tnfp36lf2tqr_y40000gn/T/sched_ff1e610f.wav",
+        "clip_count": 12
+      },
+      {
+        "id": "142ffe87",
+        "status": "completed",
+        "started_at": "2026-06-08T05:33:09.777Z",
+        "elapsed_s": 396.5,
+        "idea_title": "Uncovering AI Lies",
+        "video_path": "/Users/macbukbiru/Desktop/Code/Video-combine/output/uncovering-ai-lies_142ffe87.mp4",
+        "thumb_path": "/Users/macbukbiru/Desktop/Code/Video-combine/output/uncovering-ai-lies_142ffe87_thumb.jpg",
+        "audio_path": "/var/folders/rq/6tpf993d5tnfp36lf2tqr_y40000gn/T/sched_142ffe87.wav",
+        "clip_count": 12
+      },
       {
         "id": "caeb8792",
         "status": "error",
@@ -59,7 +81,8 @@
         "error": "The operation was aborted due to timeout"
       }
     ],
-    "current_run_id": null
+    "current_run_id": null,
+    "_retry_count": 0
   },
   {
     "id": "45fb8426",
@@ -87,7 +110,7 @@
     "title_cards": true,
     "cut_duration_seconds": 3,
     "tts_provider": "omnivoice",
-    "auto_loop": false,
+    "auto_loop": true,
     "background_music": false,
     "music_volume": 0.15,
     "steps": {
@@ -104,7 +127,7 @@
       "day_of_week": 1,
       "interval_hours": 24
     },
-    "enabled": true,
+    "enabled": false,
     "status": "error",
     "created_at": "2026-06-08T02:29:19.164Z",
     "_from_planner": true,
@@ -130,9 +153,9 @@
     "topic": "AI Secrets",
     "platform": "YouTube",
     "goal": "grow audience",
-    "tone": "inspirational",
-    "style": "storytelling",
-    "duration_minutes": 3,
+    "tone": "conversational",
+    "style": "podcast_dual",
+    "duration_minutes": 4,
     "orientation": "landscape",
     "voice": "narrator_warm",
     "speed": 0.92,
@@ -141,15 +164,15 @@
     "use_youtube": false,
     "use_pexels": true,
     "use_pixabay": true,
-    "podcast_host_voice": null,
-    "podcast_guest_voice": null,
+    "podcast_host_voice": "narrator_warm",
+    "podcast_guest_voice": "narrator_confident",
     "auto_captions": false,
     "caption_template": null,
     "color_grade": true,
     "title_cards": true,
-    "cut_duration_seconds": 2.5,
+    "cut_duration_seconds": 3.5,
     "tts_provider": "omnivoice",
-    "auto_loop": false,
+    "auto_loop": true,
     "background_music": false,
     "music_volume": 0.15,
     "steps": {
@@ -192,11 +215,11 @@
     "topic": "AI Fail",
     "platform": "YouTube",
     "goal": "grow audience",
-    "tone": "calm",
-    "style": "documentary",
+    "tone": "authoritative",
+    "style": "storytelling",
     "duration_minutes": 3,
     "orientation": "landscape",
-    "voice": "narrator_crisp",
+    "voice": "narrator_deep",
     "speed": 0.92,
     "model": "llama-3.3-70b-versatile",
     "clips_per_scene": 2,
@@ -205,11 +228,11 @@
     "use_pixabay": true,
     "podcast_host_voice": null,
     "podcast_guest_voice": null,
-    "auto_captions": true,
+    "auto_captions": false,
     "caption_template": "impact",
     "color_grade": true,
-    "title_cards": false,
-    "cut_duration_seconds": 3,
+    "title_cards": true,
+    "cut_duration_seconds": 2.5,
     "tts_provider": "omnivoice",
     "auto_loop": false,
     "background_music": false,
@@ -719,14 +742,28 @@
       "interval_hours": 24
     },
     "enabled": true,
-    "status": "idle",
+    "status": "running",
     "created_at": "2026-06-08T03:14:55.833Z",
     "_from_planner": true,
     "_planner_idea_id": 6,
-    "last_run": null,
-    "last_run_id": null,
+    "last_run": "2026-06-08T06:05:29.864Z",
+    "last_run_id": "dd6c6e88",
     "next_run_ms": null,
-    "run_history": []
+    "run_history": [
+      {
+        "id": "dd6c6e88",
+        "status": "completed",
+        "started_at": "2026-06-08T05:47:34.439Z",
+        "elapsed_s": 1075.4,
+        "idea_title": "Uncovering UFO Truths",
+        "video_path": "/Users/macbukbiru/Desktop/Code/Video-combine/output/uncovering-ufo-truths_dd6c6e88.mp4",
+        "thumb_path": "/Users/macbukbiru/Desktop/Code/Video-combine/output/uncovering-ufo-truths_dd6c6e88_thumb.jpg",
+        "audio_path": "/var/folders/rq/6tpf993d5tnfp36lf2tqr_y40000gn/T/sched_dd6c6e88.wav",
+        "clip_count": 12
+      }
+    ],
+    "current_run_id": "2a429dd5",
+    "_retry_count": 0
   },
   {
     "id": "8af14a29",
@@ -796,10 +833,24 @@
     "created_at": "2026-06-08T03:14:58.224Z",
     "_from_planner": true,
     "_planner_idea_id": 7,
-    "last_run": null,
-    "last_run_id": null,
+    "last_run": "2026-06-08T06:21:04.127Z",
+    "last_run_id": "2c5d25ff",
     "next_run_ms": null,
-    "run_history": []
+    "run_history": [
+      {
+        "id": "2c5d25ff",
+        "status": "completed",
+        "started_at": "2026-06-08T06:05:29.865Z",
+        "elapsed_s": 934.3,
+        "idea_title": "UFO Sightings Are Real",
+        "video_path": "/Users/macbukbiru/Desktop/Code/Video-combine/output/ufo-sightings-are-real_2c5d25ff.mp4",
+        "thumb_path": "/Users/macbukbiru/Desktop/Code/Video-combine/output/ufo-sightings-are-real_2c5d25ff_thumb.jpg",
+        "audio_path": "/var/folders/rq/6tpf993d5tnfp36lf2tqr_y40000gn/T/sched_2c5d25ff.wav",
+        "clip_count": 14
+      }
+    ],
+    "current_run_id": null,
+    "_retry_count": 0
   },
   {
     "id": "e7ed94b1",
@@ -869,9 +920,23 @@
     "created_at": "2026-06-08T03:14:59.508Z",
     "_from_planner": true,
     "_planner_idea_id": 8,
-    "last_run": null,
-    "last_run_id": null,
+    "last_run": "2026-06-08T06:36:14.717Z",
+    "last_run_id": "92cdfae8",
     "next_run_ms": null,
-    "run_history": []
+    "run_history": [
+      {
+        "id": "92cdfae8",
+        "status": "completed",
+        "started_at": "2026-06-08T06:21:04.130Z",
+        "elapsed_s": 910.6,
+        "idea_title": "UFO Sightings Are Not What You Think",
+        "video_path": "/Users/macbukbiru/Desktop/Code/Video-combine/output/ufo-sightings-are-not-what-you-think_92cdfae8.mp4",
+        "thumb_path": "/Users/macbukbiru/Desktop/Code/Video-combine/output/ufo-sightings-are-not-what-you-think_92cdfae8_thumb.jpg",
+        "audio_path": "/var/folders/rq/6tpf993d5tnfp36lf2tqr_y40000gn/T/sched_92cdfae8.wav",
+        "clip_count": 14
+      }
+    ],
+    "current_run_id": null,
+    "_retry_count": 0
   }
 ]

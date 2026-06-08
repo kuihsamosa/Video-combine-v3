@@ -1,0 +1,174 @@
+{
+  "id": "ufo_sightings_2023_2026-06-08T06-15-25-499Z_2c5d25ff",
+  "job_id": "8af14a29",
+  "job_name": "UFO Sightings 2023",
+  "run_id": "2c5d25ff",
+  "saved_at": "2026-06-08T06:15:25.499Z",
+  "title": "UFO Sightings Are Real",
+  "word_count": 635,
+  "scene_count": 7,
+  "script": {
+    "title": "UFO Sightings Are Real",
+    "description": "The truth about UFO sightings in 2023 and why they matter. New evidence reveals a shocking pattern of unexplained aerial phenomena.",
+    "narration": "The UFO sightings of 2023 have left us with more questions than answers. You're probably thinking, 'What's the big deal? UFOs are just a myth.' But here's the thing: the data says otherwise. A study by the National UFO Reporting Center found that over 70% of reported sightings can't be explained. That's not just a few weird incidents - that's a pattern. So, what's going on? The conventional wisdom is that UFOs are either misidentifications of natural phenomena or man-made objects. But when you dive deeper, you start to notice some strange inconsistencies. For example, many reported sightings are from credible sources like military personnel and commercial airline pilots. These are people who know what they're looking at, and they're not easily fooled. So, what are they seeing? One of the most compelling cases is the 'Tic Tac' UFO incident from 2004. It was witnessed by multiple F/A-18 fighter jets, and the footage is still widely available today. The objects in question were described as white, oval-shaped, and incredibly fast - capable of making sharp turns and accelerating at speeds of up to 2,400 miles per hour. That's not just unusual - it's physically impossible for any known aircraft. But here's the part that really gets interesting: the Pentagon has since confirmed that the incident was real, and that the objects were indeed unidentified. So, what does this mean? It means that we have a genuine mystery on our hands. It's not just about little green men or science fiction - it's about the fact that we're seeing things in the sky that we can't explain. And that's what makes it so fascinating. The question is, what are we going to do about it? Are we going to keep ignoring the evidence, or are we going to start taking it seriously? The truth is, we owe it to ourselves to investigate further. We owe it to the people who have witnessed these phenomena, and we owe it to the pursuit of knowledge itself. So, let's take a closer look at the data, and see where it takes us. One thing that's clear is that UFO sightings are not just limited to the United States. They're a global phenomenon, with reports coming in from all over the world. This suggests that whatever is going on, it's not just a local issue - it's something much bigger. But what is it? That's the million-dollar question. Some people believe that UFOs are of extraterrestrial origin, while others think they might be advanced military technology. But the truth is, we just don't know. And that's what makes it so intriguing. The lack of evidence doesn't mean that UFOs don't exist - it just means that we haven't found the evidence yet. So, what can we do to move forward? First, we need to take the phenomenon seriously. We need to acknowledge that UFO sightings are real, and that they deserve our attention. Second, we need to gather more data. We need to encourage people to come forward with their stories, and we need to start collecting evidence in a systematic way. And third, we need to start exploring the possibilities. We need to consider the fact that UFOs might be of extraterrestrial origin, and we need to start thinking about what that would mean for us as a species. It's not an easy question to answer, but it's one that we need to ask. So, what do you think? Are UFOs just a myth, or is there something more to it? The truth is, we don't know yet. But one thing is for sure - the UFO sightings of 2023 are just the beginning. We're on the cusp of something big, and it's going to change everything. So, stay tuned, because this is a story that's just getting started.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "ufo sighting night",
+          "alien spaceship landing",
+          "unidentified flying object",
+          "mysterious aerial phenomena",
+          "night sky"
+        ],
+        "search_queries": [
+          "ufo sighting 2023",
+          "unidentified flying object",
+          "mysterious sky"
+        ],
+        "description": "Opening shot of a UFO sighting at night, with a mysterious object in the sky",
+        "on_screen_text": "70% unexplained",
+        "chapter_title": "THE UFO SIGHTINGS OF 2023"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "military personnel testifying",
+          "commercial airline pilots reporting",
+          "credible sources speaking out",
+          "ufo sighting investigation",
+          "government documents"
+        ],
+        "search_queries": [
+          "military ufo sighting",
+          "airline pilot ufo report",
+          "government ufo documents"
+        ],
+        "description": "Credible sources like military personnel and airline pilots sharing their UFO sighting experiences",
+        "on_screen_text": "Credible sources",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "tic tac ufo incident",
+          "f/a-18 fighter jets",
+          "unidentified aerial phenomena",
+          "pentagon confirmation",
+          "ufo footage"
+        ],
+        "search_queries": [
+          "tic tac ufo",
+          "f/a-18 ufo sighting",
+          "pentagon ufo confirmation"
+        ],
+        "description": "The 'Tic Tac' UFO incident and the Pentagon's confirmation of the sighting",
+        "on_screen_text": "Pentagon confirmed",
+        "chapter_title": "THE TIC TAC UFO INCIDENT"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "global ufo sightings",
+          "world map with ufo reports",
+          "ufo sightings by country",
+          "international ufo phenomenon",
+          "global mystery"
+        ],
+        "search_queries": [
+          "global ufo sightings",
+          "ufo reports by country",
+          "international ufo phenomenon"
+        ],
+        "description": "Global UFO sightings and the international implications of the phenomenon",
+        "on_screen_text": "Global phenomenon",
+        "chapter_title": "A GLOBAL PHENOMENON"
+      },
+      {
+        "id": 5,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "ufo investigation team",
+          "researchers collecting data",
+          "ufo evidence gathering",
+          "scientific approach to ufos",
+          "ufo research facility"
+        ],
+        "search_queries": [
+          "ufo investigation team",
+          "ufo research facility",
+          "scientific approach to ufos"
+        ],
+        "description": "Researchers and investigators collecting data and gathering evidence on UFO sightings",
+        "on_screen_text": "Gathering evidence",
+        "chapter_title": "WHAT'S NEXT?"
+      },
+      {
+        "id": 6,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "ufo sighting footage",
+          "unidentified flying object video",
+          "mysterious aerial phenomena footage",
+          "ufo evidence",
+          "ufo video"
+        ],
+        "search_queries": [
+          "ufo sighting footage",
+          "unidentified flying object video",
+          "ufo evidence"
+        ],
+        "description": "Footage of UFO sightings and the importance of evidence in understanding the phenomenon",
+        "on_screen_text": "The evidence",
+        "chapter_title": ""
+      },
+      {
+        "id": 7,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "ufo community discussing",
+          "ufo enthusiasts sharing experiences",
+          "ufo support group",
+          "ufo discussion forum",
+          "ufo community"
+        ],
+        "search_queries": [
+          "ufo community",
+          "ufo enthusiasts",
+          "ufo support group"
+        ],
+        "description": "The UFO community and the importance of sharing experiences and discussing the phenomenon",
+        "on_screen_text": "Share your story",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "UFO Sightings 2023: The Truth",
+      "description": "The truth about UFO sightings in 2023. New evidence reveals a shocking pattern of unexplained aerial phenomena. From the 'Tic Tac' UFO incident to global sightings, we explore the phenomenon and what it means for us. Join the conversation and share your thoughts on the UFO sightings of 2023. What do you think is behind the mysterious aerial phenomena? Share your story and let's get to the bottom of this mystery. Tags: UFO sightings, UFO 2023, unidentified flying object, mysterious aerial phenomena, Tic Tac UFO incident.",
+      "tags": [
+        "UFO sightings",
+        "UFO 2023",
+        "unidentified flying object",
+        "mysterious aerial phenomena",
+        "Tic Tac UFO incident",
+        "global UFO sightings",
+        "ufo community",
+        "ufo enthusiasts",
+        "ufo evidence",
+        "ufo research"
+      ],
+      "hashtags": [
+        "#UFOsightings",
+        "#UFO2023",
+        "#UnidentifiedFlyingObject",
+        "#MysteriousAerialPhenomena",
+        "#TicTacUFO"
+      ],
+      "category": "Education"
+    }
+  }
+}
