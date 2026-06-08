@@ -167,10 +167,11 @@ function silenceWav(durationMs, sampleRate = 24000, channels = 1, bitDepth = 16)
 }
 
 // ── WAV stitcher ──────────────────────────────────────────────────────────────
-// Stitches multiple WAV buffers into one, inserting silence at paragraph breaks.
+// Stitches multiple WAV buffers into one, inserting silence at boundaries.
 // paragraphBreakMs: silence after a paragraph-end chunk (default 350ms)
-// sentenceBreakMs: silence between non-paragraph chunks (default 0 — Kokoro handles it)
-function stitchWavBuffers(buffers, paragraphBreakMs = 350) {
+// sentenceBreakMs: silence between non-paragraph chunks (default 80ms) — prevents
+//   abrupt/choppy joins when OmniVoice chunks lack natural trailing silence
+function stitchWavBuffers(buffers, paragraphBreakMs = 350, sentenceBreakMs = 80) {
   if (buffers.length === 0) throw new Error('No WAV buffers to stitch');
   if (buffers.length === 1) return buffers[0].buf;
 
@@ -184,20 +185,21 @@ function stitchWavBuffers(buffers, paragraphBreakMs = 350) {
     const { buf, paragraphEnd } = buffers[i];
     const offset = findDataOffset(buf);
     pcmParts.push(buf.slice(offset));
-    if (paragraphEnd && i < buffers.length - 1) {
-      const silence = silenceWav(paragraphBreakMs, sampleRate, channels, bitDepth);
+    if (i < buffers.length - 1) {
+      const gapMs = paragraphEnd ? paragraphBreakMs : sentenceBreakMs;
+      const silence = silenceWav(gapMs, sampleRate, channels, bitDepth);
       pcmParts.push(silence.slice(44)); // just the PCM data
     }
   }
 
-  const pcm      = Buffer.concat(pcmParts);
+  const pcm       = Buffer.concat(pcmParts);
   const totalData = pcm.length;
 
   // Build final WAV from first buffer's header + all PCM
   const firstOffset = findDataOffset(buffers[0].buf);
   const header = Buffer.from(buffers[0].buf.slice(0, firstOffset));
   const out    = Buffer.concat([header, pcm]);
-  out.writeUInt32LE(36 + totalData, 4);
+  out.writeUInt32LE(firstOffset - 8 + totalData, 4); // RIFF size = file_size - 8
   out.writeUInt32LE(totalData, firstOffset - 4);
   return out;
 }
