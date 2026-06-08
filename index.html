@@ -540,6 +540,78 @@
         }
         .sched-history-row:last-child { border-bottom: none; }
 
+        /* ── Scheduler redesign: status tokens (theme-aware) ─────────────── */
+        :root {
+            --sched-ok:    #16a34a;  --sched-ok-bg:    rgba(34,197,94,.12);
+            --sched-run:   #6366f1;  --sched-run-bg:   rgba(99,102,241,.12);
+            --sched-err:   #ef4444;  --sched-err-bg:   rgba(239,68,68,.12);
+            --sched-warn:  #f59e0b;  --sched-warn-bg:  rgba(245,158,11,.12);
+            --sched-muted: #94a3b8;
+        }
+        html[data-theme="dark"], .dark, [data-theme="dark"] {
+            --sched-ok:   #4ade80;
+            --sched-run:  #a5b4fc;
+            --sched-err:  #f87171;
+            --sched-warn: #fbbf24;
+        }
+
+        /* ── Scheduler redesign: header / toolbar ───────────────────────── */
+        .sched-head { display:flex; align-items:center; gap:10px; }
+        .sched-head-title { font-size:18px; font-weight:750; letter-spacing:-.01em; color:var(--text); }
+        .sched-head-sub { font-size:12px; color:var(--text-3); margin-top:1px; }
+        .sched-toolbar {
+            display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+            padding:7px 9px; border-radius:11px;
+            border:1px solid var(--border); background:var(--surface-2);
+        }
+        .sched-autorun {
+            display:flex; align-items:center; gap:7px; padding:4px 11px;
+            border-radius:20px; border:1px solid var(--border); background:var(--surface);
+            transition:border-color .2s, box-shadow .2s;
+        }
+        .sched-autorun.on { border-color:var(--sched-ok); box-shadow:0 0 0 3px var(--sched-ok-bg); }
+
+        /* ── Scheduler redesign: job cards ──────────────────────────────── */
+        .sched-job-card.running { border-color: var(--sched-run); box-shadow: 0 0 0 3px var(--sched-run-bg); }
+        .sched-job-card.error   { border-color: var(--sched-err); }
+        .sched-step-pill.on { background: var(--sched-ok-bg); color: var(--sched-ok); }
+        .sched-badge {
+            display:inline-flex; align-items:center; gap:3px;
+            font-size:10px; font-weight:600; border-radius:5px; padding:1px 6px; white-space:nowrap;
+        }
+        .sched-badge.planner { background:var(--sched-run-bg); color:var(--sched-run); border:1px solid var(--sched-run-bg); }
+        .sched-note { font-size:11px; margin-top:4px; display:flex; align-items:center; gap:4px; }
+        .sched-note.warn { color:var(--sched-warn); }
+        .sched-note.err  { color:var(--sched-err); }
+        .sched-job-actions { flex-wrap:wrap; }
+        .sched-job-actions .btn.grow { flex:1 1 auto; }
+        .sched-job-actions .btn.icon { flex:0 0 auto; min-width:34px; padding-left:8px; padding-right:8px; }
+        .sched-job-actions .btn.danger { color:var(--sched-err); }
+        .sched-job-actions .btn.auto-on {
+            background:linear-gradient(135deg, var(--sched-run), #8b5cf6);
+            border-color:transparent; color:#fff;
+        }
+
+        /* ── Scheduler redesign: modal job form ─────────────────────────── */
+        .sched-modal-backdrop {
+            display:none; position:fixed; inset:0; z-index:80;
+            background:rgba(15,23,42,.55); backdrop-filter:blur(2px);
+            animation:schedFade .15s ease;
+        }
+        .sched-modal-backdrop.open { display:block; }
+        @keyframes schedFade { from { opacity:0; } to { opacity:1; } }
+        .sched-modal {
+            position:fixed; z-index:81; top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            width:min(720px, calc(100vw - 32px));
+            max-height:90vh; display:none; flex-direction:column;
+            box-shadow:0 24px 60px -12px rgba(0,0,0,.5);
+        }
+        .sched-modal.open { display:flex; animation:schedPop .16s cubic-bezier(.2,.8,.3,1); }
+        @keyframes schedPop { from { opacity:0; transform:translate(-50%,-46%) scale(.98); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+        .sched-modal > .card-p { overflow-y:auto; }
+        body.sched-modal-open { overflow:hidden; }
+
         /* ── Planner ────────────────────────────────────────────────────── */
         .idea-card {
             background: var(--surface);
@@ -1705,9 +1777,10 @@
             <div style="display:flex; flex-direction:column; gap:14px;">
 
                 <!-- ── Row 1: Title + primary action ──────────────────────── -->
-                <div style="display:flex; align-items:center; gap:8px;">
+                <div class="sched-head">
                     <div style="flex:1;">
-                        <div style="font-size:17px; font-weight:700; color:var(--text);">Production Scheduler</div>
+                        <div class="sched-head-title">Production Scheduler</div>
+                        <div class="sched-head-sub">Automated video production pipelines</div>
                     </div>
                     <button class="btn btn-primary" onclick="schedShowForm()" style="white-space:nowrap;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1716,7 +1789,7 @@
                 </div>
 
                 <!-- ── Row 2: Tools toolbar + Auto-Run ────────────────────── -->
-                <div style="display:flex; align-items:center; gap:6px; padding:6px 8px; border-radius:10px; border:1px solid var(--border); background:var(--surface-2);">
+                <div class="sched-toolbar">
                     <!-- Tool buttons -->
                     <button class="btn btn-ghost btn-sm" onclick="batchQueueOpen()" style="font-size:12px; gap:5px;">
                         📋 <span>Batch</span>
@@ -1734,7 +1807,7 @@
                     <div style="flex:1;"></div>
 
                     <!-- Auto-Run pill (right-aligned in toolbar) -->
-                    <div id="schedAutoRunBar" style="display:flex; align-items:center; gap:7px; padding:4px 10px; border-radius:20px; border:1px solid var(--border); background:var(--surface); transition:border-color .2s, box-shadow .2s;">
+                    <div id="schedAutoRunBar" class="sched-autorun">
                         <label class="sched-toggle" title="Auto-run queue" style="flex-shrink:0;">
                             <input type="checkbox" id="schedAutoRunToggle" onchange="schedAutoRunChanged()">
                             <div class="sched-toggle-track"></div>
@@ -1760,9 +1833,10 @@
                 </div>
                 <div id="schedJobsList" style="display:none; flex-direction:column; gap:10px;"></div>
 
-                <!-- New / Edit Job Form (hidden until needed) -->
-                <div id="schedJobForm" class="card" style="display:none;">
-                    <div class="card-header">
+                <!-- New / Edit Job Form (centered modal) -->
+                <div id="schedModalBackdrop" class="sched-modal-backdrop" onclick="schedHideForm()"></div>
+                <div id="schedJobForm" class="card sched-modal">
+                    <div class="card-header" style="position:sticky; top:0; z-index:1; background:var(--surface);">
                         <div class="card-title" id="schedFormTitle">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                             New Job
@@ -4556,10 +4630,29 @@ let schedJobs      = [];
 let schedEditingId = null;   // null = new, string = editing existing
 let schedLogEs     = null;   // active EventSource for live log
 
+// ── HTML escape (prevents job names / errors from breaking card markup) ───────
+function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => (
+        { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+    ));
+}
+
 // ── Status dot colour ─────────────────────────────────────────────────────────
 function schedStatusColor(status) {
-    return { idle:'#22c55e', running:'#6366f1', error:'#ef4444', disabled:'#94a3b8' }[status] || '#94a3b8';
+    return {
+        idle:    'var(--sched-ok)',
+        running: 'var(--sched-run)',
+        error:   'var(--sched-err)',
+        disabled:'var(--sched-muted)',
+    }[status] || 'var(--sched-muted)';
 }
+
+// ── Esc closes the job modal ──────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.getElementById('schedJobForm')?.classList.contains('open')) {
+        schedHideForm();
+    }
+});
 
 // ── Relative time helper ──────────────────────────────────────────────────────
 function schedRelTime(isoOrMs) {
@@ -4618,11 +4711,11 @@ function schedRender() {
         const card = document.createElement('div');
         card.className = `sched-job-card${job.status === 'running' ? ' running' : ''}${job.status === 'error' ? ' error' : ''}`;
         const fromPlannerBadge = job._from_planner
-            ? `<span style="font-size:10px; font-weight:600; background:rgba(99,102,241,0.12); color:#6366f1; border:1px solid rgba(99,102,241,0.25); border-radius:4px; padding:1px 6px; white-space:nowrap;">📋 Planner</span>`
+            ? `<span class="sched-badge planner">📋 Planner</span>`
             : '';
         const needsSchedule = job._from_planner && job.schedule?.type === 'manual' && job.status === 'idle';
         const schedNudge = needsSchedule
-            ? `<div style="font-size:11px; color:#f59e0b; margin-top:4px; display:flex; align-items:center; gap:4px;">
+            ? `<div class="sched-note warn">
                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                    Set a schedule or click Run Now to produce immediately
                </div>`
@@ -4630,7 +4723,7 @@ function schedRender() {
         card.innerHTML = `
             <div class="sched-job-header">
                 <div class="sched-status-dot" style="background:${statusColor};" title="${job.enabled ? job.status : 'disabled'}"></div>
-                <div class="sched-job-name" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${job.name}</div>
+                <div class="sched-job-name" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(job.name)}">${escapeHtml(job.name)}</div>
                 ${fromPlannerBadge}
                 <label class="sched-toggle" title="${job.enabled ? 'Enabled — click to pause' : 'Disabled — click to enable'}">
                     <input type="checkbox" ${job.enabled ? 'checked' : ''} onchange="schedToggle('${job.id}')">
@@ -4640,10 +4733,10 @@ function schedRender() {
             </div>
             <div class="sched-job-body">
                 <div class="sched-job-meta">
-                    <span>${job.niche || '—'}</span>
-                    <span>·</span><span>${job.platform || 'YouTube'}</span>
+                    <span>${escapeHtml(job.niche || '—')}</span>
+                    <span>·</span><span>${escapeHtml(job.platform || 'YouTube')}</span>
                     <span>·</span><span>${job.duration_minutes || 2} min</span>
-                    <span>·</span><span>${schedSummary}</span>
+                    <span>·</span><span>${escapeHtml(schedSummary)}</span>
                 </div>
                 ${schedNudge}
                 <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:2px;">
@@ -4653,22 +4746,22 @@ function schedRender() {
                     <span>Last run: <strong>${lastRun}</strong></span>
                     ${job.next_run_ms ? `<span>Next: <strong>${nextRun}</strong></span>` : ''}
                 </div>
-                ${job.status === 'error' && job.run_history?.[0]?.error ? `<div style="font-size:11px; color:#ef4444; margin-top:2px;">❌ ${job.run_history[0].error.slice(0,100)}</div>` : ''}
-                ${job._retry_count ? `<div style="font-size:11px;color:#f59e0b;margin-top:2px;">🔄 Retry ${job._retry_count}/3 scheduled</div>` : ''}
+                ${job.status === 'error' && job.run_history?.[0]?.error ? `<div class="sched-note err">❌ ${escapeHtml(job.run_history[0].error.slice(0,100))}</div>` : ''}
+                ${job._retry_count ? `<div class="sched-note warn">🔄 Retry ${job._retry_count}/3 scheduled</div>` : ''}
                 ${job.run_history?.[0]?.thumb_path ? `<img src="/api/scheduler/output/${encodeURIComponent(job.run_history[0].thumb_path.split('/').pop())}" style="width:100%;height:72px;object-fit:cover;border-radius:6px;margin-top:6px;opacity:.9;" alt="thumbnail" loading="lazy">` : ''}
                 ${job._youtube_stats ? `<div style="font-size:10.5px;color:var(--text-3);margin-top:4px;display:flex;gap:8px;">📺 <span>${Number(job._youtube_stats.viewCount||0).toLocaleString()} views</span><span>👍 ${Number(job._youtube_stats.likeCount||0).toLocaleString()}</span></div>` : ''}
             </div>
             <div class="sched-job-actions">
-                <button class="btn btn-primary" onclick="schedRunNow('${job.id}')" ${job.status==='running'?'disabled':''}>
+                <button class="btn btn-primary grow" onclick="schedRunNow('${job.id}')" ${job.status==='running'?'disabled':''}>
                     ${job.status==='running' ? SPIN_SVG + ' Running…' : '▶ Run Now'}
                 </button>
-                <button class="btn ${job.auto_loop ? 'btn-primary' : 'btn-ghost'}" onclick="schedToggleAutoLoop('${job.id}')" title="${job.auto_loop ? 'Auto-loop ON' : 'Auto-loop OFF'}" style="${job.auto_loop ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:transparent;' : ''}">
+                <button class="btn ${job.auto_loop ? 'auto-on' : 'btn-ghost'} grow" onclick="schedToggleAutoLoop('${job.id}')" title="${job.auto_loop ? 'Auto-loop ON — click to stop' : 'Auto-loop OFF — click to enable'}">
                     🔁 Auto${job.auto_loop ? ' ON' : ''}
                 </button>
-                <button class="btn btn-ghost" onclick="schedShowPresets('${job.id}')">🎛 Presets</button>
-                <button class="btn btn-ghost" onclick="templateSaveFromJob('${job.id}')" title="Save as template">📐</button>
-                <button class="btn btn-ghost" onclick="schedEditJob('${job.id}')">✏️</button>
-                <button class="btn btn-ghost" onclick="schedDeleteJob('${job.id}')" style="color:#ef4444;">🗑</button>
+                <button class="btn btn-ghost icon" onclick="schedShowPresets('${job.id}')" title="Presets">🎛</button>
+                <button class="btn btn-ghost icon" onclick="templateSaveFromJob('${job.id}')" title="Save as template">📐</button>
+                <button class="btn btn-ghost icon" onclick="schedEditJob('${job.id}')" title="Edit">✏️</button>
+                <button class="btn btn-ghost icon danger" onclick="schedDeleteJob('${job.id}')" title="Delete">🗑</button>
             </div>`;
         list.appendChild(card);
     }
@@ -4854,8 +4947,10 @@ function schedShowForm(job = null) {
         if (pc) pc.style.transform = 'rotate(180deg)';
     }
 
-    form.style.display = 'block';
-    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    form.classList.add('open');
+    document.getElementById('schedModalBackdrop')?.classList.add('open');
+    document.body.classList.add('sched-modal-open');
+    form.querySelector('.card-p')?.scrollTo({ top: 0 });
 }
 
 // ── Scheduler footage settings ─────────────────────────────────────────────
@@ -5081,7 +5176,9 @@ function sfOnStyleChange() {
 }
 
 function schedHideForm() {
-    document.getElementById('schedJobForm').style.display = 'none';
+    document.getElementById('schedJobForm').classList.remove('open');
+    document.getElementById('schedModalBackdrop')?.classList.remove('open');
+    document.body.classList.remove('sched-modal-open');
     schedEditingId = null;
 }
 
@@ -5286,8 +5383,7 @@ function schedAutoRunChanged() {
     const on  = document.getElementById('schedAutoRunToggle').checked;
     const bar = document.getElementById('schedAutoRunBar');
     _schedAutoRunActive = on;
-    bar.style.borderColor = on ? '#6366f1' : '';
-    bar.style.boxShadow   = on ? '0 0 0 3px rgba(99,102,241,.12)' : '';
+    bar.classList.toggle('on', on);
     // Sync concurrency to backend
     const concurrency = parseInt(document.getElementById('schedAutoRunConcurrency').value) || 3;
     fetch('/api/scheduler/config', {
