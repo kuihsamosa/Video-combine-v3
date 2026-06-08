@@ -1743,6 +1743,25 @@ app.get('/api/workers/jobs/:id/logs', (req, res) => {
   req.on('close', () => { _workerLogSubs.get(jobId)?.delete(res); });
 });
 
+// Worker pushes finished video file to main server (no inbound firewall rule needed on worker)
+app.post('/api/workers/upload', workerAuth, (req, res) => {
+  const jobId    = req.headers['x-job-id'];
+  const workerId = req.headers['x-worker-id'] || 'unknown';
+  const form     = formidable({ uploadDir: OUTPUT_DIR, keepExtensions: true, maxFileSize: 4 * 1024 * 1024 * 1024 });
+  form.parse(req, (err, fields, files) => {
+    if (err) { console.error('[Worker upload]', err.message); return res.status(500).json({ ok: false, error: err.message }); }
+    const f = files.file?.[0] || files.file;
+    if (!f) return res.status(400).json({ ok: false, error: 'No file received' });
+    // Rename to original filename
+    const orig    = f.originalFilename || f.newFilename;
+    const dest    = path.join(OUTPUT_DIR, orig);
+    fs.renameSync(f.filepath, dest);
+    const url = `/api/scheduler/output/${encodeURIComponent(orig)}`;
+    console.log(`[Worker] Upload received: ${orig} from ${workerId} (job ${jobId})`);
+    res.json({ ok: true, url, path: dest });
+  });
+});
+
 // Assign a job to a specific worker (or clear assignment)
 app.post('/api/workers/assign', (req, res) => {
   const { job_id, worker_id } = req.body;

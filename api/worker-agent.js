@@ -76,19 +76,72 @@ async function api(method, path_, body) {
   return r.json();
 }
 
-// ── File server — lets main machine download finished videos ──────────────────
+// ── Push-based file transfer (no inbound firewall rule needed) ────────────────
+// Worker POSTs the video as a multipart/form-data upload to the main server.
+// The main server saves it directly into its output directory.
+async function pushFileToMain(filePath, filename, jobId) {
+  const fileSize = fs.statSync(filePath).size;
+  log(`  Pushing ${filename} (${(fileSize / 1048576).toFixed(1)} MB) to main server…`);
+
+  // Use Node 18+ built-in fetch with a ReadableStream body
+  // We build a simple multipart body manually (no external deps)
+  const boundary = `----WorkerBoundary${Date.now()}`;
+  const header   = Buffer.from(
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
+    `Content-Type: video/mp4\r\n\r\n`
+  );
+  const footer = Buffer.from(`\r\n--${boundary}--\r\n`);
+  const totalSize = header.length + fileSize + footer.length;
+
+  const { Readable } = require('stream');
+  const fileStream = fs.createReadStream(filePath);
+
+  // Concatenate header + file + footer as a single readable
+  const parts = [header, fileStream, footer];
+  let partIdx = 0;
+  const combinedStream = new Readable({
+    read() {
+      if (partIdx >= parts.length) { this.push(null); return; }
+      const part = parts[partIdx++];
+      if (Buffer.isBuffer(part)) { this.push(part); }
+      else {
+        part.on('data', chunk => this.push(chunk));
+        part.on('end',  ()    => this.read());
+        part.on('error', e   => this.destroy(e));
+      }
+    }
+  });
+
+  const resp = await fetch(`${MAIN_URL}/api/workers/upload`, {
+    method:  'POST',
+    headers: {
+      'Content-Type':    `multipart/form-data; boundary=${boundary}`,
+      'Content-Length':  String(totalSize),
+      'x-worker-secret': SECRET,
+      'x-job-id':        jobId,
+      'x-worker-id':     WORKER_ID,
+    },
+    body:    combinedStream,
+    duplex:  'half',          // required for streaming body in Node fetch
+    signal:  AbortSignal.timeout(10 * 60_000), // 10 min timeout for large files
+  });
+
+  if (!resp.ok) throw new Error(`Upload failed: HTTP ${resp.status}`);
+  const data = await resp.json();
+  if (!data.ok) throw new Error(data.error || 'Upload rejected');
+  return data.url; // main server returns the local URL
+}
+
+// ── Fallback pull-mode file server (only used if push fails & port is open) ───
 const fileServer = http.createServer((req, res) => {
   const name = decodeURIComponent(req.url.replace(/^\//, '').split('?')[0]);
-  const fp   = path.join(OUTPUT_DIR, name);
-  if (!fp.startsWith(OUTPUT_DIR) || !fs.existsSync(fp)) {
-    res.writeHead(404); res.end('Not found'); return;
-  }
+  const fp   = path.join(OUTPUT_DIR, path.basename(name)); // basename prevents path traversal
+  if (!fs.existsSync(fp)) { res.writeHead(404); res.end('Not found'); return; }
   res.writeHead(200, { 'Content-Type': 'video/mp4', 'Content-Length': fs.statSync(fp).size });
   fs.createReadStream(fp).pipe(res);
 });
-fileServer.listen(SERVE_PORT, () =>
-  log(`📡 File server on :${SERVE_PORT} — main machine will pull outputs from here`)
-);
+// File server starts lazily only if push transfer fails (see runJob below)
 
 // ── Logging ───────────────────────────────────────────────────────────────────
 function log(...args) {
@@ -180,17 +233,28 @@ async function runJob(job) {
       logger(`✅ Video: ${path.basename(outputPath)}`);
     }
 
-    // ── Report success ─────────────────────────────────────────────────────
+    // ── Transfer output back to main server ───────────────────────────────
     const outputFilename = outputPath ? path.basename(outputPath) : null;
-    const outputUrl      = outputFilename
-      ? `http://${getLocalIP()}:${SERVE_PORT}/${encodeURIComponent(outputFilename)}`
-      : null;
+    let transferredUrl   = null;
+
+    if (outputPath && outputFilename) {
+      logger('📤 Uploading video to main server…');
+      try {
+        transferredUrl = await pushFileToMain(outputPath, outputFilename, jobId);
+        logger(`✅ Transfer complete: ${outputFilename}`);
+      } catch (e) {
+        logger(`⚠️  Transfer failed (${e.message}) — main server will try to pull instead`);
+        // Fallback: expose via local file server (requires firewall rule)
+        transferredUrl = `http://${getLocalIP()}:${SERVE_PORT}/${encodeURIComponent(outputFilename)}`;
+        fileServer.listen(SERVE_PORT).catch(() => {}); // start if not already running
+      }
+    }
 
     await api('POST', '/api/workers/complete', {
       worker_id:  WORKER_ID,
       job_id:     jobId,
       status:     'completed',
-      output:     { video_path: outputPath, video_url: outputUrl, video_filename: outputFilename },
+      output:     { video_path: outputPath, video_url: transferredUrl, video_filename: outputFilename },
     });
 
     log(`✅ "${job.name}" done → ${outputFilename || '(no video)'}`);
