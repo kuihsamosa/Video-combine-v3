@@ -4692,11 +4692,26 @@ function schedRenderUpcoming() {
 
 // ── Fetch jobs from server ────────────────────────────────────────────────────
 async function schedRefresh() {
+    console.log('schedRefresh called');
     try {
         const r = await fetch('/api/scheduler/jobs');
         const d = await r.json();
-        if (d.ok) { schedJobs = d.jobs; schedRender(); workersRender(); }
-    } catch(_) {}
+        console.log('schedRefresh response:', d);
+        
+        if (d.ok) { 
+            console.log('Updating schedJobs:', d.jobs.length, 'jobs');
+            schedJobs = d.jobs; 
+            schedRender(); 
+            workersRender(); 
+            console.log('schedRefresh completed');
+        } else {
+            addLog(`❌ Failed to refresh jobs: ${d.error || 'Unknown error'}`);
+            console.error('Refresh failed:', d);
+        }
+    } catch(error) {
+        addLog(`❌ Network error refreshing jobs: ${error.message}`);
+        console.error('Refresh error:', error);
+    }
 }
 
 // ── Form show/hide ────────────────────────────────────────────────────────────
@@ -5193,10 +5208,43 @@ function schedEditJob(id) {
 }
 
 async function schedDeleteJob(id) {
+    console.log('schedDeleteJob called with id:', id);
+    
     const job = schedJobs.find(j => j.id === id);
-    if (!confirm(`Delete job "${job?.name}"?`)) return;
-    await fetch(`/api/scheduler/jobs/${id}`, { method: 'DELETE' });
-    await schedRefresh();
+    console.log('Found job:', job ? job.name : 'not found');
+    
+    if (!job) {
+        addLog('❌ Job not found for deletion');
+        console.error('Job not found for deletion:', id);
+        return;
+    }
+    
+    if (!confirm(`Delete job "${job.name}"?`)) {
+        console.log('Delete cancelled by user');
+        return;
+    }
+    
+    console.log('Proceeding with delete...');
+    
+    try {
+        const response = await fetch(`/api/scheduler/jobs/${id}`, { method: 'DELETE' });
+        const result = await response.json();
+        console.log('Delete response:', result);
+        
+        if (!result.ok) {
+            addLog(`❌ Failed to delete job: ${result.error || 'Unknown error'}`);
+            console.error('Delete failed:', result);
+            return;
+        }
+        
+        addLog(`✅ Job "${job.name}" deleted successfully`);
+        console.log('Job deleted, refreshing...');
+        await schedRefresh();
+        console.log('Refresh completed');
+    } catch (error) {
+        addLog(`❌ Delete job failed: ${error.message}`);
+        console.error('Delete error:', error);
+    }
 }
 
 async function schedToggle(id) {
