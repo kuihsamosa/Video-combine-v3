@@ -17,11 +17,25 @@
 //    PEXELS_API_KEY
 // ─────────────────────────────────────────────────────────────────────────────
 
-// env is loaded by worker.sh via `source .env.worker` before spawning node
+// On Windows, env is loaded by worker.ps1 before spawning node.
+// On Linux/Mac, env is loaded by worker.sh via `source .env.worker`.
 const os   = require('os');
 const fs   = require('fs');
 const path = require('path');
 const http = require('http');
+
+// Load .env.worker manually as a fallback (useful when running `node api/worker-agent.js` directly)
+const envWorkerPath = path.join(__dirname, '../.env.worker');
+if (fs.existsSync(envWorkerPath) && !process.env.MAIN_SERVER_URL) {
+  fs.readFileSync(envWorkerPath, 'utf8')
+    .split(/\r?\n/)
+    .filter(l => l.trim() && !l.startsWith('#') && l.includes('='))
+    .forEach(l => {
+      const [k, ...rest] = l.split('=');
+      const v = rest.join('=').trim().replace(/^['"]|['"]$/g, '');
+      if (k && v && !process.env[k.trim()]) process.env[k.trim()] = v;
+    });
+}
 
 const MAIN_URL        = (process.env.MAIN_SERVER_URL || '').replace(/\/$/, '');
 const SECRET          = process.env.WORKER_SECRET || 'videocombine-worker';
