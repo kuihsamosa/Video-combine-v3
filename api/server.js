@@ -799,6 +799,16 @@ app.post('/api/scheduler/jobs/:id/run', async (req, res) => {
   res.json({ ok: true, message: 'Job triggered', job_id: job.id });
 });
 
+// Cancel a running job
+app.post('/api/scheduler/jobs/:id/cancel', async (req, res) => {
+  try {
+    const result = await schedulerModule.cancelJob(req.params.id);
+    res.json({ ok: true, message: 'Job cancelled', job: result.job });
+  } catch (error) {
+    res.status(400).json({ ok: false, error: error.message });
+  }
+});
+
 // SSE: live logs for a running job
 app.get('/api/scheduler/jobs/:id/logs', (req, res) => {
   const job = schedulerModule.getJob(req.params.id);
@@ -1857,11 +1867,42 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
+// ── Resource Usage Monitoring ───────────────────────────────────────────────────
+app.get('/api/system/resources', (req, res) => {
+  try {
+    const rm = require('./resource-manager');
+    const systemInfo = rm.getSystemInfo();
+    const settings = rm.getSettings();
+    const schedulerStatus = schedulerModule.getSchedulerStatus();
+    
+    res.json({
+      ok: true,
+      system: systemInfo,
+      settings: settings,
+      scheduler: schedulerStatus,
+      canScheduleJob: rm.canScheduleJob(),
+      recommendedConcurrency: rm.getRecommendedConcurrency()
+    });
+  } catch (e) {
+    res.json({
+      ok: false,
+      error: e.message,
+      system: {
+        cpuCount: os.cpus().length,
+        totalMemGB: (os.totalmem() / 1024 ** 3).toFixed(1),
+        freeMemGB: (os.freemem() / 1024 ** 3).toFixed(1),
+        memUsagePercent: ((1 - os.freemem() / os.totalmem()) * 100).toFixed(1),
+      }
+    });
+  }
+});
+
 const server = app.listen(PORT, () => {
   console.log(`\n🎥 Video Combiner API running at http://localhost:${PORT}`);
   console.log(`📁 Open your browser to: http://localhost:${PORT}`);
   console.log(`🎬 API endpoint: POST http://localhost:${PORT}/api/video-combiner`);
-  console.log(`💚 Health check: GET http://localhost:${PORT}/api/health\n`);
+  console.log(`💚 Health check: GET http://localhost:${PORT}/api/health`);
+  console.log(`📊 Resource monitor: GET http://localhost:${PORT}/api/system/resources\n`);
   // Start the production scheduler
   schedulerModule.startScheduler(PORT);
 });

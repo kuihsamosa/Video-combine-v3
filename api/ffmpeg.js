@@ -31,11 +31,21 @@ function runProcess(command, args, {
 
     const stdoutLines = [];
     const stderrLines = [];
-    const maxLines = 400; // keep recent output for debugging
+    const maxLines = 100; // Reduced from 400 for memory efficiency
+    const maxTotalLogBytes = 50000; // 50KB total log limit per process
+    let totalLogBytes = 0;
 
     const pushLine = (arr, line) => {
+      const lineSize = line.length;
+      if (totalLogBytes + lineSize > maxTotalLogBytes) {
+        return; // Skip line if over memory limit
+      }
       arr.push(line);
-      if (arr.length > maxLines) arr.shift();
+      totalLogBytes += lineSize;
+      if (arr.length > maxLines) {
+        const removed = arr.shift();
+        totalLogBytes -= removed.length;
+      }
     };
 
     const emitStdout = createLineEmitter((line) => {

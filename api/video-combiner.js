@@ -9,6 +9,16 @@ const { LIMITS, getVideoPreset } = require('./app-config');
 const { runFfprobeDurationSeconds, runFfmpeg } = require('./ffmpeg');
 const { getVideoContentTypeByExt, safeRm } = require('./http-utils');
 
+// Get hardware-aware limits from resource manager
+let videoSegmentConcurrency = 2;
+try {
+  const rm = require('./resource-manager');
+  videoSegmentConcurrency = rm.getSettings().videoSegmentConcurrency;
+  console.log(`[VideoCombiner] Using hardware-aware segment concurrency: ${videoSegmentConcurrency}`);
+} catch (e) {
+  console.log(`[VideoCombiner] Using default segment concurrency: ${videoSegmentConcurrency}`);
+}
+
 const CONFIG = {
   allowedFormats: ['mp4', 'avi', 'mov', 'mkv'],
   tempDir: path.join(__dirname, '../temp'),
@@ -113,7 +123,7 @@ function hasAudioStream(inputPath) {
   }
 }
 
-async function extractSegment({ inputPath, startTime, durationSeconds, outputPath, preset, logger, orientation = 'landscape', extraVideoFilter = null }) {
+async function extractSegment({ inputPath, startTime, durationSeconds, outputPath, preset, logger, orientation = 'landscape', extraVideoFilter = null, targetSampleRate = 48000 }) {
   const audioExists = hasAudioStream(inputPath);
 
   // Base args: seek + input
@@ -121,8 +131,9 @@ async function extractSegment({ inputPath, startTime, durationSeconds, outputPat
 
   // If no audio stream, inject a lavfi silent source so every segment has audio.
   // This is critical for xfade/acrossfade to work on mute stock footage.
+  // Use target sample rate for consistency with voiceover
   if (!audioExists) {
-    args.push('-f', 'lavfi', '-i', `anullsrc=r=44100:cl=stereo`);
+    args.push('-f', 'lavfi', '-i', `anullsrc=r=${targetSampleRate}:cl=stereo`);
   }
 
   // Build video filter: scale/pad always applied; optional extra filter chained after
@@ -141,6 +152,7 @@ async function extractSegment({ inputPath, startTime, durationSeconds, outputPat
     '-map', audioExists ? '0:a:0' : '1:a:0',
     '-c:a', 'aac',
     '-b:a', preset.audioBitrate,
+    '-ar', String(targetSampleRate), // Ensure consistent sample rate
     '-avoid_negative_ts', '1',
     '-movflags', '+faststart',
     outputPath
@@ -431,8 +443,15 @@ async function handleVideoCombiner(req, res, { files, fields }, logger = console
       throw new Error('No segments extracted (empty task list)');
     }
 
-    const concurrency = Math.max(1, Math.min(6, Math.floor(toFiniteNumber(config.concurrency, 2))));
-    log(`\n⚡ Extracting ${segmentTasks.length} segment(s) with concurrency=${concurrency} (preset=${config.quality_preset || 'balanced'})`);
+    // Hardware-aware concurrency limits
+    const maxSystemConcurrency = videoSegmentConcurrency;
+    const userConcurrency = toFiniteNumber(config.concurrency, maxSystemConcurrency);
+    const concurrency = Math.max(1, Math.min(
+      maxSystemConcurrency,
+      userConcurrency
+    ));
+    
+    log(`\n⚡ Extracting ${segmentTasks.length} segment(s) with concurrency=${concurrency} (preset=${config.quality_preset || 'balanced'}, maxSystem=${maxSystemConcurrency})`);
 
     await mapWithConcurrency(segmentTasks, concurrency, async (task) => {
       const durationSeconds = Math.max(0.05, task.end - task.start);

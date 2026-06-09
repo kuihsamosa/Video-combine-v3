@@ -30,7 +30,18 @@ let   schedulerPort = 8080;
 // ── Global concurrency manager (#10 Resource Throttle / multi-instance) ───────
 const runningJobIds = new Set();   // jobIds currently executing
 const pendingQueue  = [];          // jobIds waiting for a free slot
-let   MAX_CONCURRENT = 3;          // configurable via setMaxConcurrent()
+
+// Use resource manager for hardware-aware limits
+let MAX_CONCURRENT = 3;          // Default, will be overridden by ResourceManager
+
+// Initialize with resource manager
+try {
+  const rm = require('./resource-manager');
+  MAX_CONCURRENT = rm.getSettings().maxConcurrentJobs;
+  console.log(`[Scheduler] Using hardware-aware concurrency: ${MAX_CONCURRENT}`);
+} catch (e) {
+  console.log(`[Scheduler] Using default concurrency: ${MAX_CONCURRENT}`);
+}
 
 function setMaxConcurrent(n) {
   MAX_CONCURRENT = Math.max(1, Math.min(10, parseInt(n) || 3));
@@ -63,6 +74,17 @@ function normalizeTopic(str) {
   return (str || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+// Cleanup function to prevent memory leak
+function cleanupRecentTopics() {
+  const now = Date.now();
+  const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+  for (const [topic, timestamp] of recentTopics.entries()) {
+    if (now - timestamp > maxAge) {
+      recentTopics.delete(topic);
+    }
+  }
+}
+
 // ── Script pre-gen cache (#7) ─────────────────────────────────────────────────
 // Background timer pre-generates scripts for jobs running within 15 min
 const PRE_GEN_HORIZON_MS = 15 * 60 * 1000;
@@ -73,11 +95,28 @@ let preGenTimer = null;
 let statsTimer = null;
 function startStatsTimer() {
   if (statsTimer) return;
+  if (!process.env.YOUTUBE_API_KEY) return;
+  
+  // Only start if there are jobs that need stats
+  const jobs = loadJobs();
+  const hasPendingStats = jobs.some(job =>
+    job._last_youtube_video_id &&
+    !job._youtube_stats_fetched &&
+    job._last_youtube_upload_at &&
+    (Date.now() - new Date(job._last_youtube_upload_at).getTime()) > 48 * 3_600_000
+  );
+  
+  if (!hasPendingStats) {
+    console.log('[Stats] No pending stats to fetch, timer not started');
+    return;
+  }
+  
+  console.log('[Stats] Starting timer (30min interval)');
   statsTimer = setInterval(async () => {
-    const apiKey = process.env.YOUTUBE_API_KEY; // simple API key (read-only stats)
-    if (!apiKey) return;
     const jobs = loadJobs();
     const now  = Date.now();
+    let fetchedCount = 0;
+    
     for (const job of jobs) {
       if (
         job._last_youtube_video_id &&
@@ -86,7 +125,7 @@ function startStatsTimer() {
         (now - new Date(job._last_youtube_upload_at).getTime()) > 48 * 3_600_000
       ) {
         try {
-          const url = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${job._last_youtube_video_id}&key=${apiKey}`;
+          const url = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${job._last_youtube_video_id}&key=${process.env.YOUTUBE_API_KEY}`;
           const r   = await fetch(url, { signal: AbortSignal.timeout(10_000) });
           const d   = await r.json();
           const stats = d?.items?.[0]?.statistics;
@@ -97,11 +136,27 @@ function startStatsTimer() {
               fresh._youtube_stats_fetched = true;
               upsertJob(fresh);
               console.log(`[Stats] ${job.name}: ${stats.viewCount} views, ${stats.likeCount} likes`);
+              fetchedCount++;
             }
           }
         } catch (e) {
           console.error(`[Stats] ${job.name}:`, e.message);
         }
+      }
+    }
+    
+    // Stop timer if no more jobs need stats
+    if (fetchedCount === 0) {
+      const jobsStillNeedStats = loadJobs().some(job =>
+        job._last_youtube_video_id &&
+        !job._youtube_stats_fetched &&
+        job._last_youtube_upload_at &&
+        (Date.now() - new Date(job._last_youtube_upload_at).getTime()) > 48 * 3_600_000
+      );
+      if (!jobsStillNeedStats) {
+        console.log('[Stats] No more stats needed, stopping timer');
+        clearInterval(statsTimer);
+        statsTimer = null;
       }
     }
   }, 30 * 60 * 1000); // check every 30 min
@@ -253,8 +308,15 @@ function finaliseRun(runId, status, output) {
     clients.forEach(res => { try { res.write(`data: ${msg}\n\n`); res.end(); } catch (_) {} });
     clients.clear();
   }
-  // Keep logs for 1 hour then GC
-  setTimeout(() => { delete runLogs[runId]; delete runEmitters[runId]; }, 3_600_000);
+  // Keep logs for configurable time then GC (default 5 minutes)
+  let logRetentionMs = 5 * 60 * 1000;
+  try {
+    const rm = require('./resource-manager');
+    logRetentionMs = rm.getSettings().logRetentionMinutes * 60 * 1000;
+  } catch (e) {
+    // Use default if resource manager not available
+  }
+  setTimeout(() => { delete runLogs[runId]; delete runEmitters[runId]; }, logRetentionMs);
 }
 
 // ── OmniVoice voice presets: text descriptions for voice design ───────────────
@@ -336,6 +398,12 @@ async function _runJobCore(jobId) {
     {
       const topicKey = normalizeTopic(job.topic || job.niche);
       const lastUsed = recentTopics.get(topicKey);
+      
+      // Periodic cleanup (every 100 checks)
+      if (recentTopics.size > 100) {
+        cleanupRecentTopics();
+      }
+      
       if (lastUsed) {
         const agoMin = Math.round((Date.now() - lastUsed) / 60000);
         const leftMin = Math.round((TOPIC_COOLDOWN_MS - (Date.now() - lastUsed)) / 60000);
@@ -485,27 +553,6 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
     const ttsPromise     = Promise.resolve(); // placeholder replaced below
     const footagePromise = Promise.resolve();
 
-    // ── Step 4 (parallel): Pre-cache footage while TTS runs ───────────────────
-    let footagePrefetchResult = null;
-    const footagePrefetch = (job.steps?.find_footage && output.script?.scenes?.length)
-      ? (async () => {
-          log(`🎥 Step 4 (parallel): Pre-caching footage for ${output.script.scenes.length} scenes…`);
-          const clips = await findFootageForScenes(
-            output.script.scenes,
-            process.env,
-            { log },
-            job.clips_per_scene || 2,
-            job.orientation || 'landscape',
-            job.use_youtube || false,
-            job.use_pexels  !== false,
-            job.use_pixabay !== false,
-            job.yt_quality  || '720',
-          );
-          footagePrefetchResult = clips;
-          log(`✅ Footage pre-cached: ${clips.length} clip(s) ready`);
-        })()
-      : Promise.resolve();
-
     // ── Step 3: Voiceover (TTS) ───────────────────────────────────────────────
     if (job.steps?.voiceover && output.script?.narration) {
       const isPodcastDual = output.script._podcast_dual || job.style === 'podcast_dual';
@@ -644,15 +691,8 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
       }
     }
 
-    // ── Step 4: Await pre-cached footage (already running in parallel) ────────
-    if (job.steps?.find_footage && output.script?.scenes?.length) {
-      await footagePrefetch; // wait for parallel fetch to finish if not already done
-      if (footagePrefetchResult) {
-        output.clips = footagePrefetchResult;
-      }
-    }
-
     // ── #23 Voice Speed Auto-Tune ─────────────────────────────────────────────
+    // Moved here to complete before footage prefetch starts
     if (output.audio_path && output.script) {
       try {
         const actualDur   = await runFfprobeDurationSeconds(output.audio_path, {}).catch(() => 0);
@@ -669,12 +709,46 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
             const narration   = output.script.narration;
             const voice       = job.style === 'podcast_dual' ? (job.podcast_host_voice || 'echo') : (job.voice || 'narrator_warm');
             const tunedBuf    = await generateTTS(narration, voice, newSpeed, log);
-            fs.writeFileSync(output.audio_path, tunedBuf);
+            
+            // Write to temporary file first, then rename to avoid corruption
+            const tempAudioPath = output.audio_path + '.tuning';
+            fs.writeFileSync(tempAudioPath, tunedBuf);
+            fs.renameSync(tempAudioPath, output.audio_path);
+            
             log(`✅ Voice speed tuned — new audio: ${(tunedBuf.length / 1048576).toFixed(1)} MB`);
           }
         }
       } catch (tuneErr) {
         log(`   ⚠️  Speed auto-tune failed (non-fatal): ${tuneErr.message}`);
+      }
+    }
+
+    // ── Step 4 (parallel): Pre-cache footage while TTS runs ───────────────────
+    let footagePrefetchResult = null;
+    const footagePrefetch = (job.steps?.find_footage && output.script?.scenes?.length)
+      ? (async () => {
+          log(`🎥 Step 4 (parallel): Pre-caching footage for ${output.script.scenes.length} scenes…`);
+          const clips = await findFootageForScenes(
+            output.script.scenes,
+            process.env,
+            { log },
+            job.clips_per_scene || 2,
+            job.orientation || 'landscape',
+            job.use_youtube || false,
+            job.use_pexels  !== false,
+            job.use_pixabay !== false,
+            job.yt_quality  || '720',
+          );
+          footagePrefetchResult = clips;
+          log(`✅ Footage pre-cached: ${clips.length} clip(s) ready`);
+        })()
+      : Promise.resolve();
+
+    // ── Step 4: Await pre-cached footage (already running in parallel) ────────
+    if (job.steps?.find_footage && output.script?.scenes?.length) {
+      await footagePrefetch; // wait for parallel fetch to finish if not already done
+      if (footagePrefetchResult) {
+        output.clips = footagePrefetchResult;
       }
     }
 
@@ -763,12 +837,32 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
         let   segCounter   = 0;
 
         // Helper: extract one cut from a clip, tracking offset internally
+        const clipDurations = new Map(); // Track actual clip durations
         const extractOne = async (clip, idx) => {
-          const start    = clipOffsets.get(clip.localPath) || 0;
-          const avail    = Math.max(0, (clip.duration || 30) - start);
-          if (avail < 0.5) return null;
+          // Get or cache the actual clip duration
+          let clipDuration = clipDurations.get(clip.localPath);
+          if (!clipDuration) {
+            try {
+              clipDuration = await runFfprobeDurationSeconds(clip.localPath, {}).catch(() => 30);
+              clipDurations.set(clip.localPath, clipDuration);
+            } catch (e) {
+              clipDuration = 30; // Default fallback
+            }
+          }
+          
+          const start = clipOffsets.get(clip.localPath) || 0;
+          const avail = Math.max(0, clipDuration - start);
+          
+          if (avail < 0.5) return null; // Not enough usable content left
+          
           const cutTarget = sceneCutSec(clip.scene_id); // #16 smart pacing
-          const actual    = Math.min(cutTarget, avail);
+          const actual = Math.min(cutTarget, avail);
+          
+          // Ensure we don't try to extract beyond the actual duration
+          if (start + actual > clipDuration) {
+            return null; // Safety check
+          }
+          
           const segOut = path.join(tmpDir, `seg_${idx}.mp4`);
           await extractSegment({
             inputPath:        clip.localPath,
@@ -780,7 +874,11 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
             extraVideoFilter: colorGradeFilter || null,
             logger:           { log, error: log },
           });
-          clipOffsets.set(clip.localPath, start + actual);
+          
+          // Update offset with validation
+          const newOffset = Math.min(start + actual, clipDuration);
+          clipOffsets.set(clip.localPath, newOffset);
+          
           return { path: segOut, dur: actual };
         };
 
@@ -813,12 +911,14 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
         };
 
         // ── Single round-robin loop: keep pulling cuts until coverage is met ─────
+        const availableClips = [...baseClips];
+        const exhaustedClips = new Set();
         let clipIdx = 0;
-        let exhausted = 0;
         log(`✂️  Extracting ${CUT_SECS}s cuts — need ${needed.toFixed(1)}s total…`);
 
-        while (totalSegSecs < needed && exhausted < baseClips.length) {
-          const clip = baseClips[clipIdx % baseClips.length];
+        while (totalSegSecs < needed && availableClips.length > 0) {
+          // Only use clips that haven't been exhausted
+          const clip = availableClips[clipIdx % availableClips.length];
 
           // Inject title card the first time we visit each clip's scene
           await maybeInjectTitleCard(clip);
@@ -829,14 +929,27 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
               segPaths.push(result.path);
               totalSegSecs += result.dur;
               segCounter++;
-              exhausted = 0;
             } else {
-              exhausted++;
+              // Mark this clip as exhausted and remove it from available pool
+              exhaustedClips.add(clip.localPath);
+              const idxToRemove = availableClips.findIndex(c => c.localPath === clip.localPath);
+              if (idxToRemove !== -1) {
+                availableClips.splice(idxToRemove, 1);
+                clipIdx = Math.max(0, clipIdx - 1); // Adjust index after removal
+              }
+              log(`   ♻️  Clip exhausted, ${availableClips.length} remaining`);
             }
           } catch (e) {
             log(`   ⚠️  Seg ${segCounter}: ${e.message}`);
-            exhausted++;
+            // Treat errors as exhaustion
+            exhaustedClips.add(clip.localPath);
+            const idxToRemove = availableClips.findIndex(c => c.localPath === clip.localPath);
+            if (idxToRemove !== -1) {
+              availableClips.splice(idxToRemove, 1);
+              clipIdx = Math.max(0, clipIdx - 1);
+            }
           }
+
           clipIdx++;
         }
 
@@ -1166,8 +1279,40 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
             }
           }
 
-          // Clean up segments
-          try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch(_) {}
+          // Enhanced temporary file cleanup with error handling
+          const cleanupSegments = () => {
+            try {
+              if (fs.existsSync(tmpDir)) {
+                const files = fs.readdirSync(tmpDir);
+                let cleaned = 0;
+                for (const file of files) {
+                  try {
+                    const filePath = path.join(tmpDir, file);
+                    fs.unlinkSync(filePath);
+                    cleaned++;
+                  } catch (e) {
+                    // Continue even if individual file deletion fails
+                  }
+                }
+                try {
+                  fs.rmdirSync(tmpDir);
+                  log(`🗑️  Cleaned up ${cleaned} segment files`);
+                } catch (e) {
+                  // Directory may not be empty or already gone
+                }
+              }
+            } catch (e) {
+              log(`⚠️  Segment cleanup warning: ${e.message}`);
+            }
+          };
+
+          // Register cleanup on process exit
+          process.on('exit', cleanupSegments);
+          process.on('SIGINT', () => { cleanupSegments(); process.exit(0); });
+          process.on('SIGTERM', () => { cleanupSegments(); process.exit(0); });
+
+          // Perform cleanup
+          cleanupSegments();
         } else {
           log('⚠️  No valid segments — skipping combine');
         }
@@ -1301,6 +1446,10 @@ let tickTimer = null;
 function startScheduler(port = 8080) {
   schedulerPort = port;
   if (tickTimer) clearInterval(tickTimer);
+  
+  // Clean up any jobs stuck in 'running' state from previous sessions
+  cleanupStuckJobs();
+  
   startPreGenTimer(); // #7 Script pre-generation
   startStatsTimer();  // #28 YouTube performance stats
   tickTimer = setInterval(() => {
@@ -1337,6 +1486,87 @@ function startScheduler(port = 8080) {
 
 function stopScheduler() {
   if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+}
+
+// ── Cancel/Stop a running or queued job ───────────────────────────────────────────
+async function cancelJob(jobId) {
+  const job = getJob(jobId);
+  if (!job) {
+    throw new Error(`Job ${jobId} not found`);
+  }
+
+  const isRunning = runningJobIds.has(jobId);
+  const isPending = pendingQueue.includes(jobId);
+
+  if (!isRunning && !isPending) {
+    throw new Error(`Job ${job.name} is not running or queued (status: ${job.status})`);
+  }
+
+  console.log(`[Scheduler] Cancelling job "${job.name}" (${jobId}) - running: ${isRunning}, pending: ${isPending}`);
+
+  // Remove from running set
+  runningJobIds.delete(jobId);
+
+  // Remove from pending queue if present
+  const pendingIdx = pendingQueue.indexOf(jobId);
+  if (pendingIdx !== -1) {
+    pendingQueue.splice(pendingIdx, 1);
+  }
+
+  // Update job status
+  job.status = 'idle';
+  job.current_run_id = null;
+
+  // Finalize the current run if it exists
+  if (job.current_run_id) {
+    finaliseRun(job.current_run_id, 'cancelled', { 
+      cancelled_at: new Date().toISOString() 
+    });
+  }
+
+  upsertJob(job);
+
+  // Allow other pending jobs to run
+  drainPendingQueue();
+
+  return { ok: true, job };
+}
+
+// ── Cleanup stuck jobs on startup ────────────────────────────────────────────────
+function cleanupStuckJobs() {
+  const jobs = loadJobs();
+  let cleaned = 0;
+
+  for (const job of jobs) {
+    // If job is marked as running but not in runningJobIds, it's stuck from a previous session
+    if (job.status === 'running' && !runningJobIds.has(job.id)) {
+      console.log(`[Scheduler] Cleaning up stuck job: "${job.name}" (${job.id})`);
+      
+      // Reset job to idle
+      job.status = 'idle';
+      job.current_run_id = null;
+      
+      // Add to run history that it was interrupted
+      if (job.current_run_id) {
+        job.run_history = [{
+          id: job.current_run_id,
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          status: 'interrupted',
+          error: 'Process interrupted by server restart',
+        }, ...(job.run_history || [])].slice(0, 10);
+      }
+      
+      upsertJob(job);
+      cleaned++;
+    }
+  }
+
+  if (cleaned > 0) {
+    console.log(`[Scheduler] Cleaned up ${cleaned} stuck job(s)`);
+  }
+
+  return cleaned;
 }
 
 // ── CRUD helpers ──────────────────────────────────────────────────────────────
@@ -1448,4 +1678,9 @@ module.exports = {
   computeNextRun, fmtMs,
   // #10 Resource throttle / multi-instance
   setMaxConcurrent, getSchedulerStatus,
+  drainPendingQueue,
+  // Job cancellation
+  cancelJob, cleanupStuckJobs,
+  // #28 YouTube performance stats
+  startStatsTimer,
 };

@@ -180,15 +180,41 @@ function stitchWavBuffers(buffers, paragraphBreakMs = 350, sentenceBreakMs = 80)
   const channels   = buffers[0].buf.readUInt16LE(22);
   const bitDepth   = buffers[0].buf.readUInt16LE(34);
 
+  // Validate all chunks have consistent audio format
+  for (let i = 1; i < buffers.length; i++) {
+    const chunkSampleRate = buffers[i].buf.readUInt32LE(24);
+    const chunkChannels   = buffers[i].buf.readUInt16LE(22);
+    const chunkBitDepth   = buffers[i].buf.readUInt16LE(34);
+    
+    if (chunkSampleRate !== sampleRate || chunkChannels !== channels || chunkBitDepth !== bitDepth) {
+      console.warn(`⚠️  Audio format mismatch in chunk ${i}: expected ${sampleRate}Hz/${channels}ch/${bitDepth}bit, got ${chunkSampleRate}Hz/${chunkChannels}ch/${chunkBitDepth}bit`);
+      // For now, proceed but this could cause audio artifacts
+    }
+  }
+
   const pcmParts = [];
   for (let i = 0; i < buffers.length; i++) {
     const { buf, paragraphEnd } = buffers[i];
     const offset = findDataOffset(buf);
-    pcmParts.push(buf.slice(offset));
+    
+    // Add small fade-in at start of first chunk
+    let pcmData = buf.slice(offset);
+    if (i === 0 && pcmData.length > 2000) {
+      // Simple fade-in (first 50ms)
+      const fadeSamples = Math.min(50 * sampleRate / 1000, pcmData.length / 2);
+      for (let j = 0; j < fadeSamples; j++) {
+        const factor = j / fadeSamples;
+        pcmData[j * 2] = Math.floor(pcmData[j * 2] * factor);     // Left channel
+        pcmData[j * 2 + 1] = Math.floor(pcmData[j * 2 + 1] * factor); // Right channel
+      }
+    }
+    
+    pcmParts.push(pcmData);
+    
     if (i < buffers.length - 1) {
       const gapMs = paragraphEnd ? paragraphBreakMs : sentenceBreakMs;
       const silence = silenceWav(gapMs, sampleRate, channels, bitDepth);
-      pcmParts.push(silence.slice(44)); // just the PCM data
+      pcmParts.push(silence.slice(44));
     }
   }
 
