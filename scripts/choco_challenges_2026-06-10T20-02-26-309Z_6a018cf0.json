@@ -1,0 +1,106 @@
+{
+  "id": "choco_challenges_2026-06-10T20-02-26-309Z_6a018cf0",
+  "job_id": "c8be3537",
+  "job_name": "Choco Challenges",
+  "run_id": "6a018cf0",
+  "saved_at": "2026-06-10T20:02:26.328Z",
+  "title": "Choco Challenges Revealed",
+  "word_count": 97,
+  "scene_count": 3,
+  "script": {
+    "title": "Choco Challenges Revealed",
+    "description": "Chocolates have a dark side, and it's not just the calories. Here's what you need to know about the good and the bad.",
+    "narration": "You're hooked on chocolates, but have you ever stopped to think about the challenges they pose? From melting messes to bitter disappointments, chocolates can be a real letdown. But what if I told you there's a way to make them work for you, not against you? It's time to take on the choco challenges and come out on top. The truth is, most people give up on chocolates because they don't know how to handle them. But with the right mindset and a few tricks up your sleeve, you can turn any chocolate into a decadent delight.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 10,
+        "visual_keywords": [
+          "melting chocolate",
+          "chocolate spill",
+          "messy kitchen",
+          "chocolate splash",
+          "sweet mess",
+          "chocolate melting",
+          "cocoa chaos",
+          "sweet treats"
+        ],
+        "search_queries": [
+          "melting chocolate",
+          "chocolate mess",
+          "cocoa"
+        ],
+        "description": "Chocolate melting and making a mess",
+        "on_screen_text": "Melts in 5 seconds",
+        "chapter_title": ""
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "chocolate samples",
+          "cocoa beans",
+          "chocolate bars",
+          "flavor tasting",
+          "chocolate pieces",
+          "chocolate tasting",
+          "cocoa exploration",
+          "flavor journey"
+        ],
+        "search_queries": [
+          "chocolate tasting",
+          "cocoa flavors",
+          "taste"
+        ],
+        "description": "Exploring different chocolate flavors and textures",
+        "on_screen_text": "70% cocoa",
+        "chapter_title": "THE CHOCO CHALLENGE"
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "chocolate cake",
+          "chocolate decorating",
+          "sweet treats",
+          "chocolate mold",
+          "candy making",
+          "chocolate crafting",
+          "cocoa creation",
+          "sweet success"
+        ],
+        "search_queries": [
+          "chocolate crafting",
+          "cocoa creation",
+          "chocolate"
+        ],
+        "description": "Creating beautiful and delicious chocolate treats",
+        "on_screen_text": "Create your own",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Choco Challenges: The Good & Bad",
+      "description": "Chocolates have a dark side, and it's not just the calories. Here's what you need to know about the good and the bad. From melting messes to bitter disappointments, chocolates can be a real letdown. But what if I told you there's a way to make them work for you, not against you? It's time to take on the choco challenges and come out on top. The truth is, most people give up on chocolates because they don't know how to handle them. But with the right mindset and a few tricks up your sleeve, you can turn any chocolate into a decadent delight. So, are you ready to take on the choco challenges and indulge in the sweet life?",
+      "tags": [
+        "chocolates",
+        "choco challenges",
+        "cocoa",
+        "sweet treats",
+        "foodie",
+        "chocolate lover",
+        "kitchen mastery",
+        "food art",
+        "taste adventure"
+      ],
+      "hashtags": [
+        "#ChocoChallenges",
+        "#ChocolateLover",
+        "#Foodie",
+        "#SweetTreats",
+        "#Cocoa"
+      ],
+      "category": "Food"
+    }
+  }
+}

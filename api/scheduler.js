@@ -365,14 +365,22 @@ async function generateTTS(text, voice = 'narrator_warm', speed = 0.88, logger, 
 
 // ── Concurrency-aware public entry point ──────────────────────────────────────
 async function runJob(jobId) {
-  if (runningJobIds.has(jobId)) return; // already running
+  if (!getJob(jobId)) {
+    runningJobIds.delete(jobId);
+    return;
+  }
+  if (runningJobIds.has(jobId)) {
+    console.log(`[Scheduler] Job ${jobId} already in runningJobIds - skipping`);
+    return;
+  }
   if (runningJobIds.size >= MAX_CONCURRENT) {
     if (!pendingQueue.includes(jobId)) {
       pendingQueue.push(jobId);
-      console.log(`[Scheduler] Job ${jobId} queued (slots ${runningJobIds.size}/${MAX_CONCURRENT})`);
+      console.log(`[Scheduler] Job ${jobId} queued (slots ${runningJobIds.size}/${MAX_CONCURRENT}, running: ${[...runningJobIds].join(', ')})`);
     }
     return;
   }
+  console.log(`[Scheduler] Starting job ${jobId} (slots ${runningJobIds.size + 1}/${MAX_CONCURRENT})`);
   return _runJobCore(jobId);
 }
 
@@ -382,7 +390,11 @@ async function _runJobCore(jobId) {
   const runId  = crypto.randomBytes(4).toString('hex');
   const log    = (msg) => runLog(runId, msg);
   let   job    = getJob(jobId);
-  if (!job) return;
+  if (!job) {
+    runningJobIds.delete(jobId);
+    drainPendingQueue();
+    return;
+  }
 
   // Mark job as running
   job = { ...job, status: 'running', current_run_id: runId };
@@ -1558,6 +1570,16 @@ function cleanupStuckJobs() {
       }
       
       upsertJob(job);
+      cleaned++;
+    }
+  }
+
+  // Prune ghost IDs from runningJobIds (jobs deleted while in running set)
+  const jobIds = new Set(jobs.map(j => j.id));
+  for (const id of [...runningJobIds]) {
+    if (!jobIds.has(id)) {
+      console.log(`[Scheduler] Pruning ghost runningJobId: ${id}`);
+      runningJobIds.delete(id);
       cleaned++;
     }
   }
