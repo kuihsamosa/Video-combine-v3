@@ -815,7 +815,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
 
         // ── Extract segments in a single round-robin pass ────────────────────────
         const baseClips    = output.clips;
-        const segPaths     = [];
+        const segments     = []; // { path, dur, clamped } — clamped=true when MIN_CLIP_DURATION was enforced
         const clipOffsets  = new Map(); // localPath → nextStartSeconds
         const BASE_CUT          = job.cut_duration_seconds  ?? 2.5;
         const MIN_CLIP_DURATION = job.min_clip_duration    ?? 2.5; // never cut faster than this
@@ -864,7 +864,9 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           
           if (avail < MIN_CLIP_DURATION) return null; // Not enough usable content left
 
-          const cutTarget = Math.max(MIN_CLIP_DURATION, sceneCutSec(clip.scene_id)); // #16 smart pacing
+          const cutRaw    = sceneCutSec(clip.scene_id);
+          const cutTarget = Math.max(MIN_CLIP_DURATION, cutRaw);
+          const clamped   = cutRaw < MIN_CLIP_DURATION; // true when pacing guard fired
           const actual = Math.min(cutTarget, avail);
           
           // Ensure we don't try to extract beyond the actual duration
@@ -888,7 +890,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           const newOffset = Math.min(start + actual, clipDuration);
           clipOffsets.set(clip.localPath, newOffset);
           
-          return { path: segOut, dur: actual };
+          return { path: segOut, dur: actual, clamped };
         };
 
         // ── Inject title cards at chapter boundaries (first pass, clip order) ────
@@ -911,7 +913,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
               orientation:  job.orientation || 'landscape',
               logger:       { log, error: log },
             });
-            segPaths.push(cardPath);
+            segments.push({ path: cardPath, dur: 2.0, clamped: false });
             totalSegSecs += 2.0;
             log(`🎬 Chapter card: "${chapterTitle}"`);
           } catch (cardErr) {
@@ -935,7 +937,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           try {
             const result = await extractOne(clip, segCounter);
             if (result) {
-              segPaths.push(result.path);
+              segments.push(result);
               totalSegSecs += result.dur;
               segCounter++;
             } else {
@@ -962,9 +964,10 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           clipIdx++;
         }
 
-        log(`✂️  Done: ${segPaths.length} segments, ${totalSegSecs.toFixed(1)}s from ${baseClips.length} clip(s)`);
+        const clampedCount = segments.filter(s => s.clamped).length;
+        log(`✂️  Done: ${segments.length} segments, ${totalSegSecs.toFixed(1)}s from ${baseClips.length} clip(s)${clampedCount ? ` — ${clampedCount} clamped cut(s) will crossfade` : ''}`);
 
-        if (segPaths.length) {
+        if (segments.length) {
           if (!fs.existsSync(OUTPUTS_DIR)) fs.mkdirSync(OUTPUTS_DIR, { recursive: true });
 
           const rawTitle  = output.script?.title || output.idea?.title || job.name || 'video';
@@ -974,26 +977,70 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           const listPath   = path.join(tmpDir, 'list.txt');
           const muxOutPath = path.join(OUTPUTS_DIR, `${outBase}.mp4`);
 
-          // Write concat list
-          fs.writeFileSync(listPath, segPaths.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n'));
-
-          // Single ffmpeg pass: concat segments + mux audio + fade (no intermediate file)
           const audioDur  = audioDurForCombine || 0;
           const fadeStart = Math.max(0, audioDur - 2);
-          log('🎬 Concat + mux in one pass…');
-          await runFfmpeg([
-            '-y',
-            '-f', 'concat', '-safe', '0', '-i', listPath,
-            '-i', output.audio_path,
-            '-filter_complex', [
-              `[0:v]trim=duration=${audioDur.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p,fade=t=out:st=${fadeStart.toFixed(3)}:d=2:color=black[vout]`,
-              `[1:a]asetpts=PTS-STARTPTS,afade=t=out:st=${fadeStart.toFixed(3)}:d=2[aout]`,
-            ].join(';'),
-            '-map', '[vout]', '-map', '[aout]',
-            '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-            '-c:a', 'aac', '-b:a', '192k',
-            muxOutPath,
-          ], { logger: { log, error: log } });
+
+          const useXfade = clampedCount > 0 && segments.length >= 2;
+
+          if (!useXfade) {
+            // ── Fast path: concat demuxer, hard cuts only ──────────────────────
+            const segPaths = segments.map(s => s.path);
+            fs.writeFileSync(listPath, segPaths.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n'));
+            log('🎬 Concat + mux in one pass (hard cuts)…');
+            await runFfmpeg([
+              '-y',
+              '-f', 'concat', '-safe', '0', '-i', listPath,
+              '-i', output.audio_path,
+              '-filter_complex', [
+                `[0:v]trim=duration=${audioDur.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p,fade=t=out:st=${fadeStart.toFixed(3)}:d=2:color=black[vout]`,
+                `[1:a]asetpts=PTS-STARTPTS,afade=t=out:st=${fadeStart.toFixed(3)}:d=2[aout]`,
+              ].join(';'),
+              '-map', '[vout]', '-map', '[aout]',
+              '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+              '-c:a', 'aac', '-b:a', '192k',
+              muxOutPath,
+            ], { logger: { log, error: log } });
+          } else {
+            // ── Selective-xfade path: dissolve at clamped boundaries ───────────
+            log(`🎬 Selective xfade: ${clampedCount} clamped cut(s) → dissolve (${CROSSFADE_DUR}s); rest → hard cut…`);
+
+            // Inputs: one per segment, then the narration audio
+            const inputArgs = segments.flatMap(s => ['-i', s.path]);
+            inputArgs.push('-i', output.audio_path);
+            const audioIdx = segments.length; // index of narration input
+
+            // Build chained xfade filters for video (ignore segment audio — it's stock footage)
+            const vFilters = [];
+            let cumOffset  = 0;
+            for (let i = 0; i < segments.length - 1; i++) {
+              const isClamped = segments[i].clamped || segments[i + 1].clamped;
+              const td        = isClamped ? CROSSFADE_DUR : HARDCUT_DUR;
+              const offset    = Math.max(0.01, cumOffset + segments[i].dur - td);
+              const vIn       = i === 0 ? '[0:v]' : `[vx${i}]`;
+              const vOut      = i === segments.length - 2 ? '[vchain]' : `[vx${i + 1}]`;
+              vFilters.push(`${vIn}[${i + 1}:v]xfade=transition=dissolve:duration=${td.toFixed(3)}:offset=${offset.toFixed(3)}${vOut}`);
+              cumOffset = offset;
+            }
+
+            const videoSource = segments.length === 1 ? '[0:v]' : '[vchain]';
+
+            const filterParts = [
+              ...vFilters,
+              `${videoSource}trim=duration=${audioDur.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p,fade=t=out:st=${fadeStart.toFixed(3)}:d=2:color=black[vout]`,
+              `[${audioIdx}:a]asetpts=PTS-STARTPTS,afade=t=out:st=${fadeStart.toFixed(3)}:d=2[aout]`,
+            ];
+
+            await runFfmpeg([
+              '-y',
+              ...inputArgs,
+              '-filter_complex', filterParts.join(';'),
+              '-map', '[vout]',
+              '-map', '[aout]',
+              '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+              '-c:a', 'aac', '-b:a', '192k',
+              muxOutPath,
+            ], { logger: { log, error: log } });
+          }
 
           output.video_path = muxOutPath;
           const sizeMB = (fs.statSync(muxOutPath).size / 1048576).toFixed(1);
