@@ -166,66 +166,127 @@ function silenceWav(durationMs, sampleRate = 24000, channels = 1, bitDepth = 16)
   return buf;
 }
 
-// ── WAV stitcher ──────────────────────────────────────────────────────────────
-// Stitches multiple WAV buffers into one, inserting silence at boundaries.
-// paragraphBreakMs: silence after a paragraph-end chunk (default 350ms)
-// sentenceBreakMs: silence between non-paragraph chunks (default 80ms) — prevents
-//   abrupt/choppy joins when OmniVoice chunks lack natural trailing silence
+// ── FFmpeg-based WAV stitcher (primary) ───────────────────────────────────────
+// Uses ffmpeg filter_complex concat to stitch chunks. Each chunk is decoded
+// to raw PCM first, eliminating any sample-rate / channel / codec mismatches
+// between API responses. Output is normalised to 48kHz stereo 16-bit PCM WAV.
+// paragraphBreakMs: silence padding after paragraph-end chunks (default 350ms)
+// sentenceBreakMs:  silence padding between sentence chunks (default 80ms)
+async function stitchWavWithFfmpeg(buffers, paragraphBreakMs = 350, sentenceBreakMs = 80) {
+  if (buffers.length === 0) throw new Error('No WAV buffers to stitch');
+
+  const fs   = require('fs');
+  const os   = require('os');
+  const path = require('path');
+  const { runFfmpeg } = require('./ffmpeg');
+
+  const tmpDir = path.join(os.tmpdir(), `tts_stitch_${Date.now()}`);
+  fs.mkdirSync(tmpDir, { recursive: true });
+
+  // Write each chunk buffer to a temp WAV file
+  const chunkPaths = buffers.map((item, i) => {
+    const p = path.join(tmpDir, `chunk_${i}.wav`);
+    fs.writeFileSync(p, item.buf);
+    return p;
+  });
+
+  const outputPath = path.join(tmpDir, 'stitched.wav');
+
+  try {
+    const n = buffers.length;
+
+    if (n === 1) {
+      // Single chunk — just re-encode to normalise format
+      await runFfmpeg([
+        '-y', '-i', chunkPaths[0],
+        '-ar', '48000', '-ac', '2', '-sample_fmt', 's16',
+        outputPath,
+      ], { timeoutMs: 60_000 });
+    } else {
+      // Build filter_complex:
+      //   Each non-last chunk gets apad to inject silence at its tail.
+      //   All streams are then decoded and concatenated through the concat filter.
+      //   Final aformat enforces uniform 48kHz / stereo / s16.
+      const inputArgs = chunkPaths.flatMap(p => ['-i', p]);
+
+      const filterParts = [];
+      const streamLabels = [];
+
+      for (let i = 0; i < n; i++) {
+        const isLast    = i === n - 1;
+        const padMs     = buffers[i].paragraphEnd ? paragraphBreakMs : sentenceBreakMs;
+        const padSec    = (padMs / 1000).toFixed(3);
+        const label     = `p${i}`;
+
+        if (isLast) {
+          // Last chunk: just resample, no padding
+          filterParts.push(`[${i}:a]aresample=48000[${label}]`);
+        } else {
+          // Non-last: resample then pad silence at the tail
+          filterParts.push(`[${i}:a]aresample=48000,apad=pad_dur=${padSec}[${label}]`);
+        }
+        streamLabels.push(`[${label}]`);
+      }
+
+      // Concat all padded streams, then enforce final format
+      filterParts.push(
+        `${streamLabels.join('')}concat=n=${n}:v=0:a=1,` +
+        `aformat=sample_fmts=s16:sample_rates=48000:channel_layouts=stereo[aout]`
+      );
+
+      await runFfmpeg([
+        '-y',
+        ...inputArgs,
+        '-filter_complex', filterParts.join(';'),
+        '-map', '[aout]',
+        outputPath,
+      ], { timeoutMs: 120_000 });
+    }
+
+    const result = fs.readFileSync(outputPath);
+    return result;
+  } finally {
+    // Clean up temp files
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
+  }
+}
+
+// ── WAV stitcher (legacy synchronous fallback) ────────────────────────────────
+// Used as a last-resort fallback if ffmpeg is unavailable. Concatenates raw PCM
+// data using the first chunk's header — will glitch if formats differ.
 function stitchWavBuffers(buffers, paragraphBreakMs = 350, sentenceBreakMs = 80) {
   if (buffers.length === 0) throw new Error('No WAV buffers to stitch');
   if (buffers.length === 1) return buffers[0].buf;
 
-  // Detect sample rate from first buffer's WAV header (bytes 24-27)
   const sampleRate = buffers[0].buf.readUInt32LE(24);
   const channels   = buffers[0].buf.readUInt16LE(22);
   const bitDepth   = buffers[0].buf.readUInt16LE(34);
 
-  // Validate all chunks have consistent audio format
   for (let i = 1; i < buffers.length; i++) {
-    const chunkSampleRate = buffers[i].buf.readUInt32LE(24);
-    const chunkChannels   = buffers[i].buf.readUInt16LE(22);
-    const chunkBitDepth   = buffers[i].buf.readUInt16LE(34);
-    
-    if (chunkSampleRate !== sampleRate || chunkChannels !== channels || chunkBitDepth !== bitDepth) {
-      console.warn(`⚠️  Audio format mismatch in chunk ${i}: expected ${sampleRate}Hz/${channels}ch/${bitDepth}bit, got ${chunkSampleRate}Hz/${chunkChannels}ch/${chunkBitDepth}bit`);
-      // For now, proceed but this could cause audio artifacts
+    const sr = buffers[i].buf.readUInt32LE(24);
+    const ch = buffers[i].buf.readUInt16LE(22);
+    const bd = buffers[i].buf.readUInt16LE(34);
+    if (sr !== sampleRate || ch !== channels || bd !== bitDepth) {
+      console.warn(`⚠️  Audio format mismatch in chunk ${i}: expected ${sampleRate}Hz/${channels}ch/${bitDepth}bit, got ${sr}Hz/${ch}ch/${bd}bit — use stitchWavWithFfmpeg to avoid glitches`);
     }
   }
 
   const pcmParts = [];
   for (let i = 0; i < buffers.length; i++) {
     const { buf, paragraphEnd } = buffers[i];
-    const offset = findDataOffset(buf);
-    
-    // Add small fade-in at start of first chunk
-    let pcmData = buf.slice(offset);
-    if (i === 0 && pcmData.length > 2000) {
-      // Simple fade-in (first 50ms)
-      const fadeSamples = Math.min(50 * sampleRate / 1000, pcmData.length / 2);
-      for (let j = 0; j < fadeSamples; j++) {
-        const factor = j / fadeSamples;
-        pcmData[j * 2] = Math.floor(pcmData[j * 2] * factor);     // Left channel
-        pcmData[j * 2 + 1] = Math.floor(pcmData[j * 2 + 1] * factor); // Right channel
-      }
-    }
-    
-    pcmParts.push(pcmData);
-    
+    pcmParts.push(buf.slice(findDataOffset(buf)));
     if (i < buffers.length - 1) {
       const gapMs = paragraphEnd ? paragraphBreakMs : sentenceBreakMs;
-      const silence = silenceWav(gapMs, sampleRate, channels, bitDepth);
-      pcmParts.push(silence.slice(44));
+      pcmParts.push(silenceWav(gapMs, sampleRate, channels, bitDepth).slice(44));
     }
   }
 
   const pcm       = Buffer.concat(pcmParts);
   const totalData = pcm.length;
-
-  // Build final WAV from first buffer's header + all PCM
   const firstOffset = findDataOffset(buffers[0].buf);
   const header = Buffer.from(buffers[0].buf.slice(0, firstOffset));
   const out    = Buffer.concat([header, pcm]);
-  out.writeUInt32LE(firstOffset - 8 + totalData, 4); // RIFF size = file_size - 8
+  out.writeUInt32LE(firstOffset - 8 + totalData, 4);
   out.writeUInt32LE(totalData, firstOffset - 4);
   return out;
 }
@@ -239,4 +300,4 @@ function findDataOffset(buf) {
   return 44;
 }
 
-module.exports = { preprocessTTS, chunkTTS, silenceWav, stitchWavBuffers, findDataOffset };
+module.exports = { preprocessTTS, chunkTTS, silenceWav, stitchWavBuffers, stitchWavWithFfmpeg, findDataOffset };

@@ -1,0 +1,164 @@
+{
+  "id": "ai_lies_2026-06-08T05-37-39-549Z_142ffe87",
+  "job_id": "53382f8a",
+  "job_name": "AI Lies",
+  "run_id": "142ffe87",
+  "saved_at": "2026-06-08T05:37:39.550Z",
+  "title": "Uncovering AI Lies",
+  "word_count": 336,
+  "scene_count": 6,
+  "script": {
+    "title": "Uncovering AI Lies",
+    "description": "Lena and Marcus dive into the world of AI recognition, exploring the blurred lines between truth and deception. They discuss the latest advancements in AI technology and its potential to manipulate reality.",
+    "narration": "Lena: Welcome to today's episode, where we're discussing the fascinating yet unsettling topic of AI lies. Marcus, what's your take on this? Marcus: Well, Lena, I think it's essential to understand that AI lies are not just about deception, but also about the potential for AI to manipulate reality. Lena: That's a great point, Marcus. I've been thinking about this a lot lately, and it seems like AI is getting better at creating convincing narratives. Marcus: Exactly, Lena. With the advancement of natural language processing and deep learning, AI can now generate text, images, and even videos that are almost indistinguishable from reality. Lena: That's terrifying. Marcus, can you give us an example of how this is being used in the real world? Marcus: One example that comes to mind is the use of AI-generated deepfakes in politics. Lena: Deepfakes? Marcus: Yes, Lena. Deepfakes are AI-generated videos or audio recordings that can make it seem like someone is saying or doing something they never actually did. Lena: That's crazy. Marcus, how can we protect ourselves from falling victim to these AI lies? Marcus: Well, Lena, it's not easy, but one way to start is by being more critical of the information we consume online. Lena: That's a great point, Marcus. We need to be more discerning and not take everything at face value. Marcus: Exactly, Lena. And we also need to develop better tools for detecting AI-generated content. Lena: I see what you mean, Marcus. It's a cat-and-mouse game, where AI is constantly evolving, and we need to stay one step ahead. Marcus: That's right, Lena. But I'm optimistic that with the right approach, we can mitigate the risks and ensure that AI is used for the greater good. Lena: Well, Marcus, it's been enlightening talking to you about this topic. Marcus: Thank you, Lena. It's been a pleasure sharing my insights with you. Lena: And that's all the time we have for today. Thanks for tuning in, and we'll catch you in the next episode.",
+    "speakers": [
+      "Lena",
+      "Marcus"
+    ],
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "ai",
+          "robot",
+          "future",
+          "tech",
+          "innovation"
+        ],
+        "search_queries": [
+          "ai lies",
+          "ai deception",
+          "ai manipulation"
+        ],
+        "description": "Intro to the topic of AI lies, with a futuristic cityscape in the background",
+        "on_screen_text": "The Future of Deception",
+        "chapter_title": "Introduction"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "deep learning",
+          "neural networks",
+          "machine learning",
+          "algorithms",
+          "code"
+        ],
+        "search_queries": [
+          "ai technology",
+          "ai advancements",
+          "ai capabilities"
+        ],
+        "description": "Explaining the technology behind AI lies, with animated code snippets and neural networks",
+        "on_screen_text": "The Power of Deep Learning",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "politics",
+          "deepfakes",
+          "fake news",
+          "propaganda",
+          "disinformation"
+        ],
+        "search_queries": [
+          "ai in politics",
+          "deepfakes in politics",
+          "ai-generated content"
+        ],
+        "description": "Discussing the use of AI lies in politics, with a montage of news clips and political rallies",
+        "on_screen_text": "The Danger of Deepfakes",
+        "chapter_title": "AI in Politics"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "critical thinking",
+          "media literacy",
+          "fact-checking",
+          "skepticism",
+          "investigation"
+        ],
+        "search_queries": [
+          "critical thinking in the digital age",
+          "media literacy tips",
+          "fact-checking techniques"
+        ],
+        "description": "Talking about the importance of critical thinking in the digital age, with a split-screen comparison of real and fake news",
+        "on_screen_text": "Think Critically, Verify Information",
+        "chapter_title": "Protecting Yourself"
+      },
+      {
+        "id": 5,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "ai detection",
+          "ai mitigation",
+          "ai regulation",
+          "ai ethics",
+          "ai responsibility"
+        ],
+        "search_queries": [
+          "ai detection tools",
+          "ai mitigation strategies",
+          "ai regulation debates"
+        ],
+        "description": "Exploring the challenges of detecting and mitigating AI lies, with a futuristic lab setting and scientists working on AI detection tools",
+        "on_screen_text": "The Quest for AI Detection",
+        "chapter_title": ""
+      },
+      {
+        "id": 6,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "future",
+          "ai",
+          "hope",
+          "optimism",
+          "collaboration"
+        ],
+        "search_queries": [
+          "ai future prospects",
+          "ai hope",
+          "ai optimism"
+        ],
+        "description": "Concluding the conversation on a hopeful note, with a collaborative workspace and people from different backgrounds working together",
+        "on_screen_text": "A Future of Hope and Collaboration",
+        "chapter_title": "Conclusion"
+      }
+    ],
+    "youtube": {
+      "title": "AI Lies: The Blurred Lines",
+      "description": "Join Lena and Marcus as they dive into the world of AI recognition, exploring the blurred lines between truth and deception. This podcast-style deep dive discusses the latest advancements in AI technology and its potential to manipulate reality. From deepfakes in politics to the importance of critical thinking, we cover it all. Tune in to learn more about the fascinating yet unsettling topic of AI lies.",
+      "tags": [
+        "ai",
+        "ai lies",
+        "deepfakes",
+        "critical thinking",
+        "media literacy",
+        "ai detection",
+        "ai mitigation",
+        "ai regulation",
+        "ai ethics"
+      ],
+      "hashtags": [
+        "#AI",
+        "#AILies",
+        "#Deepfakes",
+        "#CriticalThinking",
+        "#MediaLiteracy",
+        "#AIDetection"
+      ],
+      "category": "Education"
+    },
+    "_is_podcast": true,
+    "_speakers": 2,
+    "_podcast_dual": true,
+    "_host_name": "Lena",
+    "_guest_name": "Marcus"
+  }
+}

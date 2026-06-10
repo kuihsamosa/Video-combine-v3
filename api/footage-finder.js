@@ -15,10 +15,27 @@ function ensureDir() {
   if (!fs.existsSync(FOOTAGE_DIR)) fs.mkdirSync(FOOTAGE_DIR, { recursive: true });
 }
 
+// Keywords that pull irrelevant stock footage regardless of topic
+const KEYWORD_BLACKLIST = [
+  'butterfly', 'butterflies', 'insect', 'flower macro', 'nature close',
+  'spinning camera', 'vintage camera', 'camera product', 'camera spinning',
+  'tropical pool', 'resort pool', 'bikini', 'beach resort',
+  'period drama', 'aristocrat', 'wine glass vintage', 'dog walking park',
+  'abstract background', 'bokeh', 'light leak', 'lens flare',
+];
+
+function applyKeywordBlacklist(keywords) {
+  return keywords.filter(kw =>
+    !KEYWORD_BLACKLIST.some(banned => kw.toLowerCase().includes(banned))
+  );
+}
+
 // ── #17 AI Scene-to-Keyword Rewriter ─────────────────────────────────────────
 // Rewrites abstract scene descriptions → concrete, searchable visual terms.
 // One batched Groq call for all scenes; enriches scene.visual_keywords in-place.
-async function rewriteSceneKeywords(scenes, env, logger) {
+// globalTheme anchors every query to the video's overarching subject so
+// individual scene keywords can't drift into unrelated visual territory.
+async function rewriteSceneKeywords(scenes, env, logger, globalTheme) {
   const groqKey = env.GROQ_API_KEY || env.GROQ_API_KEY_2 || env.GROQ_API_KEY_3;
   if (!groqKey || !scenes?.length) return scenes;
   try {
@@ -26,6 +43,10 @@ async function rewriteSceneKeywords(scenes, env, logger) {
     const sceneList = scenes.map((s, i) =>
       `Scene ${i + 1} (id:${s.id}): "${s.description || s.narration?.slice(0, 120) || ''}"`
     ).join('\n');
+
+    const themeInstruction = globalTheme
+      ? `Global visual theme for ALL scenes: "${globalTheme}". Every keyword must be consistent with this theme.\n`
+      : '';
 
     const { content } = await callGroq([
       {
@@ -40,7 +61,10 @@ async function rewriteSceneKeywords(scenes, env, logger) {
           `- Terms must be visually concrete (e.g. "person typing laptop office" not "productivity")\n` +
           `- Prefer terms that return results on Pexels / Pixabay\n` +
           `- No abstract nouns alone (success, growth, future)\n` +
-          `- Max 3 words per term\n\n` +
+          `- Max 3 words per term\n` +
+          `- All terms must feature HUMAN SUBJECTS in real-world social or professional settings\n` +
+          `- NEVER suggest: nature close-ups, insects, flowers, isolated product shots, period/vintage dramas, resort/tropical pools, or any scene inconsistent with the global theme\n` +
+          `${themeInstruction}\n` +
           `${sceneList}\n\n` +
           `Return JSON array: [{"id": sceneId, "keywords": ["term1","term2","term3","term4"]}]\n` +
           `Return ONLY the JSON array, no markdown.`,
@@ -54,10 +78,10 @@ async function rewriteSceneKeywords(scenes, env, logger) {
     enriched.forEach(({ id, keywords }) => {
       const scene = scenes.find(s => String(s.id) === String(id));
       if (scene && Array.isArray(keywords)) {
-        // Prepend AI-generated concrete keywords before existing ones
+        const cleaned = applyKeywordBlacklist(keywords.filter(Boolean));
         scene.visual_keywords = [
-          ...keywords.filter(Boolean),
-          ...(scene.visual_keywords || []),
+          ...cleaned,
+          ...applyKeywordBlacklist(scene.visual_keywords || []),
         ].slice(0, 8);
       }
     });
@@ -316,6 +340,7 @@ async function findFootageForScenes(
   usePexels     = true,
   usePixabay    = true,
   ytQuality     = '720',
+  globalTheme   = null,
 ) {
   const pexelsKey  = env.PEXELS_API_KEY;
   const pixabayKey = env.PIXABAY_API_KEY;
@@ -330,8 +355,10 @@ async function findFootageForScenes(
   ensureDir();
 
   // #17 Rewrite abstract scene descriptions → concrete visual keywords
+  // Derive globalTheme from the job config if not explicitly passed
+  const resolvedTheme = globalTheme || env.GLOBAL_THEME || null;
   if (env.GROQ_API_KEY || env.GROQ_API_KEY_2 || env.GROQ_API_KEY_3) {
-    scenes = await rewriteSceneKeywords(scenes, env, logger);
+    scenes = await rewriteSceneKeywords(scenes, env, logger, resolvedTheme);
   }
 
   // Evict footage older than 2 hours
@@ -374,8 +401,8 @@ async function findFootageForScenes(
     // Tier 7: fifth keyword (universal fallback)
     if (kw.length >= 5) tiers.push(kw[4]);
 
-    // Ultimate fallback: something always returns results
-    tiers.push('cinematic nature');
+    // Ultimate fallback: human-centric, always returns results
+    tiers.push('people working together');
 
     // Deduplicate while preserving order
     return [...new Set(tiers.map(t => t.toLowerCase().trim()))].filter(Boolean);

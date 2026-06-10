@@ -1,0 +1,153 @@
+{
+  "id": "women_leaders_2026-06-10T18-53-48-828Z_3a0375bd",
+  "job_id": "e4e7ee43",
+  "job_name": "Women Leaders",
+  "run_id": "3a0375bd",
+  "saved_at": "2026-06-10T18:53:48.829Z",
+  "title": "Women Who Changed The Game",
+  "word_count": 491,
+  "scene_count": 6,
+  "script": {
+    "title": "Women Who Changed The Game",
+    "description": "The untold stories of female leaders who broke barriers and achieved greatness, and what we can learn from their journeys. Despite the obstacles, these women rose to the top and paved the way for future generations.",
+    "narration": "You know, when we think of leaders, we often think of men. But what about the women who changed the game? The ones who broke barriers, achieved greatness, and paved the way for future generations? It's time to tell their stories. Take, for example, Madam C.J. Walker, one of the first self-made female millionaires in America. She built a business empire from scratch, despite being born into poverty and facing countless obstacles along the way. Or consider Malala Yousafzai, the youngest Nobel Prize laureate, who risked her life to advocate for girls' education. These women, and many like them, are a testament to the power of female leadership. But here's the thing: their stories are not just inspirational - they're also instructive. They show us that leadership is not just about achieving success, but about creating a legacy that lasts. So, what can we learn from these women? For starters, they were not afraid to take risks. They were not afraid to challenge the status quo and push boundaries. And they were not afraid to fail. In fact, they often used their failures as opportunities to learn and grow. But what's even more interesting is that they didn't do it alone. They had networks of supporters, mentors, and peers who helped them along the way. They had people who believed in them, even when they didn't believe in themselves. And that's a crucial point. Because, as women, we often face unique challenges in the workplace. We're expected to be nurturing and collaborative, but also strong and assertive. We're expected to be perfect, but also relatable. It's a tightrope to walk, and it can be exhausting. But the women who have come before us show us that it's possible. They show us that we can be both strong and vulnerable, both confident and humble. So, what can we do to follow in their footsteps? First, we need to start believing in ourselves. We need to stop waiting for permission and start taking action. We need to stop apologizing for who we are and start embracing our strengths. And we need to start supporting each other. We need to create networks of women who can lift each other up, who can offer advice and guidance, and who can provide a safe space to share our struggles and our successes. It's not going to be easy, of course. There will be obstacles and setbacks along the way. But if we can learn from the women who have come before us, we can overcome them. We can rise to the top, and we can change the game. So, let's do it. Let's start telling our own stories, and let's start supporting each other. Let's create a world where women can thrive, and where female leadership is the norm. It's time to take our place at the table, and it's time to make our mark. The question is, what will you do to make it happen?",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "female entrepreneur office",
+          "business meeting women",
+          "leadership skills training",
+          "women empowerment conference",
+          "city sunrise"
+        ],
+        "search_queries": [
+          "women in business",
+          "female leaders",
+          "entrepreneurship skills"
+        ],
+        "description": "Introduction to the topic of women leaders, with a montage of women in various leadership roles",
+        "on_screen_text": "Women Who Lead",
+        "chapter_title": ""
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 80,
+        "visual_keywords": [
+          "madam c.j. walker biography",
+          "malala yousafzai nobel prize",
+          "women changing world history",
+          "female role models",
+          "historic landmark"
+        ],
+        "search_queries": [
+          "madam c.j. walker",
+          "malala yousafzai",
+          "women in history"
+        ],
+        "description": "Stories of Madam C.J. Walker and Malala Yousafzai, with images and footage of their lives and achievements",
+        "on_screen_text": "Pioneers",
+        "chapter_title": "THE TRAILBLAZERS"
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 70,
+        "visual_keywords": [
+          "women in workplace challenges",
+          "gender equality office",
+          "female leadership styles",
+          "career development for women",
+          "city street"
+        ],
+        "search_queries": [
+          "women in workplace",
+          "gender equality",
+          "female leadership"
+        ],
+        "description": "Discussion of the challenges women face in the workplace, with footage of women in office settings",
+        "on_screen_text": "Challenges",
+        "chapter_title": ""
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 90,
+        "visual_keywords": [
+          "women supporting women",
+          "female mentorship programs",
+          "networking events for women",
+          "women empowerment quotes",
+          "nature park"
+        ],
+        "search_queries": [
+          "women supporting women",
+          "female mentorship",
+          "women's networking events"
+        ],
+        "description": "Importance of women supporting each other, with footage of women's networking events and mentorship programs",
+        "on_screen_text": "Support",
+        "chapter_title": "THE POWER OF COMMUNITY"
+      },
+      {
+        "id": 5,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "women taking action",
+          "female leadership development",
+          "career goals for women",
+          "women in leadership roles",
+          "city skyline"
+        ],
+        "search_queries": [
+          "women taking action",
+          "female leadership development",
+          "women's career goals"
+        ],
+        "description": "Call to action for women to start believing in themselves and taking action, with footage of women in leadership roles",
+        "on_screen_text": "Take Action",
+        "chapter_title": ""
+      },
+      {
+        "id": 6,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "women making a difference",
+          "female leaders changing world",
+          "women's impact on society",
+          "global women's movement",
+          "earth globe"
+        ],
+        "search_queries": [
+          "women making a difference",
+          "female leaders changing the world",
+          "women's impact on society"
+        ],
+        "description": "Conclusion, with a montage of women making a difference and a call to action for viewers to get involved",
+        "on_screen_text": "Make A Difference",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Women Who Changed The Game",
+      "description": "The untold stories of female leaders who broke barriers and achieved greatness, and what we can learn from their journeys. From Madam C.J. Walker to Malala Yousafzai, these women show us that leadership is not just about achieving success, but about creating a legacy that lasts. So, what can we learn from their stories? And how can we apply those lessons to our own lives? Join us as we explore the power of female leadership and the impact it can have on the world. What will you do to make a difference?",
+      "tags": [
+        "women leaders",
+        "female empowerment",
+        "leadership development",
+        "women in business",
+        "career goals for women",
+        "women's networking events",
+        "female mentorship",
+        "women making a difference"
+      ],
+      "hashtags": [
+        "WomenWhoLead",
+        "FemaleEmpowerment",
+        "LeadershipDevelopment",
+        "WomenInBusiness",
+        "CareerGoalsForWomen"
+      ],
+      "category": "Education"
+    }
+  }
+}

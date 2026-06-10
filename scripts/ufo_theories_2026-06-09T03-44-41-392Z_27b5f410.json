@@ -1,0 +1,117 @@
+{
+  "id": "ufo_theories_2026-06-09T03-44-41-392Z_27b5f410",
+  "job_id": "e7ed94b1",
+  "job_name": "UFO Theories",
+  "run_id": "27b5f410",
+  "saved_at": "2026-06-09T03:44:41.392Z",
+  "title": "UFO Sightings Are Not What You Think",
+  "word_count": 154,
+  "scene_count": 4,
+  "script": {
+    "title": "UFO Sightings Are Not What You Think",
+    "description": "The truth behind UFO sightings and the theories surrounding them. What do they really mean and why are they important?",
+    "narration": "UFO sightings are not about aliens, they're about a fundamental flaw in our perception. Most people assume that UFOs are either misidentifications of natural phenomena or extraterrestrial spacecraft. But what if it's neither? What if UFOs are actually a symptom of a much deeper issue - our inability to understand and explain the unknown. The truth is, the majority of reported UFO sightings can be explained by human error, misperception, or man-made objects. However, there's a small percentage that remains unexplained, and it's this percentage that sparks the most interest and debate. But here's the thing: our brains are wired to recognize patterns, and when we can't explain something, we tend to fill in the gaps with our own biases and assumptions. So, what are UFO sightings really telling us? Are they a call to re-examine our understanding of the world and the universe, or are they simply a reflection of our own limitations?",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "ufo sighting night",
+          "people looking up",
+          "mysterious lights",
+          "unsolved mystery",
+          "space landscape"
+        ],
+        "search_queries": [
+          "ufo night sky",
+          "mysterious lights",
+          "space"
+        ],
+        "description": "A dark night sky with people looking up at mysterious lights",
+        "on_screen_text": "5% unexplained",
+        "chapter_title": "THE REALITY OF UFO SIGHTINGS"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "radar screen",
+          "air traffic control",
+          "pilot testimony",
+          "investigation report",
+          "government documents"
+        ],
+        "search_queries": [
+          "air traffic control radar",
+          "ufo investigation",
+          "government report"
+        ],
+        "description": "A radar screen showing unexplained blips, with a pilot's testimony and an investigation report",
+        "on_screen_text": "70% human error",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "brain scan",
+          "neuroscience experiment",
+          "cognitive bias",
+          "perception study",
+          "human psychology"
+        ],
+        "search_queries": [
+          "brain scan perception",
+          "cognitive bias",
+          "human psychology"
+        ],
+        "description": "A brain scan showing how our perception can be influenced by biases and assumptions",
+        "on_screen_text": "Our brains fill gaps",
+        "chapter_title": "WHY WE SEE WHAT WE WANT TO SEE"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 40,
+        "visual_keywords": [
+          "space landscape",
+          "stars and planets",
+          "universe mystery",
+          "cosmic wonder",
+          "existential question"
+        ],
+        "search_queries": [
+          "space landscape",
+          "universe mystery",
+          "existential question"
+        ],
+        "description": "A space landscape with stars and planets, sparking a sense of wonder and curiosity",
+        "on_screen_text": "",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "The Truth About UFO Sightings",
+      "description": "UFO sightings are not what you think. They're not about aliens or extraterrestrial life, but about our own perception and understanding of the world. In this video, we'll explore the truth behind UFO sightings and the theories surrounding them. What do they really mean and why are they important? We'll delve into the psychology of perception, the role of human error, and the possibility of the unknown. So, what are UFO sightings really telling us? Are they a call to re-examine our understanding of the world and the universe, or are they simply a reflection of our own limitations? Join us as we explore the fascinating world of UFO sightings and the secrets they hold. What do you think is the most plausible explanation for UFO sightings? Share your thoughts in the comments below.",
+      "tags": [
+        "UFO sightings",
+        "unexplained phenomena",
+        "human perception",
+        "psychology",
+        "space mystery",
+        "cosmic wonder",
+        "existential question",
+        "aliens",
+        "extraterrestrial life",
+        "universe"
+      ],
+      "hashtags": [
+        "#UFO",
+        "#SpaceMystery",
+        "#HumanPerception",
+        "#Psychology",
+        "#CosmicWonder"
+      ],
+      "category": "Education"
+    }
+  }
+}

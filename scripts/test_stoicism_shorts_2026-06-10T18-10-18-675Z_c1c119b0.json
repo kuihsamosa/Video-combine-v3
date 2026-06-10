@@ -1,0 +1,129 @@
+{
+  "id": "test_stoicism_shorts_2026-06-10T18-10-18-675Z_c1c119b0",
+  "job_id": "83b8da82",
+  "job_name": "Test — Stoicism Shorts",
+  "run_id": "c1c119b0",
+  "saved_at": "2026-06-10T18:10:18.677Z",
+  "title": "Stoic Habits For Life",
+  "word_count": 151,
+  "scene_count": 4,
+  "script": {
+    "title": "Stoic Habits For Life",
+    "description": "Three simple Stoic habits can transform your life by teaching you to focus on what truly matters and let go of the rest. Adopting these habits can lead to a more balanced and fulfilling existence.",
+    "narration": "I used to think that being productive meant getting more done in less time. But then I stumbled upon Stoicism, and everything changed. The first habit that made a difference for me was waking up early, before the world wakes up. It's not about being a morning person; it's about having time for yourself. In that quiet hour, I practice the second habit: journaling. Writing down my thoughts helps me process them and gain clarity. The third habit is perhaps the most powerful: negative visualization. It's about imagining the worst-case scenario, not to be pessimistic, but to appreciate what you have. This mindset shift has been profound for me. I've learned to focus on what truly matters and let go of the rest. These habits haven't made my life easier, but they've made me stronger. So, the real question is, what's holding you back from adopting these simple yet life-changing habits?",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "morning bed",
+          "quiet room",
+          "sunrise window",
+          "person stretching",
+          "bedroom interior",
+          "morning person waking up",
+          "quiet morning routine",
+          "mindfulness meditation"
+        ],
+        "search_queries": [
+          "morning sunrise",
+          "wake up early",
+          "quiet morning"
+        ],
+        "description": "A person waking up early, in a quiet and serene environment",
+        "on_screen_text": "5am wake up",
+        "chapter_title": "THE FIRST HABIT"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "park bench",
+          "person writing",
+          "outdoor seating",
+          "garden path",
+          "lake shore",
+          "journaling in a park",
+          "writing in a notebook",
+          "reflective thinking"
+        ],
+        "search_queries": [
+          "journaling outdoors",
+          "writing in nature",
+          "reflection"
+        ],
+        "description": "A person journaling in a peaceful outdoor setting",
+        "on_screen_text": "Clarity through writing",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "city skyline",
+          "person thinking",
+          "rooftop view",
+          "urban landscape",
+          "high rise",
+          "person looking out at a cityscape",
+          "contemplative thinking",
+          "city life"
+        ],
+        "search_queries": [
+          "cityscape at sunset",
+          "urban evening",
+          "contemplation"
+        ],
+        "description": "A person contemplating life, looking out at a cityscape",
+        "on_screen_text": "Appreciate what you have",
+        "chapter_title": "THE MINDSET SHIFT"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 40,
+        "visual_keywords": [
+          "forest path",
+          "person walking",
+          "mountain trail",
+          "river bank",
+          "nature reserve",
+          "person walking in nature",
+          "reflective walking",
+          "alone in the woods"
+        ],
+        "search_queries": [
+          "walking in nature",
+          "alone in the woods",
+          "reflection"
+        ],
+        "description": "A person walking in nature, reflecting on their life",
+        "on_screen_text": "",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "3 Stoic Habits",
+      "description": "Three simple Stoic habits can transform your life by teaching you to focus on what truly matters and let go of the rest. Adopting these habits can lead to a more balanced and fulfilling existence. The first habit is waking up early, the second is journaling, and the third is negative visualization. These habits have made a profound impact on my life, and I believe they can do the same for you. So, what's holding you back from adopting these simple yet life-changing habits? Are you ready to take the first step towards a more meaningful life?",
+      "tags": [
+        "Stoicism",
+        "productivity",
+        "mindfulness",
+        "journaling",
+        "negative visualization",
+        "personal growth",
+        "self-improvement",
+        "habits",
+        "morning routine",
+        "reflection"
+      ],
+      "hashtags": [
+        "StoicHabits",
+        "ProductivityHacks",
+        "MindfulnessMatters",
+        "JournalingForSuccess",
+        "NegativeVisualization"
+      ],
+      "category": "Education"
+    }
+  }
+}

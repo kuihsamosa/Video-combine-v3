@@ -1,0 +1,183 @@
+{
+  "id": "ai_lies_2026-06-08T05-44-42-677Z_ff1e610f",
+  "job_id": "53382f8a",
+  "job_name": "AI Lies",
+  "run_id": "ff1e610f",
+  "saved_at": "2026-06-08T05:44:42.677Z",
+  "title": "Uncovering AI Lies",
+  "word_count": 297,
+  "scene_count": 6,
+  "script": {
+    "title": "Uncovering AI Lies",
+    "description": "Exploring the world of AI recognition and deception, Ryan and Avery dive into the complexities of artificial intelligence and its potential to mislead.",
+    "narration": "Ryan: I'm excited to have Avery on the show today to talk about AI lies. Avery, what's the most shocking example you've come across of AI being used to deceive? Avery: Well, Ryan, I think one of the most striking examples is the use of deepfakes in politics. Ryan: That's right, like the video of Nancy Pelosi that was slowed down to make her appear drunk. Avery: Exactly, and it's not just limited to videos, Ryan. AI can also be used to generate fake audio and text that's almost indistinguishable from the real thing. Ryan: That's terrifying. Avery, how do you think we can combat this? Avery: I think it's going to require a multi-faceted approach, Ryan. We need to develop better AI detection tools, but we also need to educate people on how to critically evaluate the information they're consuming. Ryan: Ryan turns to Avery and asks, what about the role of social media platforms in all this? Avery: Ah, that's a great question, Ryan. Social media platforms have a huge responsibility to prevent the spread of AI-generated misinformation. Ryan: But isn't that a bit of a Catch-22, Avery? I mean, don't social media platforms rely on AI to moderate their content? Avery: That's true, Ryan, but that doesn't mean they can't also use AI to detect and remove fake content. Ryan: I see what you mean. Avery, what do you think is the most important thing for our listeners to take away from this conversation? Avery: I think it's that AI lies are a real and present danger, Ryan, but they don't have to be inevitable. By being aware of the potential for deception and taking steps to verify the information we consume, we can all play a role in preventing the spread of misinformation.",
+    "speakers": [
+      "Ryan",
+      "Avery"
+    ],
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "aerial city",
+          "city skyline",
+          "urban landscape",
+          "cityscape sunset",
+          "city aerial view",
+          "AI",
+          "deception",
+          "politics"
+        ],
+        "search_queries": [
+          "AI lies",
+          "deepfakes",
+          "misinformation"
+        ],
+        "description": "Intro to the topic of AI lies, with a aerial city shot in the background",
+        "on_screen_text": "AI Lies: The Hidden Threat",
+        "chapter_title": "Introduction"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "person scrolling phone",
+          "hand holding phone",
+          "phone screen",
+          "person texting",
+          "mobile phone use",
+          "social media",
+          "fake news",
+          "propaganda"
+        ],
+        "search_queries": [
+          "social media manipulation",
+          "fake news",
+          "propaganda"
+        ],
+        "description": "Discussion of social media's role in spreading AI-generated misinformation, with a shot of a person scrolling through their phone",
+        "on_screen_text": "Social Media: A Breeding Ground for Misinformation",
+        "chapter_title": "Social Media's Role"
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "person working computer",
+          "computer screen",
+          "office worker",
+          "person typing",
+          "laptop keyboard",
+          "AI detection",
+          "machine learning",
+          "algorithms"
+        ],
+        "search_queries": [
+          "AI detection",
+          "machine learning",
+          "algorithms"
+        ],
+        "description": "Explanation of AI detection tools and their limitations, with a shot of a person working on a computer",
+        "on_screen_text": "The Limitations of AI Detection",
+        "chapter_title": "AI Detection"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "person reading book",
+          "book pages turning",
+          "reading in library",
+          "person with book",
+          "bookshelf background",
+          "critical thinking",
+          "media literacy",
+          "education"
+        ],
+        "search_queries": [
+          "critical thinking",
+          "media literacy",
+          "education"
+        ],
+        "description": "Discussion of the importance of critical thinking and media literacy in combating AI lies, with a shot of a person reading a book",
+        "on_screen_text": "The Importance of Critical Thinking",
+        "chapter_title": "Critical Thinking"
+      },
+      {
+        "id": 5,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "government building",
+          "city hall",
+          "parliament building",
+          "courthouse exterior",
+          "government office",
+          "regulation",
+          "policy",
+          "government"
+        ],
+        "search_queries": [
+          "AI regulation",
+          "policy",
+          "government"
+        ],
+        "description": "Discussion of the need for regulation and policy to prevent the spread of AI-generated misinformation, with a shot of a government building",
+        "on_screen_text": "The Need for Regulation",
+        "chapter_title": "Regulation"
+      },
+      {
+        "id": 6,
+        "duration_hint_seconds": 45,
+        "visual_keywords": [
+          "person looking out",
+          "city view window",
+          "urban view",
+          "person contemplating",
+          "city skyline view",
+          "future",
+          "consequences",
+          "ramifications"
+        ],
+        "search_queries": [
+          "AI future",
+          "consequences",
+          "ramifications"
+        ],
+        "description": "Conclusion and final thoughts on the implications of AI lies, with a shot of a person looking out at a cityscape",
+        "on_screen_text": "The Future of AI Lies",
+        "chapter_title": "Conclusion"
+      }
+    ],
+    "youtube": {
+      "title": "AI Lies: The Hidden Threat",
+      "description": "Join Ryan and Avery as they explore the world of AI recognition and deception. From deepfakes to AI-generated misinformation, they dive into the complexities of artificial intelligence and its potential to mislead. This podcast-style deep dive is perfect for anyone looking to learn more about the latest developments in AI and how to protect themselves from its potential dangers.",
+      "tags": [
+        "AI",
+        "lies",
+        "deception",
+        "deepfakes",
+        "misinformation",
+        "social media",
+        "regulation",
+        "policy",
+        "future",
+        "consequences"
+      ],
+      "hashtags": [
+        "#AI",
+        "#Deepfakes",
+        "#Misinformation",
+        "#SocialMedia",
+        "#Regulation",
+        "#Future"
+      ],
+      "category": "Education"
+    },
+    "_is_podcast": true,
+    "_speakers": 2,
+    "_podcast_dual": true,
+    "_host_name": "Ryan",
+    "_guest_name": "Avery"
+  }
+}

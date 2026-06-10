@@ -1,0 +1,150 @@
+{
+  "id": "task_1_portrait_energetic_2026-06-09T06-14-42-509Z_d18fb18b",
+  "job_id": "7bd61980",
+  "job_name": "Task 1 - Portrait Energetic",
+  "run_id": "d18fb18b",
+  "saved_at": "2026-06-09T06:14:42.510Z",
+  "title": "Gaming CPU Myths Debunked",
+  "word_count": 250,
+  "scene_count": 5,
+  "script": {
+    "title": "Gaming CPU Myths Debunked",
+    "description": "The truth about gaming CPUs and what you really need to know to make informed purchasing decisions. We're breaking down the myths and giving you the facts.",
+    "narration": "The gaming CPU market is a minefield of misinformation. You're told you need the latest and greatest, but is that really true? Most people assume that a high-end CPU is necessary for smooth gaming, but here's where that breaks down. The reality is, most modern CPUs can handle gaming just fine. The difference between a $300 CPU and a $1,000 CPU is not as drastic as you'd think. In fact, a study by Tom's Hardware found that the average gamer can't tell the difference between a system running a Core i5 and one running a Core i9. So, what's really going on here? It's all about the GPU. The graphics card is the real bottleneck in most gaming systems, not the CPU. That's why you can get away with a mid-range CPU and still have a great gaming experience. But here's the part that nobody talks about: the CPU is not just about gaming performance. It's about overall system performance. If you're doing other tasks like video editing or streaming, a higher-end CPU can make a big difference. The key is to understand your specific needs and not get caught up in the hype. So, what do you really need to know? First, don't overspend on a CPU just for gaming. Second, consider your overall system needs. And third, don't believe the myths. The truth is, you can get a great gaming experience without breaking the bank. So, the real question is, what are you really using your CPU for?",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "gaming setup",
+          "gaming monitor",
+          "cpu tower",
+          "desktop computer",
+          "gaming setup desk",
+          "mid-range cpu",
+          "gaming monitor",
+          "computer hardware"
+        ],
+        "search_queries": [
+          "gaming cpu comparison",
+          "mid-range gaming setup",
+          "computer hardware"
+        ],
+        "description": "A gaming setup with a mid-range CPU and a gaming monitor",
+        "on_screen_text": "60% of gamers",
+        "chapter_title": "THE REALITY CHECK"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 40,
+        "visual_keywords": [
+          "gpu cards",
+          "cpu comparison",
+          "computer hardware",
+          "tech benchmark",
+          "gpu graphics card",
+          "high-end cpu",
+          "gaming performance",
+          "computer components"
+        ],
+        "search_queries": [
+          "gpu vs cpu gaming",
+          "high-end cpu performance",
+          "computer components"
+        ],
+        "description": "A comparison of GPUs and CPUs, highlighting the importance of the GPU in gaming performance",
+        "on_screen_text": "GPU is key",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "video editing",
+          "computer desk",
+          "screen display",
+          "editing software",
+          "video editing software",
+          "cpu performance",
+          "streaming setup",
+          "computer workstation"
+        ],
+        "search_queries": [
+          "cpu for video editing",
+          "streaming cpu requirements",
+          "computer workstation"
+        ],
+        "description": "A video editing setup, highlighting the importance of CPU performance for tasks beyond gaming",
+        "on_screen_text": "CPU matters",
+        "chapter_title": "THE CPU MYTH"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 40,
+        "visual_keywords": [
+          "cpu box",
+          "tech review",
+          "computer parts",
+          "gaming news",
+          "gaming cpu myths",
+          "cpu facts",
+          "computer hardware",
+          "tech news"
+        ],
+        "search_queries": [
+          "gaming cpu myths debunked",
+          "cpu facts and myths",
+          "computer hardware news"
+        ],
+        "description": "A summary of the myths and facts about gaming CPUs, with a call to action to make informed purchasing decisions",
+        "on_screen_text": "Know the facts",
+        "chapter_title": "THE TRUTH REVEALED"
+      },
+      {
+        "id": 5,
+        "duration_hint_seconds": 40,
+        "visual_keywords": [
+          "budget gaming",
+          "gaming keyboard",
+          "mid range cpu",
+          "gaming mouse",
+          "gaming setup budget",
+          "cpu purchase",
+          "computer hardware store",
+          "tech shopping"
+        ],
+        "search_queries": [
+          "gaming cpu budget",
+          "cpu purchase guide",
+          "computer hardware store"
+        ],
+        "description": "A gaming setup on a budget, with a mid-range CPU and a focus on overall system performance",
+        "on_screen_text": "Budget gaming",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Debunking Gaming CPU Myths",
+      "description": "The gaming CPU market is full of myths and misinformation. In this video, we're breaking down the facts and giving you the truth about what you really need to know to make informed purchasing decisions. From the importance of the GPU to the reality of CPU performance, we're covering it all. So, what do you really need to know about gaming CPUs? Watch to find out. Don't forget to like and subscribe for more tech content. What's your take on gaming CPUs? Let us know in the comments below.",
+      "tags": [
+        "gaming cpu",
+        "cpu myths",
+        "gpu vs cpu",
+        "gaming performance",
+        "computer hardware",
+        "tech news",
+        "gaming community",
+        "cpu purchase guide",
+        "gaming setup"
+      ],
+      "hashtags": [
+        "GamingCPU",
+        "CPUMyths",
+        "GPUvsCPU",
+        "GamingPerformance",
+        "ComputerHardware"
+      ],
+      "category": "Science & Technology"
+    }
+  }
+}

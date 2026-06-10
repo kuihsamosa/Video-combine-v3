@@ -1,0 +1,134 @@
+{
+  "id": "top_5_cookie_myths_2026-06-09T06-59-30-385Z_7fcb204f",
+  "job_id": "d87dd68e",
+  "job_name": "Top 5 Cookie Myths",
+  "run_id": "7fcb204f",
+  "saved_at": "2026-06-09T06:59:30.385Z",
+  "title": "Cookie Myths Busted",
+  "word_count": 652,
+  "scene_count": 5,
+  "script": {
+    "title": "Cookie Myths Busted",
+    "description": "The history of cookies is full of myths and misconceptions, and it's time to set the record straight. From the origins of the cookie to the modern-day treats we know and love, we're diving into the top 5 cookie myths that will change the way you think about cookies forever.",
+    "narration": "The world of cookies is a delicious one, but it's also full of myths and misconceptions. You're probably thinking, 'what's the harm in a few little white lies about cookies?' Well, it's time to set the record straight. Let's start with the biggest myth of all: that cookies are an American invention. It's a claim that's been repeated so often, it's become a kind of folklore. But here's the thing: cookies have been around for thousands of years, and they originated in ancient Mesopotamia. That's right, the birthplace of cookies is not New York City or Paris, but ancient Iraq. The evidence is clear: archaeological digs have uncovered evidence of cookie-like treats dating back to around 2000 BC. So, what were these ancient cookies like? They were probably made with honey and nuts, and were baked on hot stones. Not exactly the chocolate chip cookies we know and love today, but still, it's amazing to think that our ancient ancestors were enjoying a version of this treat thousands of years ago. But that's not all - the ancient Egyptians also baked cookies, and they were often used as an offering to the gods. It's clear that cookies have been a beloved treat for centuries, and it's time to give them the respect they deserve. Now, let's move on to the next myth: that cookies are bad for you. It's a claim that's been made by health experts and nutritionists for years, but is it really true? The answer is, it depends. While it's true that many modern cookies are high in sugar and unhealthy fats, it's also true that cookies can be a healthy treat if made with the right ingredients. Take, for example, the traditional Scottish shortbread cookie. Made with just a few simple ingredients - butter, sugar, flour, and salt - these cookies are a great example of how a treat can be both delicious and nutritious. And then there's the myth that cookies are only for special occasions. It's a claim that's been made by bakers and cooks for years, but is it really true? The answer is, no. Cookies can be a great any-time treat, and they're perfect for a quick pick-me-up or a snack on the go. In fact, many countries around the world enjoy cookies as a regular part of their diet. In Sweden, for example, cookies are a staple at coffee breaks, and in Italy, they're often enjoyed with a glass of wine. So, why do we think cookies are only for special occasions? It's probably because of the way they're often marketed - as a luxury item or a special treat. But the truth is, cookies are for anyone, anytime. Now, let's move on to the next myth: that cookies are easy to make. It's a claim that's been made by many a well-meaning cook, but is it really true? The answer is, not always. While some cookies are easy to make, others require a lot of skill and patience. Take, for example, the traditional French macaron. These delicate meringue-based cookies require a lot of precision and technique to get right, and even experienced bakers can struggle to make them perfectly. And then there's the myth that cookies are only for kids. It's a claim that's been made by many a parent, but is it really true? The answer is, no. Cookies are for anyone, regardless of age. In fact, many adults enjoy cookies just as much as kids do, and they're a great way to indulge in a sweet treat. So, there you have it - the top 5 cookie myths busted. From the origins of the cookie to the modern-day treats we know and love, it's time to set the record straight and give cookies the respect they deserve. So, the next time you bite into a delicious cookie, remember: you're enjoying a treat that's been thousands of years in the making.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "ancient mesopotamia",
+          "cookie archaeological site",
+          "history of cookies",
+          "baking ancient cookies",
+          "cookie origins"
+        ],
+        "search_queries": [
+          "ancient cookie history",
+          "cookie origins",
+          "baking in ancient mesopotamia"
+        ],
+        "description": "Opening scene showing ancient Mesopotamia and the origins of cookies",
+        "on_screen_text": "2000 BC",
+        "chapter_title": "THE ORIGINS OF COOKIES"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "traditional scottish shortbread",
+          "scottish baking",
+          "healthy cookie ingredients",
+          "butter and sugar",
+          "flour and salt"
+        ],
+        "search_queries": [
+          "scottish shortbread recipe",
+          "healthy cookie ingredients",
+          "baking with butter and sugar"
+        ],
+        "description": "Scene showing traditional Scottish shortbread being made",
+        "on_screen_text": "4 ingredients",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "swedish coffee break",
+          "italian cookies and wine",
+          "cookies around the world",
+          "coffee and cookie pairings",
+          "international cookie traditions"
+        ],
+        "search_queries": [
+          "swedish coffee break",
+          "italian cookies and wine",
+          "cookies around the world"
+        ],
+        "description": "Scene showing cookies being enjoyed in different countries",
+        "on_screen_text": "Cookies are for anyone",
+        "chapter_title": "COOKIES AROUND THE WORLD"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "french macaron making",
+          "meringue-based cookies",
+          "cookie baking techniques",
+          "precision baking",
+          "delicate cookie decorating"
+        ],
+        "search_queries": [
+          "french macaron recipe",
+          "meringue-based cookies",
+          "cookie baking techniques"
+        ],
+        "description": "Scene showing the challenges of making French macarons",
+        "on_screen_text": "Precision required",
+        "chapter_title": "THE ART OF COOKIE MAKING"
+      },
+      {
+        "id": 5,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "adults enjoying cookies",
+          "cookie and coffee pairings",
+          "grown-up cookie treats",
+          "sophisticated cookie flavors",
+          "luxury cookie experiences"
+        ],
+        "search_queries": [
+          "adults and cookies",
+          "cookie and coffee pairings",
+          "grown-up cookie treats"
+        ],
+        "description": "Scene showing adults enjoying cookies in different settings",
+        "on_screen_text": "Cookies are for anyone",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Top 5 Cookie Myths Busted",
+      "description": "The history of cookies is full of myths and misconceptions, and it's time to set the record straight. From the origins of the cookie to the modern-day treats we know and love, we're diving into the top 5 cookie myths that will change the way you think about cookies forever. Whether you're a cookie lover or just looking to learn more about the history of this delicious treat, this video is for you. So, what are the top 5 cookie myths? Watch to find out. And don't forget to like and subscribe for more fun and informative videos. What's your favorite type of cookie? Let us know in the comments below. Do you think cookies are only for special occasions, or can they be enjoyed anytime? The debate is on, and we want to hear from you.",
+      "tags": [
+        "cookie myths",
+        "history of cookies",
+        "cookie origins",
+        "healthy cookies",
+        "cookies around the world",
+        "french macarons",
+        "adults and cookies",
+        "cookie and coffee pairings"
+      ],
+      "hashtags": [
+        "#cookies",
+        "#cookie myths",
+        "#history of cookies",
+        "#foodie",
+        "#baking"
+      ],
+      "category": "Education"
+    }
+  }
+}

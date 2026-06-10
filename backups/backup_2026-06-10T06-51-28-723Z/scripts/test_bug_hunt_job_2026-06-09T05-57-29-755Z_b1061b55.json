@@ -1,0 +1,98 @@
+{
+  "id": "test_bug_hunt_job_2026-06-09T05-57-29-755Z_b1061b55",
+  "job_id": "c77a2bc6",
+  "job_name": "Test Bug Hunt Job",
+  "run_id": "b1061b55",
+  "saved_at": "2026-06-09T05:57:29.755Z",
+  "title": "Testing Tools Exposed",
+  "word_count": 261,
+  "scene_count": 3,
+  "script": {
+    "title": "Testing Tools Exposed",
+    "description": "A critical look at the testing tool landscape, revealing which tools truly deliver and why the rest fall short. The testing tool industry has a dirty secret: most tools are designed to sell, not to help you ship quality software.",
+    "narration": "The testing tool industry has a dirty secret. Most tools are designed to sell, not to help you ship quality software. Think about it — if a tool actually made your testing more efficient, you'd stop buying new tools and upgrades. The entire market depends on you staying stuck in a slightly better version of stuck. I've seen it firsthand: teams spending thousands on flashy new tools, only to still be manually testing the same old workflows. But what if I told you there are tools that actually break this cycle? Tools that help you test smarter, not harder. Let's take a look at the testing tool smackdown. On one hand, we have the heavy hitters: Selenium, Appium, and TestComplete. These tools have been around for years, and they've got the features to prove it. But do they really deliver? The research says no. A study by TestTalks found that teams using these tools still spend an average of 30% of their testing time on manual testing. That's right — 30%. So what's going on? It turns out that these tools are great at automating the easy stuff, but when it comes to complex testing, they fall short. That's where the new kids on the block come in: tools like Cypress, Playwright, and Detox. These tools are designed from the ground up for modern testing, and they're changing the game. They're faster, more reliable, and actually help you test smarter. So here's the question: are you still using the old guard, or are you ready to join the testing tool revolution?",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "testing team meeting",
+          "software development workflow",
+          "coding on laptop",
+          "frustrated programmer",
+          "tech startup office"
+        ],
+        "search_queries": [
+          "software testing tools",
+          "team meeting discussion",
+          "coding laptop"
+        ],
+        "description": "A team of developers and testers sitting around a table, looking frustrated and unsure about their testing workflow",
+        "on_screen_text": "30% manual testing",
+        "chapter_title": "THE TESTING TOOL LANDSCAPE"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "automated testing robot",
+          "test automation framework",
+          "coding on desktop",
+          "satisfied programmer",
+          "cloud computing"
+        ],
+        "search_queries": [
+          "automated testing tools",
+          "test automation framework",
+          "cloud computing"
+        ],
+        "description": "A developer sitting at their desk, looking satisfied as they work on automated testing",
+        "on_screen_text": "Test smarter, not harder",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "testing tool comparison",
+          "software development tools",
+          "coding on tablet",
+          "curious programmer",
+          "devops pipeline"
+        ],
+        "search_queries": [
+          "testing tool comparison",
+          "software development tools",
+          "devops pipeline"
+        ],
+        "description": "A developer sitting at their desk, looking curious as they compare different testing tools",
+        "on_screen_text": "Join the revolution",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Testing Tool Smackdown",
+      "description": "Which testing tools reign supreme? The testing tool industry has a dirty secret: most tools are designed to sell, not to help you ship quality software. In this video, we'll take a critical look at the testing tool landscape and reveal which tools truly deliver. From the heavy hitters like Selenium and TestComplete, to the new kids on the block like Cypress and Playwright, we'll explore the pros and cons of each tool and help you decide which ones are right for you. So, are you ready to join the testing tool revolution? Let's dive into the world of testing tools and find out which ones will help you test smarter, not harder. What's your favorite testing tool? Let us know in the comments below.",
+      "tags": [
+        "testing tools",
+        "software testing",
+        "test automation",
+        "devops",
+        "software development",
+        "quality assurance",
+        "testing framework",
+        "automated testing",
+        "manual testing",
+        "testing workflow"
+      ],
+      "hashtags": [
+        "TestingTools",
+        "SoftwareTesting",
+        "TestAutomation",
+        "DevOps",
+        "SoftwareDevelopment"
+      ],
+      "category": "Science & Technology"
+    }
+  }
+}

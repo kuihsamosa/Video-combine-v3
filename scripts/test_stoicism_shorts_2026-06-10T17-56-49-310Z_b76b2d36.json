@@ -1,0 +1,129 @@
+{
+  "id": "test_stoicism_shorts_2026-06-10T17-56-49-310Z_b76b2d36",
+  "job_id": "83b8da82",
+  "job_name": "Test — Stoicism Shorts",
+  "run_id": "b76b2d36",
+  "saved_at": "2026-06-10T17:56:49.311Z",
+  "title": "Stoic Habits Changed My Life",
+  "word_count": 182,
+  "scene_count": 4,
+  "script": {
+    "title": "Stoic Habits Changed My Life",
+    "description": "Three simple stoic habits transformed my life by teaching me resilience, self-awareness, and inner strength. I'll share how these practices helped me overcome obstacles and find peace in a chaotic world.",
+    "narration": "I used to think that happiness came from external sources, but then I discovered stoicism. The productivity advice industry has a way of keeping you stuck, but stoic habits are different. They're not about being more efficient, they're about being more resilient. For me, it started with morning journaling. I'd write down my thoughts, my fears, and my goals. It was like a weight had been lifted off my shoulders. Then, I began practicing negative visualization. I'd imagine myself losing everything, and it was liberating. I realized that I didn't need all that stuff to be happy. The third habit was physical training. I started with short walks, and then I moved on to more intense workouts. It wasn't about looking good, it was about feeling strong. These habits taught me that I'm capable of overcoming any obstacle. They gave me the strength to pursue my passions, and the courage to face my fears. So, what are you waiting for? Start with one habit, and see how it changes your life. The question is, what will you do with this newfound strength?",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "person writing",
+          "calm office",
+          "laptop desk",
+          "book shelf",
+          "coffee table",
+          "man writing journal",
+          "morning sunlight",
+          "reflection"
+        ],
+        "search_queries": [
+          "morning journaling",
+          "writing therapy",
+          "sunrise"
+        ],
+        "description": "A person writing in a journal, with a calm and peaceful atmosphere",
+        "on_screen_text": "My thoughts, fears, goals",
+        "chapter_title": "THE FIRST HABIT"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "empty room",
+          "white wall",
+          "person sitting",
+          "floor chair",
+          "minimal decor",
+          "person imagining loss",
+          "empty room",
+          "freedom"
+        ],
+        "search_queries": [
+          "negative visualization",
+          "mindfulness",
+          " Minimalism"
+        ],
+        "description": "A person sitting in an empty room, looking liberated",
+        "on_screen_text": "Losing everything",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "person running",
+          "gym equipment",
+          "fitness trainer",
+          "yoga mat",
+          "treadmill machine",
+          "person working out",
+          "intense training",
+          "strength"
+        ],
+        "search_queries": [
+          "physical training",
+          "workout routine",
+          "fitness"
+        ],
+        "description": "A person exercising, with a determined look on their face",
+        "on_screen_text": "Feeling strong",
+        "chapter_title": "THE THIRD HABIT"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 40,
+        "visual_keywords": [
+          "mountain peak",
+          "sunrise sky",
+          "person hiking",
+          "rocky cliff",
+          "misty forest",
+          "person standing on a mountain",
+          "overcoming obstacles",
+          "triumph"
+        ],
+        "search_queries": [
+          "stoic habits",
+          "personal growth",
+          "inspiration"
+        ],
+        "description": "A person standing on a mountain, looking out at the sunrise",
+        "on_screen_text": "Newfound strength",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "3 Stoic Habits Changed My Life",
+      "description": "Discover the three simple stoic habits that transformed my life. From morning journaling to physical training, these practices taught me resilience, self-awareness, and inner strength. Learn how to overcome obstacles and find peace in a chaotic world. What will you do with this newfound strength? Share your story in the comments below. Don't forget to like and subscribe for more inspiring content.",
+      "tags": [
+        "stoicism",
+        "personal growth",
+        "self-improvement",
+        "inspiration",
+        "motivation",
+        "productivity",
+        "happiness",
+        "wellness",
+        "mindfulness",
+        "fitness"
+      ],
+      "hashtags": [
+        "Stoicism",
+        "PersonalGrowth",
+        "SelfImprovement",
+        "Inspiration",
+        "Motivation"
+      ],
+      "category": "Education"
+    }
+  }
+}

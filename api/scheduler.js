@@ -13,7 +13,7 @@ const crypto  = require('crypto');
 const { brainstormIdeas, validateIdea } = require('./planner');
 const { generateScript }                = require('./script-generator');
 const { findFootageForScenes }          = require('./footage-finder');
-const { preprocessTTS, chunkTTS, stitchWavBuffers } = require('./tts-utils');
+const { preprocessTTS, chunkTTS, stitchWavBuffers, stitchWavWithFfmpeg } = require('./tts-utils');
 const { runFfmpeg, runFfprobeDurationSeconds } = require('./ffmpeg');
 const { extractSegment } = (() => { try { return require('./video-combiner'); } catch(_) { return {}; } })();
 const { getVideoPreset }                = require('./app-config');
@@ -360,7 +360,7 @@ async function generateTTS(text, voice = 'narrator_warm', speed = 0.88, logger, 
     wavChunks.push({ buf, paragraphEnd });
     if (!quiet) logger(`   ✅ Chunk ${i+1}/${chunks.length} — ${(buf.length/1024).toFixed(0)} KB`);
   }
-  return stitchWavBuffers(wavChunks, 350);
+  return stitchWavWithFfmpeg(wavChunks, 350, 80);
 }
 
 // ── Concurrency-aware public entry point ──────────────────────────────────────
@@ -658,7 +658,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           if (!wavChunksFiltered.length) {
             throw new Error(`All ${turns.length} podcast turns failed TTS — is OmniVoice running at ${OMNIVOICE_URL}?`);
           }
-          const stitched = stitchWavBuffers(wavChunksFiltered, 400); // 400ms between speaker turns
+          const stitched = await stitchWavWithFfmpeg(wavChunksFiltered, 400, 80); // 400ms between speaker turns
           const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
           fs.writeFileSync(audioPath, stitched);
           output.audio_path = audioPath;
@@ -728,6 +728,11 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
     const footagePrefetch = (job.steps?.find_footage && output.script?.scenes?.length)
       ? (async () => {
           log(`🎥 Step 4 (parallel): Pre-caching footage for ${output.script.scenes.length} scenes…`);
+          // Derive global theme: explicit job field → script title → job name
+          const derivedTheme = job.global_theme
+            || output.script?.title
+            || job.name
+            || null;
           const clips = await findFootageForScenes(
             output.script.scenes,
             process.env,
@@ -738,6 +743,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
             job.use_pexels  !== false,
             job.use_pixabay !== false,
             job.yt_quality  || '720',
+            derivedTheme,
           );
           footagePrefetchResult = clips;
           log(`✅ Footage pre-cached: ${clips.length} clip(s) ready`);
@@ -811,7 +817,8 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
         const baseClips    = output.clips;
         const segPaths     = [];
         const clipOffsets  = new Map(); // localPath → nextStartSeconds
-        const BASE_CUT     = job.cut_duration_seconds ?? 2.5;
+        const BASE_CUT         = job.cut_duration_seconds ?? 2.5;
+        const MIN_CLIP_DURATION = job.min_clip_duration ?? 2.5; // never cut faster than this
 
         // #16 Smart Cut Pacing — derive per-scene cut length from narration density
         const scenes       = output.script?.scenes || [];
@@ -829,7 +836,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           const w = sceneLengths[String(sceneId)] || avgWords;
           // More words = faster cuts; fewer words = slower, contemplative cuts
           const ratio = Math.min(2.0, Math.max(0.5, avgWords / Math.max(1, w)));
-          return Math.round(BASE_CUT * ratio * 10) / 10; // 1dp
+          return Math.max(MIN_CLIP_DURATION, Math.round(BASE_CUT * ratio * 10) / 10); // 1dp, never below min
         };
         const CUT_SECS = BASE_CUT; // kept for non-scene clips
         const needed       = (audioDurForCombine || (job.duration_minutes || 2) * 60) * 1.25;
@@ -853,9 +860,9 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           const start = clipOffsets.get(clip.localPath) || 0;
           const avail = Math.max(0, clipDuration - start);
           
-          if (avail < 0.5) return null; // Not enough usable content left
-          
-          const cutTarget = sceneCutSec(clip.scene_id); // #16 smart pacing
+          if (avail < MIN_CLIP_DURATION) return null; // Not enough usable content left
+
+          const cutTarget = Math.max(MIN_CLIP_DURATION, sceneCutSec(clip.scene_id)); // #16 smart pacing
           const actual = Math.min(cutTarget, avail);
           
           // Ensure we don't try to extract beyond the actual duration
