@@ -1,98 +1,142 @@
 // Shared TTS preprocessing utilities used by both server.js (/api/tts) and scheduler.js.
 
-// ── Text cleaning ─────────────────────────────────────────────────────────────
-function preprocessTTS(raw) {
+// ── Text cleaning (shared core) ───────────────────────────────────────────────
+function _cleanText(raw) {
   let t = raw;
 
   // 1. Remove stage directions the LLM sometimes sneaks in
-  t = t.replace(/\[(?:pause|beat|cut|silence|music|sfx|transition)[^\]]*\]/gi, '');
-  t = t.replace(/\((?:pause|beat|silence|music)[^)]*\)/gi, '');
+  t = t.replace(/\[(?:pause|beat|cut|silence|music|sfx|transition)[^\]]*\]/gi, ‘’);
+  t = t.replace(/\((?:pause|beat|silence|music)[^)]*\)/gi, ‘’);
 
   // 2. Strip markdown formatting
-  t = t.replace(/\*\*(.+?)\*\*/g, '$1');           // **bold**
-  t = t.replace(/\*(.+?)\*/g, '$1');                // *italic*
-  t = t.replace(/__(.+?)__/g, '$1');                // __underline__
-  t = t.replace(/_(.+?)_/g, '$1');                  // _italic_
-  t = t.replace(/#{1,6}\s*/g, '');                  // ## headings
-  t = t.replace(/`{1,3}[^`]*`{1,3}/g, '');         // `code`
-  t = t.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');   // [link](url) → link text
-  t = t.replace(/https?:\/\/\S+/g, '');            // bare URLs
+  t = t.replace(/\*\*(.+?)\*\*/g, ‘$1’);           // **bold**
+  t = t.replace(/\*(.+?)\*/g, ‘$1’);                // *italic*
+  t = t.replace(/__(.+?)__/g, ‘$1’);                // __underline__
+  t = t.replace(/_(.+?)_/g, ‘$1’);                  // _italic_
+  t = t.replace(/#{1,6}\s*/g, ‘’);                  // ## headings
+  t = t.replace(/`{1,3}[^`]*`{1,3}/g, ‘’);         // `code`
+  t = t.replace(/\[([^\]]+)\]\([^)]*\)/g, ‘$1’);   // [link](url) → link text
+  t = t.replace(/https?:\/\/\S+/g, ‘’);            // bare URLs
 
-  // 3. Em-dash / en-dash → natural pause (Kokoro handles '...' well as a short pause)
-  t = t.replace(/ — /g, '... ');
-  t = t.replace(/—/g, '... ');
-  t = t.replace(/–/g, ', ');
-  t = t.replace(/…/g, '... ');
+  // 3. Em-dash / en-dash → natural pause
+  t = t.replace(/ — /g, ‘... ‘);
+  t = t.replace(/—/g, ‘... ‘);
+  t = t.replace(/–/g, ‘, ‘);
+  t = t.replace(/…/g, ‘... ‘);
 
   // 4. Typographic quotes → straight ASCII
-  t = t.replace(/[‘’]/g, "'");
-  t = t.replace(/[“”]/g, '"');
+  t = t.replace(/[‘’]/g, “’”);
+  t = t.replace(/[“”]/g, ‘”’);
 
   // 5. Bullet / list symbols → sentence break
-  t = t.replace(/·|•|●|▪|►|→/g, '. ');
-  t = t.replace(/^\s*\d+\.\s+/gm, '');   // numbered list items
-  t = t.replace(/^\s*[-–•]\s+/gm, '');   // dashed / bulleted list items
+  t = t.replace(/·|•|●|▪|►|→/g, ‘. ‘);
+  t = t.replace(/^\s*\d+\.\s+/gm, ‘’);   // numbered list items
+  t = t.replace(/^\s*[-–•]\s+/gm, ‘’);   // dashed / bulleted list items
 
   // 6. Symbols → spoken words
-  t = t.replace(/(\d[\d,]*\.?\d*)\s*%/g, '$1 percent');
-  t = t.replace(/\$(\d[\d,]*\.?\d*)/g,   '$1 dollars');
-  t = t.replace(/£(\d[\d,]*\.?\d*)/g,    '$1 pounds');
-  t = t.replace(/€(\d[\d,]*\.?\d*)/g,    '$1 euros');
-  t = t.replace(/&/g,    ' and ');
-  t = t.replace(/\+/g,   ' plus ');
-  t = t.replace(/#(\w+)/g, '$1');    // #hashtag → hashtag
-  t = t.replace(/@(\w+)/g, '$1');    // @mention → mention
+  t = t.replace(/(\d[\d,]*\.?\d*)\s*%/g, ‘$1 percent’);
+  t = t.replace(/\$(\d[\d,]*\.?\d*)/g,   ‘$1 dollars’);
+  t = t.replace(/£(\d[\d,]*\.?\d*)/g,    ‘$1 pounds’);
+  t = t.replace(/€(\d[\d,]*\.?\d*)/g,    ‘$1 euros’);
+  t = t.replace(/&/g,    ‘ and ‘);
+  t = t.replace(/\+/g,   ‘ plus ‘);
+  t = t.replace(/#(\w+)/g, ‘$1’);    // #hashtag → hashtag
+  t = t.replace(/@(\w+)/g, ‘$1’);    // @mention → mention
 
   // 7. Common abbreviations → spoken forms
-  t = t.replace(/\betc\.\s*/gi,  'et cetera. ');
-  t = t.replace(/\be\.g\.\s*/gi, 'for example, ');
-  t = t.replace(/\bi\.e\.\s*/gi, 'that is, ');
-  t = t.replace(/\bvs\.\s*/gi,   'versus ');
-  t = t.replace(/\bDr\.\s+/g,    'Doctor ');
-  t = t.replace(/\bMr\.\s+/g,    'Mister ');
-  t = t.replace(/\bMrs\.\s+/g,   'Missus ');
-  t = t.replace(/\bMs\.\s+/g,    'Miss ');
-  t = t.replace(/\bSt\.\s+/g,    'Saint ');
-  t = t.replace(/\bApr\.\s*/gi,  'April ');
-  t = t.replace(/\bAug\.\s*/gi,  'August ');
-  t = t.replace(/\bDec\.\s*/gi,  'December ');
-  t = t.replace(/\bFeb\.\s*/gi,  'February ');
-  t = t.replace(/\bJan\.\s*/gi,  'January ');
-  t = t.replace(/\bJul\.\s*/gi,  'July ');
-  t = t.replace(/\bJun\.\s*/gi,  'June ');
-  t = t.replace(/\bMar\.\s*/gi,  'March ');
-  t = t.replace(/\bNov\.\s*/gi,  'November ');
-  t = t.replace(/\bOct\.\s*/gi,  'October ');
-  t = t.replace(/\bSep\.\s*/gi,  'September ');
+  t = t.replace(/\betc\.\s*/gi,  ‘et cetera. ‘);
+  t = t.replace(/\be\.g\.\s*/gi, ‘for example, ‘);
+  t = t.replace(/\bi\.e\.\s*/gi, ‘that is, ‘);
+  t = t.replace(/\bvs\.\s*/gi,   ‘versus ‘);
+  t = t.replace(/\bDr\.\s+/g,    ‘Doctor ‘);
+  t = t.replace(/\bMr\.\s+/g,    ‘Mister ‘);
+  t = t.replace(/\bMrs\.\s+/g,   ‘Missus ‘);
+  t = t.replace(/\bMs\.\s+/g,    ‘Miss ‘);
+  t = t.replace(/\bSt\.\s+/g,    ‘Saint ‘);
+  t = t.replace(/\bApr\.\s*/gi,  ‘April ‘);
+  t = t.replace(/\bAug\.\s*/gi,  ‘August ‘);
+  t = t.replace(/\bDec\.\s*/gi,  ‘December ‘);
+  t = t.replace(/\bFeb\.\s*/gi,  ‘February ‘);
+  t = t.replace(/\bJan\.\s*/gi,  ‘January ‘);
+  t = t.replace(/\bJul\.\s*/gi,  ‘July ‘);
+  t = t.replace(/\bJun\.\s*/gi,  ‘June ‘);
+  t = t.replace(/\bMar\.\s*/gi,  ‘March ‘);
+  t = t.replace(/\bNov\.\s*/gi,  ‘November ‘);
+  t = t.replace(/\bOct\.\s*/gi,  ‘October ‘);
+  t = t.replace(/\bSep\.\s*/gi,  ‘September ‘);
 
   // 8. Ordinal numbers → spoken words (1st → first … 20th → twentieth)
   const ordinals = {
-    '1st':'first','2nd':'second','3rd':'third','4th':'fourth','5th':'fifth',
-    '6th':'sixth','7th':'seventh','8th':'eighth','9th':'ninth','10th':'tenth',
-    '11th':'eleventh','12th':'twelfth','13th':'thirteenth','14th':'fourteenth',
-    '15th':'fifteenth','16th':'sixteenth','17th':'seventeenth','18th':'eighteenth',
-    '19th':'nineteenth','20th':'twentieth',
+    ‘1st’:’first’,’2nd’:’second’,’3rd’:’third’,’4th’:’fourth’,’5th’:’fifth’,
+    ‘6th’:’sixth’,’7th’:’seventh’,’8th’:’eighth’,’9th’:’ninth’,’10th’:’tenth’,
+    ‘11th’:’eleventh’,’12th’:’twelfth’,’13th’:’thirteenth’,’14th’:’fourteenth’,
+    ‘15th’:’fifteenth’,’16th’:’sixteenth’,’17th’:’seventeenth’,’18th’:’eighteenth’,
+    ‘19th’:’nineteenth’,’20th’:’twentieth’,
   };
   t = t.replace(/\b(\d{1,2})(st|nd|rd|th)\b/gi, (m, n, s) => ordinals[(n + s).toLowerCase()] || m);
 
   // 9. Small integers (1–20) written as digits → words
-  const nums = ['zero','one','two','three','four','five','six','seven','eight','nine',
-                 'ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen',
-                 'seventeen','eighteen','nineteen','twenty'];
+  const nums = [‘zero’,’one’,’two’,’three’,’four’,’five’,’six’,’seven’,’eight’,’nine’,
+                 ‘ten’,’eleven’,’twelve’,’thirteen’,’fourteen’,’fifteen’,’sixteen’,
+                 ‘seventeen’,’eighteen’,’nineteen’,’twenty’];
   t = t.replace(/\b(\d{1,2})\b/g, (m, n) => {
     const i = parseInt(n, 10);
     return (i <= 20 && nums[i]) ? nums[i] : m;
   });
 
   // 10. Tidy whitespace and stray punctuation artefacts
-  t = t.replace(/[ \t]{2,}/g, ' ');           // multiple spaces → one
-  t = t.replace(/\n{3,}/g, '\n\n');           // max double newline
-  t = t.replace(/([.!?])\s*([.!?])+/g, '$1'); // duplicate end-punctuation
-  t = t.replace(/,\s*,/g, ',');               // double commas
-  t = t.replace(/\(\s*\)/g, '');              // empty parens
-  t = t.replace(/\.\s*\.\s*\./g, '...');      // normalise ellipsis spacing
+  t = t.replace(/[ \t]{2,}/g, ‘ ‘);           // multiple spaces → one
+  t = t.replace(/\n{3,}/g, ‘\n\n’);           // max double newline
+  t = t.replace(/([.!?])\s*([.!?])+/g, ‘$1’); // duplicate end-punctuation
+  t = t.replace(/,\s*,/g, ‘,’);               // double commas
+  t = t.replace(/\(\s*\)/g, ‘’);              // empty parens
+  t = t.replace(/\.\s*\.\s*\./g, ‘...’);      // normalise ellipsis spacing
 
   return t.trim();
+}
+
+// ── Plain-text preprocessor (OmniVoice / OpenAI-compatible APIs) ──────────────
+// OmniVoice does not support SSML. Pauses are induced via punctuation cues that
+// the neural model’s prosody engine responds to: “...” (~400 ms breath pause)
+// and “, “ with a trailing soft-pause marker for commas (~200 ms).
+function preprocessTTS(raw) {
+  let t = _cleanText(raw);
+
+  // Sentence-ending punctuation → append ellipsis pause cue (~400 ms breath)
+  // Avoid doubling up where “...” already exists from step 3 above.
+  t = t.replace(/([.!?])(?!\.)(\s)/g, ‘$1... $2’);
+
+  // Comma → light pause cue (~200 ms)
+  t = t.replace(/,(\s)/g, ‘,.. $1’);
+
+  // Final whitespace tidy after pause injections
+  t = t.replace(/[ \t]{2,}/g, ‘ ‘);
+
+  return t.trim();
+}
+
+// ── SSML preprocessor (for APIs that accept <speak> markup) ──────────────────
+// Use this instead of preprocessTTS when sending to a TTS engine that supports
+// SSML (e.g. Google TTS, Amazon Polly, Azure Cognitive Speech).
+// Wraps the output in a <speak> root element and appends explicit <break> tags:
+//   <break time=”400ms”/> after sentence-ending punctuation (. ! ?)
+//   <break time=”200ms”/> after commas
+function preprocessTTSWithSSML(raw) {
+  let t = _cleanText(raw);
+
+  // Escape XML special characters before injecting markup
+  t = t.replace(/&/g, ‘&amp;’);
+  t = t.replace(/</g, ‘&lt;’);
+  t = t.replace(/>/g, ‘&gt;’);
+  t = t.replace(/”/g, ‘&quot;’);
+
+  // Inject <break> after sentence-ending punctuation
+  t = t.replace(/([.!?])(?!\.)(\s|$)/g, ‘$1<break time=”400ms”/>$2’);
+
+  // Inject <break> after commas
+  t = t.replace(/,(\s)/g, ‘,<break time=”200ms”/>$1’);
+
+  return `<speak>${t}</speak>`;
 }
 
 // ── Chunking ──────────────────────────────────────────────────────────────────
@@ -166,14 +210,17 @@ function silenceWav(durationMs, sampleRate = 24000, channels = 1, bitDepth = 16)
   return buf;
 }
 
-// ── FFmpeg-based WAV stitcher (primary) ───────────────────────────────────────
-// Uses ffmpeg filter_complex concat to stitch chunks. Each chunk is decoded
-// to raw PCM first, eliminating any sample-rate / channel / codec mismatches
-// between API responses. Output is normalised to 48kHz stereo 16-bit PCM WAV.
-// paragraphBreakMs: silence padding after paragraph-end chunks (default 350ms)
-// sentenceBreakMs:  silence padding between sentence chunks (default 80ms)
+// ── FFmpeg filter_complex audio stitcher ──────────────────────────────────────
+// Builds an explicit multi-input filter graph:
+//   [0:a][1:a]...[N-1:a]concat=n=N:v=0:a=1[aout]
+// Silence padding is interleaved as real WAV input files so every stream keeps
+// its literal [i:a] label and the concat receives exactly N sequential inputs.
+// Output is re-encoded to broadcast-safe MP3: 44100 Hz / stereo / 192k.
+//
+// paragraphBreakMs : gap after a paragraph-end chunk  (default 350 ms)
+// sentenceBreakMs  : gap between sentence chunks       (default  80 ms)
 async function stitchWavWithFfmpeg(buffers, paragraphBreakMs = 350, sentenceBreakMs = 80) {
-  if (buffers.length === 0) throw new Error('No WAV buffers to stitch');
+  if (buffers.length === 0) throw new Error('No audio buffers to stitch');
 
   const fs   = require('fs');
   const os   = require('os');
@@ -183,70 +230,63 @@ async function stitchWavWithFfmpeg(buffers, paragraphBreakMs = 350, sentenceBrea
   const tmpDir = path.join(os.tmpdir(), `tts_stitch_${Date.now()}`);
   fs.mkdirSync(tmpDir, { recursive: true });
 
-  // Write each chunk buffer to a temp WAV file
-  const chunkPaths = buffers.map((item, i) => {
-    const p = path.join(tmpDir, `chunk_${i}.wav`);
-    fs.writeFileSync(p, item.buf);
-    return p;
-  });
-
-  const outputPath = path.join(tmpDir, 'stitched.wav');
-
   try {
-    const n = buffers.length;
+    // ── Write speech chunk files ─────────────────────────────────────────────
+    const chunkPaths = buffers.map((item, i) => {
+      const p = path.join(tmpDir, `chunk_${i}.wav`);
+      fs.writeFileSync(p, item.buf);
+      return p;
+    });
 
-    if (n === 1) {
-      // Single chunk — just re-encode to normalise format
-      await runFfmpeg([
-        '-y', '-i', chunkPaths[0],
-        '-ar', '48000', '-ac', '2', '-sample_fmt', 's16',
-        outputPath,
-      ], { timeoutMs: 60_000 });
-    } else {
-      // Build filter_complex:
-      //   Each non-last chunk gets apad to inject silence at its tail.
-      //   All streams are then decoded and concatenated through the concat filter.
-      //   Final aformat enforces uniform 48kHz / stereo / s16.
-      const inputArgs = chunkPaths.flatMap(p => ['-i', p]);
+    const outputPath = path.join(tmpDir, 'stitched.mp3');
+    const inputArgs  = chunkPaths.flatMap(p => ['-i', p]);
 
-      const filterParts = [];
-      const streamLabels = [];
+    // ── Build filter_complex ─────────────────────────────────────────────────
+    // Speech chunks arrive as file inputs [0:a]..[N-1:a].
+    // Silence between chunks is generated inline via anullsrc — no temp files.
+    //
+    // For N speech chunks the filter produces 2N-1 streams:
+    //   chunk_0, silence_0, chunk_1, silence_1, ..., chunk_N-1
+    //
+    // Each silence node:
+    //   anullsrc=channel_layout=stereo:sample_rate=44100,atrim=duration=D[sI]
+    //
+    // Final concat:
+    //   [0:a][s0][1:a][s1]...[N-1:a]concat=n=(2N-1):v=0:a=1[aout]
+    const N = buffers.length;
+    const filterParts   = [];
+    const concatStreams = [];
 
-      for (let i = 0; i < n; i++) {
-        const isLast    = i === n - 1;
-        const padMs     = buffers[i].paragraphEnd ? paragraphBreakMs : sentenceBreakMs;
-        const padSec    = (padMs / 1000).toFixed(3);
-        const label     = `p${i}`;
+    for (let i = 0; i < N; i++) {
+      concatStreams.push(`[${i}:a]`);
 
-        if (isLast) {
-          // Last chunk: just resample, no padding
-          filterParts.push(`[${i}:a]aresample=48000[${label}]`);
-        } else {
-          // Non-last: resample then pad silence at the tail
-          filterParts.push(`[${i}:a]aresample=48000,apad=pad_dur=${padSec}[${label}]`);
-        }
-        streamLabels.push(`[${label}]`);
+      if (i < N - 1) {
+        const gapSec = ((buffers[i].paragraphEnd ? paragraphBreakMs : sentenceBreakMs) / 1000).toFixed(3);
+        filterParts.push(
+          `anullsrc=channel_layout=stereo:sample_rate=44100,atrim=duration=${gapSec}[s${i}]`
+        );
+        concatStreams.push(`[s${i}]`);
       }
-
-      // Concat all padded streams, then enforce final format
-      filterParts.push(
-        `${streamLabels.join('')}concat=n=${n}:v=0:a=1,` +
-        `aformat=sample_fmts=s16:sample_rates=48000:channel_layouts=stereo[aout]`
-      );
-
-      await runFfmpeg([
-        '-y',
-        ...inputArgs,
-        '-filter_complex', filterParts.join(';'),
-        '-map', '[aout]',
-        outputPath,
-      ], { timeoutMs: 120_000 });
     }
 
-    const result = fs.readFileSync(outputPath);
-    return result;
+    const totalStreams   = concatStreams.length; // N chunks + (N-1) silence nodes
+    const concatFilter  = `${concatStreams.join('')}concat=n=${totalStreams}:v=0:a=1[aout]`;
+    filterParts.push(concatFilter);
+
+    await runFfmpeg([
+      '-y',
+      ...inputArgs,
+      '-filter_complex', filterParts.join(';'),
+      '-map',  '[aout]',
+      '-ar',   '44100',
+      '-ac',   '2',
+      '-c:a',  'libmp3lame',
+      '-b:a',  '192k',
+      outputPath,
+    ], { timeoutMs: 120_000 });
+
+    return fs.readFileSync(outputPath);
   } finally {
-    // Clean up temp files
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
   }
 }
@@ -300,4 +340,4 @@ function findDataOffset(buf) {
   return 44;
 }
 
-module.exports = { preprocessTTS, chunkTTS, silenceWav, stitchWavBuffers, stitchWavWithFfmpeg, findDataOffset };
+module.exports = { preprocessTTS, preprocessTTSWithSSML, chunkTTS, silenceWav, stitchWavBuffers, stitchWavWithFfmpeg, findDataOffset };

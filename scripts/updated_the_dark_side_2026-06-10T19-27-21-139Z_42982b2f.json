@@ -1,0 +1,174 @@
+{
+  "id": "updated_the_dark_side_2026-06-10T19-27-21-139Z_42982b2f",
+  "job_id": "2f87c08a",
+  "job_name": "Updated The Dark Side",
+  "run_id": "42982b2f",
+  "saved_at": "2026-06-10T19:27:21.140Z",
+  "title": "The Dark Side of Cookies",
+  "word_count": 775,
+  "scene_count": 6,
+  "script": {
+    "title": "The Dark Side of Cookies",
+    "description": "The history of cookies is not as sweet as you think. From ancient times to modern day, cookies have been tied to exploitation, violence, and greed. It's time to expose the truth behind the cookie industry.",
+    "narration": "The cookie industry has a dirty secret. It's not just about the sugar and butter, but about the blood, sweat, and tears that go into making them. From ancient Mesopotamia to modern-day factories, cookies have been tied to exploitation, violence, and greed. The research backs this up: a study by the International Labor Organization found that over 70% of cocoa farms in West Africa use child labor. That's right, your favorite chocolate chip cookie might just be made with the help of a 10-year-old slave. But here's the thing: it's not just about the chocolate. It's about the entire system that allows this to happen. The cookie industry is built on a complex web of trade agreements, tariffs, and subsidies that keep the prices low and the profits high. And at the center of it all is the sugar industry, which has been accused of manipulating markets, bribing officials, and even using slave labor to harvest its crops. So, what's the real cost of that cookie? It's not just the $2 you pay at the store, but the environmental degradation, the human rights abuses, and the economic exploitation that go into making it. But don't just take my word for it. Let's take a look at the history of cookies and see how this industry has evolved over time. From the ancient spice routes to the modern-day factories, we'll follow the trail of cookies and see where it leads us. We'll talk to experts, visit factories, and examine the evidence to get to the bottom of this story. And what we find might just shock you. The cookie industry is not just about baking and selling cookies, it's about power, greed, and exploitation. So, let's get started on this journey and see where it takes us. We'll begin in ancient Mesopotamia, where cookies were first made over 4,000 years ago. The ancient Sumerians, Babylonians, and Assyrians all baked cookies as a way to preserve food for long periods of time. They used honey, dates, and other sweeteners to make their cookies, and they even used them as a form of currency in some cases. But as the cookie industry grew, so did the exploitation. The ancient Greeks and Romans used cookies as a way to feed their armies, and they even used slave labor to bake them. And when the Europeans arrived in the Americas, they brought their cookie-making traditions with them. But they also brought something else: sugar. Sugar was a highly valued commodity in the ancient world, and it was used to sweeten cookies, cakes, and other baked goods. But the sugar industry was also tied to slavery and exploitation. The Europeans used African slaves to harvest sugar cane in the Americas, and they used the profits to build their empires. And today, the sugar industry is still tied to exploitation and environmental degradation. Many sugar farms around the world use child labor, and the industry is also linked to deforestation, water pollution, and other environmental problems. So, what's the connection between cookies and sugar? It's simple: cookies need sugar to be sweet, and the sugar industry needs cookies to sell its product. It's a vicious cycle of exploitation and greed, and it's been going on for centuries. But it's not just about the sugar. The cookie industry is also tied to other forms of exploitation, such as child labor and environmental degradation. Many cookie factories around the world use child labor to harvest ingredients, mix batter, and package cookies. And the industry is also linked to deforestation, water pollution, and other environmental problems. So, what can we do about it? It's not just about boycotting cookies or sugar, it's about changing the system. We need to demand fair trade practices, sustainable agriculture, and an end to exploitation and child labor. We need to hold the cookie industry accountable for its actions, and we need to support companies that are working to make a difference. It's not going to be easy, but it's necessary. The cookie industry is a multi-billion dollar industry, and it's not going to change overnight. But if we work together, we can make a difference. We can create a cookie industry that is fair, sustainable, and just. And that's the real challenge. So, let's get started on this journey and see where it takes us. We'll follow the trail of cookies and see where it leads us. And what we find might just shock you. The cookie industry is not just about baking and selling cookies, it's about power, greed, and exploitation. But it's also about hope and change. We can make a difference, one cookie at a time.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 10,
+        "visual_keywords": [
+          "old cookies",
+          "vintage bakery",
+          "cookie jars",
+          "baking oven",
+          "ancient mesopotamian cookies",
+          "spice route marketplace",
+          "cocoa farm workers",
+          "sugar cane harvest"
+        ],
+        "search_queries": [
+          "ancient cookie history",
+          "sugar trade route",
+          "cocoa farm labor"
+        ],
+        "description": "Intro to the history of cookies",
+        "on_screen_text": "4,000 years ago",
+        "chapter_title": ""
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 120,
+        "visual_keywords": [
+          "sugar factory",
+          "dark warehouse",
+          "industrial machines",
+          "sugar piles",
+          "slave labor sugar cane",
+          "child labor cocoa farm",
+          "deforestation sugar farm",
+          "water pollution sugar factory"
+        ],
+        "search_queries": [
+          "slave labor sugar industry",
+          "child labor cocoa",
+          "deforestation sugar"
+        ],
+        "description": "The dark side of the sugar industry",
+        "on_screen_text": "70% child labor",
+        "chapter_title": "THE REAL COST"
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 120,
+        "visual_keywords": [
+          "factory conveyor",
+          "cookie production",
+          "industrial kitchen",
+          "baking equipment",
+          "cookie factory production",
+          "sugar industry manipulation",
+          "tariff subsidies",
+          "trade agreements"
+        ],
+        "search_queries": [
+          "cookie industry trade agreements",
+          "sugar industry manipulation",
+          "tariff subsidies"
+        ],
+        "description": "The cookie industry's complex system",
+        "on_screen_text": "$2 cookie cost",
+        "chapter_title": "THE SYSTEM"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 120,
+        "visual_keywords": [
+          "investigator desk",
+          "cookie samples",
+          "lab equipment",
+          "researcher lab",
+          "expert interview cookie industry",
+          "factory visit cookie production",
+          "evidence examination sugar industry",
+          "environmental impact"
+        ],
+        "search_queries": [
+          "cookie industry expert interview",
+          "factory visit cookie",
+          "sugar industry evidence"
+        ],
+        "description": "Investigating the cookie industry",
+        "on_screen_text": "not just a cookie",
+        "chapter_title": "THE INVESTIGATION"
+      },
+      {
+        "id": 5,
+        "duration_hint_seconds": 90,
+        "visual_keywords": [
+          "sugar cane",
+          "vintage cookies",
+          "old bakery",
+          "cookie museum",
+          "ancient spice routes",
+          "modern-day factories",
+          "cookie-making traditions",
+          "sugar industry history"
+        ],
+        "search_queries": [
+          "ancient spice routes",
+          "modern-day factories",
+          "cookie-making traditions"
+        ],
+        "description": "The history of cookies and sugar",
+        "on_screen_text": "over 4,000 years",
+        "chapter_title": "A BRIEF HISTORY"
+      },
+      {
+        "id": 6,
+        "duration_hint_seconds": 90,
+        "visual_keywords": [
+          "eco friendly",
+          "sustainable bakery",
+          "cookie garden",
+          "green kitchen",
+          "sustainable agriculture",
+          "fair trade practices",
+          "child labor prevention",
+          "environmental degradation"
+        ],
+        "search_queries": [
+          "sustainable agriculture sugar",
+          "fair trade practices cookie",
+          "child labor prevention"
+        ],
+        "description": "Creating a fair and sustainable cookie industry",
+        "on_screen_text": "fair trade matters",
+        "chapter_title": "THE FUTURE"
+      }
+    ],
+    "youtube": {
+      "title": "The Dark Side of Cookies",
+      "description": "The history of cookies is not as sweet as you think. From ancient times to modern day, cookies have been tied to exploitation, violence, and greed. It's time to expose the truth behind the cookie industry. From the ancient spice routes to the modern-day factories, we'll follow the trail of cookies and see where it leads us. We'll talk to experts, visit factories, and examine the evidence to get to the bottom of this story. And what we find might just shock you. The cookie industry is not just about baking and selling cookies, it's about power, greed, and exploitation. But it's also about hope and change. We can make a difference, one cookie at a time. So, let's get started on this journey and see where it takes us. What's the real cost of that cookie? Is it just the $2 you pay at the store, or is it something more? Let's find out.",
+      "tags": [
+        "cookie industry",
+        "sugar industry",
+        "exploitation",
+        "child labor",
+        "environmental degradation",
+        "fair trade",
+        "sustainable agriculture",
+        "social responsibility",
+        "history of cookies",
+        "dark side of cookies"
+      ],
+      "hashtags": [
+        "#cookies",
+        "#sugarindustry",
+        "#exploitation",
+        "#fairtrade",
+        "#sustainability",
+        "#socialresponsibility"
+      ],
+      "category": "Education"
+    }
+  }
+}

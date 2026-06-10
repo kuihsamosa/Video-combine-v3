@@ -620,7 +620,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           log(`   ℹ️  No speaker structure found — falling back to single voice`);
           const cleanNarration = narration.replace(labelRx, '');
           const wavBuf = await generateTTS(cleanNarration, hostVoice, job.speed || 0.90, log);
-          const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
+          const audioPath = path.join(os.tmpdir(), `sched_${runId}.mp3`);
           fs.writeFileSync(audioPath, wavBuf);
           output.audio_path = audioPath;
         } else {
@@ -659,7 +659,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
             throw new Error(`All ${turns.length} podcast turns failed TTS — is OmniVoice running at ${OMNIVOICE_URL}?`);
           }
           const stitched = await stitchWavWithFfmpeg(wavChunksFiltered, 400, 80); // 400ms between speaker turns
-          const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
+          const audioPath = path.join(os.tmpdir(), `sched_${runId}.mp3`);
           fs.writeFileSync(audioPath, stitched);
           output.audio_path = audioPath;
           log(`✅ Dual-voice voiceover: ${(stitched.length / 1048576).toFixed(1)} MB → ${audioPath}`);
@@ -671,7 +671,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           .replace(/^HOST:\s*/gim, '')   // strip any stray labels
           .replace(/^GUEST:\s*/gim, '');
         const wavBuf = await generateTTS(podcastNarration, job.voice || 'narrator_warm', job.speed || 0.86, log);
-        const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
+        const audioPath = path.join(os.tmpdir(), `sched_${runId}.mp3`);
         fs.writeFileSync(audioPath, wavBuf);
         output.audio_path = audioPath;
         log(`✅ Podcast voiceover: ${(wavBuf.length / 1048576).toFixed(1)} MB → ${audioPath}`);
@@ -684,7 +684,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           job.speed || 0.92,
           log,
         );
-        const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
+        const audioPath = path.join(os.tmpdir(), `sched_${runId}.mp3`);
         fs.writeFileSync(audioPath, wavBuf);
         output.audio_path = audioPath;
         log(`✅ Voiceover: ${(wavBuf.length / 1048576).toFixed(1)} MB → ${audioPath}`);
