@@ -817,8 +817,10 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
         const baseClips    = output.clips;
         const segPaths     = [];
         const clipOffsets  = new Map(); // localPath → nextStartSeconds
-        const BASE_CUT         = job.cut_duration_seconds ?? 2.5;
-        const MIN_CLIP_DURATION = job.min_clip_duration ?? 2.5; // never cut faster than this
+        const BASE_CUT          = job.cut_duration_seconds  ?? 2.5;
+        const MIN_CLIP_DURATION = job.min_clip_duration    ?? 2.5; // never cut faster than this
+        const CROSSFADE_DUR     = job.crossfade_duration   ?? 0.5; // dissolve duration at clamped cuts
+        const HARDCUT_DUR       = 0.03;                            // near-instant xfade ≈ hard cut
 
         // #16 Smart Cut Pacing — derive per-scene cut length from narration density
         const scenes       = output.script?.scenes || [];
