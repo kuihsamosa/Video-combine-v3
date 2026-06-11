@@ -1545,7 +1545,7 @@ app.post('/api/tts', async (req, res) => {
   }
 
   const cleaned       = preprocessTTS(text.trim());
-  const chunks        = chunkTTS(cleaned, 480);
+  const chunks        = chunkTTS(cleaned, 500);
   const description   = resolveVoice(voice);
   const effectiveSpeed = speed === 1.0 ? 0.92 : speed;
 
@@ -1557,7 +1557,7 @@ app.post('/api/tts', async (req, res) => {
       const r = await fetch(`${OMNIVOICE_URL}/v1/audio/speech`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ model: 'omnivoice', input: chunkText, voice: description, speed: effectiveSpeed, response_format: 'wav' }),
+        body:    JSON.stringify({ model: 'omnivoice', input: chunkText, voice: description, speed: effectiveSpeed, response_format: 'wav', seed: 42 }),
         signal:  AbortSignal.timeout(180_000),
       });
       if (!r.ok) {
@@ -1570,7 +1570,7 @@ app.post('/api/tts', async (req, res) => {
     if (!wavChunks.length) return res.status(500).json({ error: 'No audio generated' });
 
     const combined = format === 'wav'
-      ? stitchWavBuffers(wavChunks, 350)
+      ? stitchWavBuffers(wavChunks)
       : Buffer.concat(wavChunks.map(c => c.buf));
 
     res.set('Content-Type', format === 'wav' ? 'audio/wav' : 'audio/mpeg');

@@ -1,0 +1,99 @@
+{
+  "id": "ketchup_around_world_2026-06-10T20-28-15-997Z_85ca14ac",
+  "job_id": "f1cefe68",
+  "job_name": "Ketchup Around World",
+  "run_id": "85ca14ac",
+  "saved_at": "2026-06-10T20:28:15.998Z",
+  "title": "Ketchup's Hidden Origin",
+  "word_count": 90,
+  "scene_count": 3,
+  "script": {
+    "title": "Ketchup's Hidden Origin",
+    "description": "Ketchup's origins are more complex than you think, with roots in ancient Asia and a journey to the Americas.",
+    "narration": "Ketchup's story begins in 17th-century Asia, where British sailors discovered a sweet and sour sauce. They brought it back to Europe, where it evolved into a tomato-based condiment. By the 19th century, American companies like Heinz were mass-producing ketchup. But here's the part that's often missed: ketchup was initially a luxury item, with some recipes calling for expensive spices like cumin and coriander. It wasn't until the early 20th century that ketchup became the affordable, everyday condiment we know today. So, what's the real story behind ketchup's rise to fame?",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 10,
+        "visual_keywords": [
+          "ancient asian market",
+          "sailor exploring",
+          "exotic spices",
+          "cultural exchange",
+          "global trade"
+        ],
+        "search_queries": [
+          "vintage asian spice market",
+          "sailor in exotic port",
+          "historic cultural exchange"
+        ],
+        "description": "Ancient Asian market scene with sailors and exotic spices",
+        "on_screen_text": "17th century",
+        "chapter_title": "THE ORIGIN STORY"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "heinz factory",
+          "tomato harvesting",
+          "industrial machinery",
+          "mass production",
+          "american industry"
+        ],
+        "search_queries": [
+          "heinz factory tour",
+          "tomato harvest",
+          "industrial food production"
+        ],
+        "description": "Heinz factory and tomato harvesting scene",
+        "on_screen_text": "19th century",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "luxury dining",
+          "expensive spices",
+          "cumin and coriander",
+          "high-end restaurant",
+          "fine dining"
+        ],
+        "search_queries": [
+          "luxury dining experience",
+          "expensive spices",
+          "fine dining restaurant"
+        ],
+        "description": "Luxury dining scene with expensive spices",
+        "on_screen_text": "Luxury item",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Ketchup's Hidden Origin",
+      "description": "Ketchup's origins are more complex than you think, with roots in ancient Asia and a journey to the Americas. From its initial discovery by British sailors to its evolution into a tomato-based condiment, ketchup's story is one of cultural exchange and adaptation. But what's the real story behind ketchup's rise to fame? Is it just a tasty condiment, or is there more to it? Let's explore the history of ketchup and uncover its hidden origin. What do you think is the most surprising fact about ketchup's origins?",
+      "tags": [
+        "ketchup",
+        "origin",
+        "history",
+        "food",
+        "condiment",
+        "asia",
+        "america",
+        "heinz",
+        "tomato",
+        "spices"
+      ],
+      "hashtags": [
+        "#ketchup",
+        "#foodie",
+        "#history",
+        "#condiment",
+        "#asia",
+        "#america"
+      ],
+      "category": "Education"
+    }
+  }
+}

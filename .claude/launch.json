@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "video-combine",
+      "name": "video-combiner",
       "runtimeExecutable": "node",
       "runtimeArgs": ["api/server.js"],
-      "port": 8080
+      "port": 8080,
+      "autoPort": false
     }
   ]
 }

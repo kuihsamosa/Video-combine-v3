@@ -84,13 +84,51 @@ function preprocessTTS(raw) {
     return (i <= 20 && nums[i]) ? nums[i] : m;
   });
 
-  // 10. Tidy whitespace and stray punctuation artefacts
+  // 10. Tidy whitespace and stray punctuation artefacts (must run before prosody injection
+  // so the injected "..." and commas aren't eaten by the duplicate-punctuation rule).
   t = t.replace(/[ \t]{2,}/g, ' ');           // multiple spaces → one
   t = t.replace(/\n{3,}/g, '\n\n');           // max double newline
   t = t.replace(/([.!?])\s*([.!?])+/g, '$1'); // duplicate end-punctuation
   t = t.replace(/,\s*,/g, ',');               // double commas
+  t = t.replace(/,\s*([.!?])/g, '$1');        // comma before sentence-end punctuation
   t = t.replace(/\(\s*\)/g, '');              // empty parens
   t = t.replace(/\.\s*\.\s*\./g, '...');      // normalise ellipsis spacing
+
+  // ── Prosody injection (runs AFTER cleanup so injected punctuation is preserved) ──
+
+  // 11. Inject commas after common interjections the LLM tends to omit.
+  // Without a comma, TTS engines rush through the transition ("That's right it was…").
+  const interjections = [
+    "That's right","You see","Now","Well","And yet","But wait","In fact",
+    "Of course","Indeed","After all","As a result","In other words","Believe it or not",
+    "Here's the thing","Here's what","Turns out","It turns out","So","Yet",
+  ];
+  for (const word of interjections) {
+    const re = new RegExp(`\\b(${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\s+(?=[a-z])`, 'g');
+    t = t.replace(re, `$1, `);
+  }
+  // "But" at clause/sentence start (after period or paragraph break).
+  t = t.replace(/([.!?]\s+)(But)\s+(?=[a-z])/g, '$1$2, ');
+  t = t.replace(/(^|\n\n)(But)\s+(?=[a-z])/g, '$1$2, ');
+
+  // 12. Anticipatory pause before high-impact dramatic words at end of clause.
+  // Fires only when the dramatic word is immediately followed by sentence-ending
+  // punctuation, so it never adds "a... rotten ingredients" mid-phrase.
+  // e.g. "it was a disaster." → "it was a... disaster."
+  const dramaticWords = [
+    'disaster','catastrophe','rotten','sketchy','spoiled','contaminated',
+    'poison','poisonous','deadly','toxic','filthy','foul','putrid','vile',
+    'corrupt','scandal','shocking','horrifying','disgusting','revolting',
+    'terrifying','devastating','catastrophic','lethal','fatal',
+  ];
+  const dramaticEndRe = new RegExp(
+    `\\s+(${dramaticWords.join('|')})(\\s*[.!?;])`,
+    'gi'
+  );
+  t = t.replace(dramaticEndRe, '... $1$2');
+
+  // Tidy any doubled commas created by the injections above
+  t = t.replace(/,\s*,/g, ',');
 
   return t.trim();
 }
@@ -98,8 +136,8 @@ function preprocessTTS(raw) {
 // ── Chunking ──────────────────────────────────────────────────────────────────
 // Splits cleaned text into natural paragraph/sentence chunks.
 // Chunks tagged with isParagraphBreak=true get silence inserted after them.
-// Smaller maxChars (300) gives better prosody than 480.
-function chunkTTS(text, maxChars = 300) {
+// 500 chars balances prosody quality against per-chunk voice drift.
+function chunkTTS(text, maxChars = 500) {
   const paras = text.split(/\n{2,}/).map(p => p.replace(/\n/g, ' ').trim()).filter(Boolean);
   const chunks = [];
 
@@ -166,12 +204,48 @@ function silenceWav(durationMs, sampleRate = 24000, channels = 1, bitDepth = 16)
   return buf;
 }
 
+// ── Trim leading near-silence from PCM data ───────────────────────────────────
+// OmniVoice also pads the START of each chunk. Without trimming the lead,
+// the explicit inter-chunk gap stacks with this leading pad, doubling the pause.
+function trimLeadingPcmSilence(pcm, bitDepth, threshold = 800) {
+  const bytesPerSample = bitDepth / 8;
+  let start = 0;
+  while (start + bytesPerSample <= pcm.length) {
+    const sample = bitDepth === 16
+      ? Math.abs(pcm.readInt16LE(start))
+      : Math.abs(pcm[start] - 128);
+    if (sample > threshold) break;
+    start += bytesPerSample;
+  }
+  return start > 0 ? pcm.slice(start) : pcm;
+}
+
+// ── Trim trailing near-silence from PCM data ─────────────────────────────────
+// OmniVoice pads each chunk with ~200-400ms of silence. Without trimming,
+// stitching produces: audio | pad-silence | gap-silence | ABRUPT-START → gasp.
+function trimTrailingPcmSilence(pcm, bitDepth, sampleRate = 24000, threshold = 800) {
+  // threshold=800 ≈ -32dB — matches OmniVoice's noise floor so its trailing pad is removed.
+  // threshold=150 was too low (-47dB) and left 150-200ms of unstripped pad per chunk.
+  const bytesPerSample = bitDepth / 8;
+  let end = pcm.length;
+  while (end >= bytesPerSample) {
+    const sample = bitDepth === 16
+      ? Math.abs(pcm.readInt16LE(end - bytesPerSample))
+      : Math.abs(pcm[end - 1] - 128);
+    if (sample > threshold) break;
+    end -= bytesPerSample;
+  }
+  // Keep 15ms of natural reverb tail after the last loud sample
+  const tailBytes = Math.floor(sampleRate * 0.015) * bytesPerSample;
+  const keepEnd = Math.min(pcm.length, end + tailBytes);
+  return keepEnd < pcm.length ? pcm.slice(0, keepEnd) : pcm;
+}
+
 // ── WAV stitcher ──────────────────────────────────────────────────────────────
 // Stitches multiple WAV buffers into one, inserting silence at boundaries.
 // paragraphBreakMs: silence after a paragraph-end chunk (default 350ms)
-// sentenceBreakMs: silence between non-paragraph chunks (default 80ms) — prevents
-//   abrupt/choppy joins when OmniVoice chunks lack natural trailing silence
-function stitchWavBuffers(buffers, paragraphBreakMs = 350, sentenceBreakMs = 80) {
+// sentenceBreakMs: silence between non-paragraph chunks (default 40ms)
+function stitchWavBuffers(buffers, paragraphBreakMs = 280, sentenceBreakMs = 40) {
   if (buffers.length === 0) throw new Error('No WAV buffers to stitch');
   if (buffers.length === 1) return buffers[0].buf;
 
@@ -185,32 +259,72 @@ function stitchWavBuffers(buffers, paragraphBreakMs = 350, sentenceBreakMs = 80)
     const chunkSampleRate = buffers[i].buf.readUInt32LE(24);
     const chunkChannels   = buffers[i].buf.readUInt16LE(22);
     const chunkBitDepth   = buffers[i].buf.readUInt16LE(34);
-    
     if (chunkSampleRate !== sampleRate || chunkChannels !== channels || chunkBitDepth !== bitDepth) {
       console.warn(`⚠️  Audio format mismatch in chunk ${i}: expected ${sampleRate}Hz/${channels}ch/${bitDepth}bit, got ${chunkSampleRate}Hz/${chunkChannels}ch/${chunkBitDepth}bit`);
-      // For now, proceed but this could cause audio artifacts
     }
   }
+
+  const bytesPerSample  = bitDepth / 8;
+  const fadeInMs        = 2;   // ms — anti-click only; longer ramps clip plosive consonants ('B','P','D')
+  const fadeOutMs       = 12;  // ms — inter-chunk fade-out before gap silence
+  const finalFadeOutMs  = 400; // ms — natural tail on the very last chunk
 
   const pcmParts = [];
   for (let i = 0; i < buffers.length; i++) {
     const { buf, paragraphEnd } = buffers[i];
     const offset = findDataOffset(buf);
-    
-    // Add small fade-in at start of first chunk
-    let pcmData = buf.slice(offset);
-    if (i === 0 && pcmData.length > 2000) {
-      // Simple fade-in (first 50ms)
-      const fadeSamples = Math.min(50 * sampleRate / 1000, pcmData.length / 2);
+
+    // Trim OmniVoice's leading and trailing silence pads.
+    // Leading trim applies to all chunks so the explicit inter-chunk gap isn't
+    // doubled by OmniVoice's own lead-in pad. Trailing trim applies to all
+    // non-final chunks so the gap isn't doubled by OmniVoice's own trail-out pad.
+    let pcmData = Buffer.from(buf.slice(offset));
+    pcmData = trimLeadingPcmSilence(pcmData, bitDepth);
+    if (i < buffers.length - 1) {
+      pcmData = trimTrailingPcmSilence(pcmData, bitDepth, sampleRate);
+    }
+
+    // Fade-in on every chunk (not just first) — eliminates the gasping artifact
+    // at inter-chunk boundaries caused by abrupt PCM onsets
+    if (pcmData.length > fadeInMs * sampleRate / 1000 * bytesPerSample * 2) {
+      const fadeSamples = Math.floor(fadeInMs * sampleRate / 1000);
       for (let j = 0; j < fadeSamples; j++) {
         const factor = j / fadeSamples;
-        pcmData[j * 2] = Math.floor(pcmData[j * 2] * factor);     // Left channel
-        pcmData[j * 2 + 1] = Math.floor(pcmData[j * 2 + 1] * factor); // Right channel
+        const base = j * bytesPerSample * channels;
+        for (let c = 0; c < channels; c++) {
+          const pos = base + c * bytesPerSample;
+          if (pos + bytesPerSample <= pcmData.length) {
+            const s = pcmData.readInt16LE(pos);
+            pcmData.writeInt16LE(Math.round(s * factor), pos);
+          }
+        }
       }
     }
-    
+
+    // Fade-out: short inter-chunk smoothing OR long natural tail on the final chunk
+    const isLast      = i === buffers.length - 1;
+    const applyFadeMs = isLast ? finalFadeOutMs : fadeOutMs;
+    const minPcmForFade = applyFadeMs * sampleRate / 1000 * bytesPerSample * channels * 2;
+    if (pcmData.length > minPcmForFade) {
+      const fadeSamples = Math.floor(applyFadeMs * sampleRate / 1000);
+      const startByte   = pcmData.length - fadeSamples * bytesPerSample * channels;
+      for (let j = 0; j < fadeSamples; j++) {
+        const factor = isLast
+          ? Math.pow(1 - j / fadeSamples, 2)  // quadratic for smoother natural tail
+          : (1 - j / fadeSamples);             // linear for quick inter-chunk edge
+        const base = startByte + j * bytesPerSample * channels;
+        for (let c = 0; c < channels; c++) {
+          const pos = base + c * bytesPerSample;
+          if (pos + bytesPerSample <= pcmData.length) {
+            const s = pcmData.readInt16LE(pos);
+            pcmData.writeInt16LE(Math.round(s * factor), pos);
+          }
+        }
+      }
+    }
+
     pcmParts.push(pcmData);
-    
+
     if (i < buffers.length - 1) {
       const gapMs = paragraphEnd ? paragraphBreakMs : sentenceBreakMs;
       const silence = silenceWav(gapMs, sampleRate, channels, bitDepth);

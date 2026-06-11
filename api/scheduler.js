@@ -335,13 +335,26 @@ const OMNIVOICE_PRESETS = {
 
 const OMNIVOICE_URL = process.env.OMNIVOICE_URL || 'http://localhost:8881';
 
+async function checkOmniVoiceHealth() {
+  try {
+    const r = await fetch(`${OMNIVOICE_URL}/v1/models`, { signal: AbortSignal.timeout(5_000) });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
 // ── TTS helper: OmniVoice only, returns WAV Buffer ────────────────────────────
 // quiet=true suppresses per-chunk logs (used when many turns run in parallel)
 async function generateTTS(text, voice = 'narrator_warm', speed = 0.88, logger, quiet = false) {
   const description = OMNIVOICE_PRESETS[voice] || voice || 'nova';
   const cleaned     = preprocessTTS(text);
-  const chunks      = chunkTTS(cleaned, 300);
+  const chunks      = chunkTTS(cleaned, 500);
   if (!quiet) logger(`🎙️  OmniVoice TTS: ${chunks.length} chunk(s), voice="${description}"`);
+
+  if (!await checkOmniVoiceHealth()) {
+    throw new Error(`OmniVoice TTS server is not responding at ${OMNIVOICE_URL} — please start it and retry`);
+  }
 
   const wavChunks = [];
   for (let i = 0; i < chunks.length; i++) {
@@ -350,7 +363,7 @@ async function generateTTS(text, voice = 'narrator_warm', speed = 0.88, logger, 
       method:  'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'audio/wav' },
       body:    JSON.stringify({ model: 'omnivoice', input: chunkText, voice: description, speed, response_format: 'wav', seed: 42 }),
-      signal:  AbortSignal.timeout(180_000),
+      signal:  AbortSignal.timeout(120_000),
     });
     if (!r.ok) {
       const detail = await r.text().catch(() => '');
@@ -360,7 +373,7 @@ async function generateTTS(text, voice = 'narrator_warm', speed = 0.88, logger, 
     wavChunks.push({ buf, paragraphEnd });
     if (!quiet) logger(`   ✅ Chunk ${i+1}/${chunks.length} — ${(buf.length/1024).toFixed(0)} KB`);
   }
-  return stitchWavBuffers(wavChunks, 350);
+  return stitchWavBuffers(wavChunks);
 }
 
 // ── Concurrency-aware public entry point ──────────────────────────────────────
@@ -990,7 +1003,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
             '-i', output.audio_path,
             '-filter_complex', [
               `[0:v]trim=duration=${audioDur.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p,fade=t=out:st=${fadeStart.toFixed(3)}:d=2:color=black[vout]`,
-              `[1:a]asetpts=PTS-STARTPTS,afade=t=out:st=${fadeStart.toFixed(3)}:d=2[aout]`,
+              `[1:a]asetpts=PTS-STARTPTS,apad=whole_dur=${audioDur.toFixed(3)},atrim=0:${audioDur.toFixed(3)},afade=t=out:st=${fadeStart.toFixed(3)}:d=2[aout]`,
             ].join(';'),
             '-map', '[vout]', '-map', '[aout]',
             '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',

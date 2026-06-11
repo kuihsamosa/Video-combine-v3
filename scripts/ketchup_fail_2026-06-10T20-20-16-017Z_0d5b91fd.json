@@ -1,0 +1,92 @@
+{
+  "id": "ketchup_fail_2026-06-10T20-20-16-017Z_0d5b91fd",
+  "job_id": "ead00a29",
+  "job_name": "Ketchup Fail",
+  "run_id": "0d5b91fd",
+  "saved_at": "2026-06-10T20:20:16.017Z",
+  "title": "Ketchup's Dark Secret",
+  "word_count": 85,
+  "scene_count": 3,
+  "script": {
+    "title": "Ketchup's Dark Secret",
+    "description": "The origins of ketchup are not what you think, and its evolution is a story of unexpected twists. Ketchup's history is a fascinating tale of experimentation and adaptation.",
+    "narration": "Ketchup's origins are not what you think. It started as a fermented fish sauce in Asia, not a sweet tomato sauce. The British adapted it, adding mushrooms and walnuts, but it wasn't until they added tomatoes that it became the ketchup we know. But here's the thing: the first commercial ketchups were a disaster, with rotten ingredients and sketchy preservatives. It took one man, Henry J. Heinz, to revolutionize the recipe and make ketchup safe and tasty. So, what's the real secret to ketchup's success?",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 10,
+        "visual_keywords": [
+          "fermented fish sauce",
+          "Asian market",
+          "British adaptation",
+          "food experimentation",
+          "exotic spices"
+        ],
+        "search_queries": [
+          "Asian fermented sauce",
+          "British food adaptation",
+          "exotic spice market"
+        ],
+        "description": "A bustling Asian market with various fermented sauces on display",
+        "on_screen_text": "Fermented fish sauce",
+        "chapter_title": "THE ORIGINAL RECIPE"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "tomato fields",
+          "British countryside",
+          "mushroom picking",
+          "walnut trees",
+          "sunrise landscape"
+        ],
+        "search_queries": [
+          "tomato farm",
+          "British countryside landscape",
+          "walnut tree"
+        ],
+        "description": "A British countryside landscape with tomato fields, mushroom picking, and walnut trees",
+        "on_screen_text": "Tomatoes added",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "Henry J. Heinz",
+          "ketchup factory",
+          "quality control",
+          "food safety",
+          "industrial machinery"
+        ],
+        "search_queries": [
+          "Heinz ketchup factory",
+          "food safety inspection",
+          "industrial food production"
+        ],
+        "description": "A ketchup factory with Henry J. Heinz overseeing quality control and food safety",
+        "on_screen_text": "Heinz revolutionized",
+        "chapter_title": "THE TURNING POINT"
+      }
+    ],
+    "youtube": {
+      "title": "Ketchup's Dark Secret",
+      "description": "The origins of ketchup are not what you think, and its evolution is a story of unexpected twists. Ketchup's history is a fascinating tale of experimentation and adaptation. From its start as a fermented fish sauce in Asia to its adaptation by the British and eventual revolution by Henry J. Heinz, ketchup's story is full of surprises. But what's the real secret to ketchup's success? Is it the ingredients, the production process, or something else entirely? Join us as we explore the fascinating history of ketchup and uncover its dark secrets.",
+      "tags": [
+        "ketchup history",
+        "food origin",
+        "Henry J. Heinz",
+        "fermented fish sauce",
+        "British adaptation",
+        "food safety"
+      ],
+      "hashtags": [
+        "#KetchupLovers",
+        "#FoodHistory",
+        "#HeinzKetchup"
+      ],
+      "category": "Education"
+    }
+  }
+}
