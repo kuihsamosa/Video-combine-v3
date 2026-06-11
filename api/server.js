@@ -1545,9 +1545,9 @@ app.post('/api/tts', async (req, res) => {
   }
 
   const cleaned      = preprocessTTS(text.trim());
-  const chunks       = chunkTTS(cleaned, 250);
+  const chunks       = chunkTTS(cleaned, 500);
   const description  = resolveVoice(voice);
-  const effectiveSpeed = Math.min(1.05, Math.max(1.0, speed));
+  const effectiveSpeed = Math.min(1.4, Math.max(0.6, speed));
 
   try {
     const wavChunks = [];
@@ -1558,7 +1558,7 @@ app.post('/api/tts', async (req, res) => {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ model: 'omnivoice', input: chunkText, voice: description, speed: effectiveSpeed, response_format: 'wav', seed: 42 }),
-        signal:  AbortSignal.timeout(180_000),
+        signal:  AbortSignal.timeout(120_000),
       });
       if (!r.ok) {
         const errText = await r.text().catch(() => '');
@@ -1569,14 +1569,36 @@ app.post('/api/tts', async (req, res) => {
 
     if (!wavChunks.length) return res.status(500).json({ error: 'No audio generated' });
 
-    const combined = format === 'wav'
-      ? stitchWavBuffers(wavChunks)
-      : Buffer.concat(wavChunks.map(c => c.buf));
+    const stitched = stitchWavBuffers(wavChunks);
 
-    res.set('Content-Type', format === 'wav' ? 'audio/wav' : 'audio/mpeg');
-    res.set('Content-Disposition', `attachment; filename="tts.${format}"`);
-    res.set('Content-Length', combined.length);
-    res.send(combined);
+    if (format !== 'mp3') {
+      res.set('Content-Type', 'audio/wav');
+      res.set('Content-Disposition', 'attachment; filename="tts.wav"');
+      res.set('Content-Length', stitched.length);
+      return res.send(stitched);
+    }
+
+    // Convert WAV → MP3 via ffmpeg so the output is a real MP3, not raw WAV bytes
+    const { execFile } = require('child_process');
+    const tmpWav = path.join(os.tmpdir(), `tts_${Date.now()}.wav`);
+    const tmpMp3 = tmpWav.replace('.wav', '.mp3');
+    fs.writeFileSync(tmpWav, stitched);
+    await new Promise((resolve, reject) => {
+      execFile('ffmpeg', [
+        '-y', '-i', tmpWav,
+        '-c:a', 'libmp3lame', '-q:a', '2', '-ar', '44100',
+        tmpMp3,
+      ], (err) => {
+        if (err) reject(err); else resolve();
+      });
+    });
+    const mp3Buf = fs.readFileSync(tmpMp3);
+    fs.unlink(tmpWav, () => {});
+    fs.unlink(tmpMp3, () => {});
+    res.set('Content-Type', 'audio/mpeg');
+    res.set('Content-Disposition', 'attachment; filename="tts.mp3"');
+    res.set('Content-Length', mp3Buf.length);
+    res.send(mp3Buf);
   } catch (err) {
     if (err.name === 'TimeoutError') return res.status(504).json({ error: 'OmniVoice TTS timed out' });
     res.status(502).json({ error: 'OmniVoice unreachable', details: err.message });

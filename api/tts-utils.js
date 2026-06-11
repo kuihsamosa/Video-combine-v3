@@ -204,6 +204,77 @@ function silenceWav(durationMs, sampleRate = 24000, channels = 1, bitDepth = 16)
   return buf;
 }
 
+// ── Internal silence compressor ───────────────────────────────────────────────
+// OmniVoice DESIGN mode inserts 500-950ms pauses after every sentence-ending
+// punctuation within a single chunk. This scan-and-replace compresses any
+// contiguous run of near-silence > maxSilenceMs down to maxSilenceMs, preserving
+// natural breath pauses while removing the dead air.
+function compressInternalSilence(pcm, bitDepth, sampleRate, maxSilenceMs = 150, threshold = 800) {
+  const bytesPerSample = bitDepth / 8;
+  const maxSilenceSamples = Math.floor(sampleRate * maxSilenceMs / 1000);
+  const n = pcm.length / bytesPerSample;
+
+  const parts = [];
+  let silenceStart = -1;
+  let silenceCount = 0;
+
+  for (let i = 0; i < n; i++) {
+    const s = Math.abs(pcm.readInt16LE(i * bytesPerSample));
+    const isSilent = s < threshold;
+
+    if (isSilent) {
+      if (silenceStart < 0) silenceStart = i;
+      silenceCount++;
+    } else {
+      if (silenceStart >= 0) {
+        // Flush the silence run
+        const keep = Math.min(silenceCount, maxSilenceSamples);
+        parts.push(pcm.slice(silenceStart * bytesPerSample, (silenceStart + keep) * bytesPerSample));
+        silenceStart = -1;
+        silenceCount = 0;
+      }
+      parts.push(pcm.slice(i * bytesPerSample, (i + 1) * bytesPerSample));
+    }
+  }
+  // Flush trailing silence (keep up to maxSilenceSamples)
+  if (silenceStart >= 0) {
+    const keep = Math.min(silenceCount, maxSilenceSamples);
+    parts.push(pcm.slice(silenceStart * bytesPerSample, (silenceStart + keep) * bytesPerSample));
+  }
+
+  return Buffer.concat(parts);
+}
+
+// ── Per-chunk RMS normalisation ───────────────────────────────────────────────
+// OmniVoice DESIGN mode (used when no voice profile exists) produces chunks at
+// wildly different gain levels — up to 14 dB of variation observed. A single
+// outlier chunk throws off loudnorm and can silence everything else.
+// This rescales each chunk's PCM to a fixed target RMS before stitching.
+function normalisePcmRms(pcm, bitDepth, targetRms = 4000) {
+  const bytesPerSample = bitDepth / 8;
+  const n = pcm.length / bytesPerSample;
+  if (n === 0) return pcm;
+
+  let sumSq = 0;
+  for (let i = 0; i < n; i++) {
+    const s = pcm.readInt16LE(i * bytesPerSample);
+    sumSq += s * s;
+  }
+  const rms = Math.sqrt(sumSq / n);
+  if (rms < 10) return pcm; // silence chunk — don't amplify noise
+
+  const gain = Math.min(targetRms / rms, 4.0); // cap at 12 dB boost to avoid clipping
+  if (Math.abs(gain - 1.0) < 0.05) return pcm; // already close enough
+
+  const out = Buffer.allocUnsafe(pcm.length);
+  for (let i = 0; i < n; i++) {
+    const s = pcm.readInt16LE(i * bytesPerSample);
+    const scaled = Math.max(-32768, Math.min(32767, Math.round(s * gain)));
+    out.writeInt16LE(scaled, i * bytesPerSample);
+  }
+  return out;
+}
+
 // ── Trim leading near-silence from PCM data ───────────────────────────────────
 // OmniVoice also pads the START of each chunk. Without trimming the lead,
 // the explicit inter-chunk gap stacks with this leading pad, doubling the pause.
@@ -243,11 +314,10 @@ function trimTrailingPcmSilence(pcm, bitDepth, sampleRate = 24000, threshold = 8
 
 // ── WAV stitcher ──────────────────────────────────────────────────────────────
 // Stitches multiple WAV buffers into one, inserting silence at boundaries.
-// paragraphBreakMs: silence after a paragraph-end chunk (default 500ms)
-// sentenceBreakMs: silence between non-paragraph chunks (default 350ms)
-function stitchWavBuffers(buffers, paragraphBreakMs = 500, sentenceBreakMs = 350) {
+// paragraphBreakMs: silence after a paragraph-end chunk (default 350ms)
+// sentenceBreakMs: silence between non-paragraph chunks (default 100ms)
+function stitchWavBuffers(buffers, paragraphBreakMs = 350, sentenceBreakMs = 100) {
   if (buffers.length === 0) throw new Error('No WAV buffers to stitch');
-  if (buffers.length === 1) return buffers[0].buf;
 
   // Detect sample rate from first buffer's WAV header (bytes 24-27)
   const sampleRate = buffers[0].buf.readUInt32LE(24);
@@ -287,6 +357,14 @@ function stitchWavBuffers(buffers, paragraphBreakMs = 500, sentenceBreakMs = 350
     }
     // Trim trailing silence on ALL chunks (including final) — prevents the dead tail
     pcmData = trimTrailingPcmSilence(pcmData, bitDepth, sampleRate);
+
+    // Compress internal silences: OmniVoice DESIGN mode inserts 500-950ms pauses
+    // after every sentence-ending punctuation within the chunk. Cap them at 150ms.
+    pcmData = compressInternalSilence(pcmData, bitDepth, sampleRate);
+
+    // Normalise each chunk to a consistent RMS level so OmniVoice DESIGN mode
+    // amplitude variation (up to 14 dB observed) doesn't throw off loudnorm
+    pcmData = normalisePcmRms(pcmData, bitDepth);
 
     // Fade-in on every chunk (not just first) — eliminates the gasping artifact
     // at inter-chunk boundaries caused by abrupt PCM onsets

@@ -1,0 +1,194 @@
+{
+  "id": "trump_vs_fake_2026-06-11T07-52-00-304Z_38b50332",
+  "job_id": "42ee12fc",
+  "job_name": "Trump vs Fake",
+  "run_id": "38b50332",
+  "saved_at": "2026-06-11T07:52:00.306Z",
+  "title": "Trump: The Best President",
+  "word_count": 686,
+  "scene_count": 7,
+  "script": {
+    "title": "Trump: The Best President",
+    "description": "Why Trump's presidency was a success, despite what the media says. A deep dive into the facts and statistics that prove his effectiveness.",
+    "narration": "The media's obsession with discrediting Trump has led to a false narrative about his presidency. But what if I told you that Trump was actually the best president the US has seen in decades? It sounds crazy, but hear me out. Most people assume that Trump's presidency was a disaster, and that's what the media has been telling you. But if you look at the facts, you'll see that he made some incredible achievements. For example, the economy flourished under his leadership, with the lowest unemployment rate in 50 years. And let's not forget about the tax cuts, which put more money in the pockets of Americans. But here's the thing: the media doesn't want you to know about these successes. They'd rather focus on the drama and controversy surrounding Trump. And that's exactly what they did. They created a fake narrative about him, one that's been perpetuated by the left and the media. But it's time to set the record straight. Trump's presidency was not a failure, it was a success. And if you're still not convinced, let me take you through some of the key statistics and facts that prove it. First, let's talk about the economy. As I mentioned earlier, the unemployment rate was at a historic low during Trump's presidency. But that's not all - the stock market also reached record highs, with the Dow Jones increasing by over 50% during his time in office. And let's not forget about the GDP growth rate, which averaged over 2% per year. These are incredible numbers, and they're a testament to Trump's economic policies. But the media doesn't want you to know about these successes. Instead, they'd rather focus on the negative aspects of his presidency. And that's exactly what they did. They created a false narrative about him, one that's been perpetuated by the left and the media. But it's time to set the record straight. Trump's presidency was not a failure, it was a success. And if you're still not convinced, let me take you through some of the key statistics and facts that prove it. One of the most significant achievements of Trump's presidency was his handling of the COVID-19 pandemic. Despite what the media says, Trump's response to the pandemic was swift and effective. He took bold action, restricting travel from China and implementing a national emergency declaration. And let's not forget about the vaccine development, which was accelerated under his leadership. The media doesn't want you to know about these successes, but the facts are clear. Trump's handling of the pandemic was a success, and it saved countless lives. But what about the media's role in all of this? Why did they create a fake narrative about Trump? The answer is simple: they were afraid of him. They were afraid of his populist message, and they were afraid of his ability to connect with the American people. So they did what they do best - they created a false narrative about him, one that would discredit him and undermine his presidency. But it didn't work. Trump's supporters saw through the media's lies, and they continued to support him. And that's why Trump's presidency was a success. Despite the media's best efforts to discredit him, he was able to achieve some incredible things. So the next time you hear someone say that Trump was a bad president, you can set them straight. You can tell them about the economy, the tax cuts, and the pandemic response. You can tell them about the facts and statistics that prove his effectiveness. And you can tell them that the media's narrative about him is false. It's time to set the record straight, and it's time to give Trump the credit he deserves. He was a great president, and his legacy will be remembered for years to come. So the real question is, what's next? Will we continue to let the media dictate our narrative, or will we seek out the truth? The choice is ours, but one thing is clear - Trump's presidency was a success, and it's time we start acknowledging it.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "president speaking",
+          "press conference",
+          "man microphone",
+          "usa flag",
+          "trump speaking",
+          "presidential seal",
+          "white house",
+          "politics"
+        ],
+        "search_queries": [
+          "trump speech",
+          "white house press",
+          "presidential elections"
+        ],
+        "description": "Trump speaking at a press conference",
+        "on_screen_text": " Lowest Unemployment",
+        "chapter_title": "THE REAL TRUMP"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "stock market",
+          "money graph",
+          "economy chart",
+          "newspaper headline",
+          "economy graph",
+          "stock market",
+          "money",
+          "finance"
+        ],
+        "search_queries": [
+          "economy news",
+          "stock market trends",
+          "financial growth"
+        ],
+        "description": "Economic growth under Trump",
+        "on_screen_text": "50% Dow Increase",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "doctor mask",
+          "hospital room",
+          "medical team",
+          "virus lab",
+          "covid vaccine",
+          "doctor",
+          "hospital",
+          "healthcare"
+        ],
+        "search_queries": [
+          "covid vaccine development",
+          "pandemic response",
+          "medical research"
+        ],
+        "description": "Trump's handling of the COVID-19 pandemic",
+        "on_screen_text": "Vaccine Development",
+        "chapter_title": "THE PANDEMIC RESPONSE"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "news studio",
+          "tv anchor",
+          "newspaper desk",
+          "social media",
+          "media newsroom",
+          "journalist",
+          "newspaper",
+          "tv news"
+        ],
+        "search_queries": [
+          "media bias",
+          "fake news",
+          "journalism"
+        ],
+        "description": "The media's role in creating a fake narrative about Trump",
+        "on_screen_text": "Media Bias",
+        "chapter_title": "THE MEDIA'S ROLE"
+      },
+      {
+        "id": 5,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "crowd cheering",
+          "usa crowd",
+          "president waving",
+          "american flag",
+          "trump supporters",
+          "rally",
+          "american flag",
+          "politics"
+        ],
+        "search_queries": [
+          "trump supporters",
+          "rally",
+          "election campaign"
+        ],
+        "description": "Trump's connection with the American people",
+        "on_screen_text": "Populist Message",
+        "chapter_title": "THE PEOPLE'S PRESIDENT"
+      },
+      {
+        "id": 6,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "history book",
+          "usa monument",
+          "president statue",
+          "white house",
+          "trump legacy",
+          "history books",
+          "presidential library",
+          "america flag"
+        ],
+        "search_queries": [
+          "trump legacy",
+          "presidential history",
+          "america's past"
+        ],
+        "description": "Trump's legacy and impact on American history",
+        "on_screen_text": "Legacy",
+        "chapter_title": "THE LASTING IMPACT"
+      },
+      {
+        "id": 7,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "city skyline",
+          "usa flag wave",
+          "american landscape",
+          "futuristic city",
+          "future america",
+          "america flag",
+          "cityscape",
+          "politics"
+        ],
+        "search_queries": [
+          "america's future",
+          "politics",
+          "hope"
+        ],
+        "description": "The future of America and the impact of Trump's presidency",
+        "on_screen_text": "What's Next",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Trump: The Best President?",
+      "description": "Why Trump's presidency was a success, despite what the media says. A deep dive into the facts and statistics that prove his effectiveness. From the economy to the pandemic response, we'll explore the key achievements of Trump's presidency and why the media's narrative about him is false. So, what's next for America? Will we continue to let the media dictate our narrative, or will we seek out the truth? The choice is ours, but one thing is clear - Trump's presidency was a success, and it's time we start acknowledging it. Join the conversation and let us know what you think. Is Trump the best president the US has seen in decades? Let us know in the comments below.",
+      "tags": [
+        "Trump",
+        "Best President",
+        "Economy",
+        "Pandemic",
+        "Media Bias",
+        "Politics",
+        "America",
+        "Legacy",
+        "Future"
+      ],
+      "hashtags": [
+        "Trump2024",
+        "MAGA",
+        "AmericaFirst",
+        "MakeAmericaGreatAgain",
+        "Politics"
+      ],
+      "category": "News & Politics"
+    }
+  }
+}

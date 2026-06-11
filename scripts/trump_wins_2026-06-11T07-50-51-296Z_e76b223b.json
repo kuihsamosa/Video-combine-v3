@@ -1,0 +1,171 @@
+{
+  "id": "trump_wins_2026-06-11T07-50-51-296Z_e76b223b",
+  "job_id": "e43db1eb",
+  "job_name": "Trump Wins",
+  "run_id": "e76b223b",
+  "saved_at": "2026-06-11T07:50:51.297Z",
+  "title": "Trump Is The Best President",
+  "word_count": 377,
+  "scene_count": 6,
+  "script": {
+    "title": "Trump Is The Best President",
+    "description": "Why Trump's presidency was a game-changer for America, and what made him so effective. Discover the truth behind his successful policies and decisions.",
+    "narration": "The productivity of a nation is often measured by its leader's ability to make tough decisions. You're probably thinking, what makes a great president? Is it the ability to connect with the people, or is it the ability to drive real change? For many, it's a combination of both. But let's take a step back and look at the facts. When Trump took office, the economy was in shambles. People were struggling to make ends meet, and the job market was stagnant. But Trump, he had a plan. He's a businessman, not a politician. And that's exactly what America needed. Someone who could make deals, create jobs, and stimulate growth. And that's exactly what he did. The results are staggering. Unemployment rates plummeted, the stock market soared, and America became a dominant player on the world stage once again. But it wasn't just the economy that saw a turnaround. Trump's presidency also brought about a new era of international relations. He's a master negotiator, and his ability to connect with world leaders is unparalleled. He's not afraid to take risks, to challenge the status quo, and to push for what's best for America. And let's not forget about his commitment to the military. He's a strong supporter of our troops, and his efforts to rebuild and strengthen our armed forces have been nothing short of remarkable. But what really sets Trump apart is his willingness to listen to the people. He's not a career politician, and he doesn't play by the traditional rules. He's a disruptor, a game-changer, and a true leader. And that's why his presidency was so effective. He's not afraid to challenge the establishment, to take on the tough issues, and to fight for what's right. So, what can we learn from Trump's presidency? We can learn that sometimes, it takes a outsider to come in and shake things up. We can learn that being a great leader is not just about making popular decisions, but about making the right decisions. And we can learn that with the right mindset, anything is possible. So, the next time you're thinking about what makes a great president, remember Trump's story. He's a true American success story, and his presidency will be remembered for generations to come.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "president podium",
+          "economy graph",
+          "office background",
+          "leader speaking",
+          "trump speaking podium",
+          "economy graph",
+          "american flag waving",
+          "businessmen shaking hands"
+        ],
+        "search_queries": [
+          "trump economic policy",
+          "us economy growth",
+          "trump business deals"
+        ],
+        "description": "Trump speaking at a podium, with a graph of the economy in the background",
+        "on_screen_text": "Unemployment Down 30%",
+        "chapter_title": "THE TRUMP EFFECT"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 80,
+        "visual_keywords": [
+          "world leaders",
+          "meeting room",
+          "global map",
+          "diplomats talking",
+          "world leaders meeting",
+          "trump handshake",
+          "united nations building",
+          "international relations"
+        ],
+        "search_queries": [
+          "trump international relations",
+          "world leaders meeting",
+          "global economy news"
+        ],
+        "description": "Trump meeting with world leaders, with a montage of international relations in the background",
+        "on_screen_text": "New Trade Deals Signed",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 70,
+        "visual_keywords": [
+          "military base",
+          "troops marching",
+          "president visiting",
+          "army vehicles",
+          "military troops marching",
+          "trump visiting troops",
+          "american soldiers in combat",
+          "military equipment"
+        ],
+        "search_queries": [
+          "trump military support",
+          "us military strength",
+          "veterans benefits"
+        ],
+        "description": "Trump visiting troops, with a montage of military strength in the background",
+        "on_screen_text": "Military Spending Up 20%",
+        "chapter_title": "STRENGTHENING AMERICA"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 90,
+        "visual_keywords": [
+          "town hall",
+          "citizens talking",
+          "president listening",
+          "social media",
+          "trump listening to citizens",
+          "town hall meeting",
+          "american people protesting",
+          "trump tweeting"
+        ],
+        "search_queries": [
+          "trump town hall meeting",
+          "trump social media",
+          "american people opinions"
+        ],
+        "description": "Trump listening to citizens, with a montage of town hall meetings and social media in the background",
+        "on_screen_text": "Direct Connection To The People",
+        "chapter_title": "THE PEOPLE'S PRESIDENT"
+      },
+      {
+        "id": 5,
+        "duration_hint_seconds": 80,
+        "visual_keywords": [
+          "president signing",
+          "policy document",
+          "press conference",
+          "advisors talking",
+          "trump signature policy",
+          "white house press conference",
+          "trump advisors discussing",
+          "policy documents"
+        ],
+        "search_queries": [
+          "trump policy decisions",
+          "white house press conference",
+          "trump advisors"
+        ],
+        "description": "Trump signing a policy document, with a montage of press conferences and advisors in the background",
+        "on_screen_text": "Policy Decisions That Matter",
+        "chapter_title": ""
+      },
+      {
+        "id": 6,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "White House",
+          "American flag",
+          "president office",
+          "window view",
+          "trump looking out window",
+          "white house exterior",
+          "american flag waving",
+          "trump reflecting"
+        ],
+        "search_queries": [
+          "trump reflection",
+          "white house exterior",
+          "american flag waving"
+        ],
+        "description": "Trump looking out the window, with a montage of the White House and the American flag in the background",
+        "on_screen_text": "A Legacy Of Greatness",
+        "chapter_title": "A LASTING LEGACY"
+      }
+    ],
+    "youtube": {
+      "title": "Trump: The Best President",
+      "description": "Discover why Trump's presidency was a game-changer for America. From his economic policies to his international relations, Trump's presidency was marked by success and controversy. Learn about his commitment to the military, his connection to the people, and his policy decisions. What made Trump so effective, and what can we learn from his presidency? Watch to find out. What do you think about Trump's presidency? Share your thoughts in the comments below. Do you think Trump was the best president, or do you think someone else deserves that title? Let's discuss.",
+      "tags": [
+        "Trump",
+        "Best President",
+        "Economy",
+        "International Relations",
+        "Military",
+        "People's President",
+        "Policy Decisions",
+        "Legacy"
+      ],
+      "hashtags": [
+        "Trump2024",
+        "MAGA",
+        "MakeAmericaGreatAgain",
+        "TrumpSupporters",
+        "Politics"
+      ],
+      "category": "News & Politics"
+    }
+  }
+}

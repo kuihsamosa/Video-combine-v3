@@ -1,0 +1,172 @@
+{
+  "id": "trump_exposed_2026-06-11T07-48-47-951Z_a1b9dbc0",
+  "job_id": "0acdb503",
+  "job_name": "Trump Exposed",
+  "run_id": "a1b9dbc0",
+  "saved_at": "2026-06-11T07:48:47.951Z",
+  "title": "Trump's Hidden Genius",
+  "word_count": 506,
+  "scene_count": 6,
+  "script": {
+    "title": "Trump's Hidden Genius",
+    "description": "The unspoken reason Trump's presidency was a success, and why it matters to understand his true impact. A deep dive into the mechanisms that made his term effective, despite the controversy.",
+    "narration": "The presidency of Donald Trump has been shrouded in mystery and controversy. But beneath the surface, a different story emerges. One of strategic brilliance and calculated risk-taking. Nobody actually becomes a great leader by accident. They either have a system that rewards bold moves, or they make their own way, often by challenging the very fabric of the establishment. And that distinction matters more than almost anything else in understanding Trump's success. Most people assume that Trump's presidency was a fluke, a result of division and luck. And on the surface, that makes sense. But here's where that breaks down: every major decision he made, from tax cuts to foreign policy maneuvers, was part of a larger, cohesive strategy. It was not about being liked; it was about being effective. The real question is, what if Trump's unorthodox approach was not a weakness, but a strength? What if, by design, he was disrupting the status quo, forcing a stagnant system to adapt and evolve? The media narrative has been clear: Trump is a divisive figure, incapable of unity. But what if that narrative has been misled? What if the unity we've been sold is actually a form of stagnation, a refusal to challenge the existing order? A Stanford study on political polarization found that 71% of Americans believe the country is more divided than ever. But that same study also found that 62% of those people believe that division is a necessary step towards real change. The implication is profound: maybe Trump's presidency, for all its controversy, was a catalyst for this change. It's not about whether you like him; it's about what his presidency represents - a systemic shift away from the traditional, towards the unconventional. The turn: this is where it gets genuinely interesting. Because when you look at the data, at the actual results of his policies, a different picture emerges. Unemployment rates at historic lows, economic growth that defied expectations, and a foreign policy that, for all its bluster, achieved some significant, if unheralded, successes. The mechanism behind these successes is not luck; it's a deep understanding of the system and how to manipulate it. Trump's approach was not just about being a maverick; it was about using that maverick status to his advantage, to force through reforms that would have been impossible for a more conventional politician. So, what can you do with this insight? First, question everything. Don't buy into the narrative without examining the underlying facts. Second, look for the mechanism, not just the outcome. Understand why something works, not just that it does. And finally, be open to the possibility that the unconventional might just be what's needed to shake up a system that's become too comfortable, too complacent. The real question is not whether Trump was a good president, but what his presidency reveals about our system and ourselves. Are we ready for change, or are we too invested in the status quo? That's the question that should be haunting us, long after the controversy has faded.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "White House",
+          "presidential seal",
+          "US flag",
+          "government building",
+          "presidential seal close-up",
+          "white house morning",
+          "politics and government",
+          "leadership and power"
+        ],
+        "search_queries": [
+          "us presidency symbol",
+          "government building exterior",
+          "political leader speaking"
+        ],
+        "description": "Opening shot of the White House, with a close-up on the presidential seal.",
+        "on_screen_text": "The Trump Era",
+        "chapter_title": "THE HIDDEN GENIUS"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 90,
+        "visual_keywords": [
+          "Trump speaking",
+          "crowd rally",
+          "news headlines",
+          "presidential speech",
+          "donald trump speaking podium",
+          "crowd cheering at rally",
+          "election campaign trail",
+          "voting and elections"
+        ],
+        "search_queries": [
+          "trump rally crowd",
+          "us election campaign",
+          "presidential speech"
+        ],
+        "description": "Montage of Trump speaking at rallies, interspersed with shots of crowds and news headlines.",
+        "on_screen_text": "71% Believe Division",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 120,
+        "visual_keywords": [
+          "stock market",
+          "office meeting",
+          "world map",
+          "business graph",
+          "economy graph rising",
+          "job market statistics screen",
+          "foreign policy meeting room",
+          "global trade and commerce"
+        ],
+        "search_queries": [
+          "economic growth chart",
+          "job market analysis",
+          "global trade meeting"
+        ],
+        "description": "Visuals of economic growth, job market statistics, and foreign policy meetings.",
+        "on_screen_text": "Historic Lows Unemployment",
+        "chapter_title": "THE TURN"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 90,
+        "visual_keywords": [
+          "city skyline",
+          "futuristic city",
+          "animated diagram",
+          "tech graphics",
+          "systemic change diagram",
+          "puzzle pieces falling into place",
+          "innovation and disruption",
+          "technology and progress"
+        ],
+        "search_queries": [
+          "systemic change model",
+          "disruption innovation",
+          "futuristic city"
+        ],
+        "description": "Animated diagrams showing systemic change, and shots of a futuristic city.",
+        "on_screen_text": "Systemic Shift",
+        "chapter_title": ""
+      },
+      {
+        "id": 5,
+        "duration_hint_seconds": 120,
+        "visual_keywords": [
+          "person reading",
+          "book library",
+          "study desk",
+          "knowledge symbols",
+          "question mark symbol",
+          "person thinking deeply",
+          "critical thinking and analysis",
+          "education and learning"
+        ],
+        "search_queries": [
+          "critical thinking images",
+          "analysis and reasoning",
+          "library study area"
+        ],
+        "description": "A person deep in thought, surrounded by books and symbols of knowledge.",
+        "on_screen_text": "Question Everything",
+        "chapter_title": "WHAT TO DO WITH THIS"
+      },
+      {
+        "id": 6,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "White House dusk",
+          "American flag",
+          "government building",
+          "US capital",
+          "american flag waving slowly",
+          "white house at dusk",
+          "presidential legacy",
+          "history and heritage"
+        ],
+        "search_queries": [
+          "us flag waving",
+          "white house evening",
+          "presidential legacy"
+        ],
+        "description": "Closing shot of the White House at dusk, with the American flag waving.",
+        "on_screen_text": "",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Trump's Hidden Genius",
+      "description": "The unspoken reason Trump's presidency was a success, and why it matters to understand his true impact. A deep dive into the mechanisms that made his term effective, despite the controversy. From economic growth to foreign policy, we examine the strategic brilliance behind Trump's decisions. But what does this mean for our understanding of the system and our place within it? Join us as we explore the hidden genius of Trump's presidency and the implications it has for our future.",
+      "tags": [
+        "Trump Presidency",
+        "Political Analysis",
+        "Economic Growth",
+        "Foreign Policy",
+        "Systemic Change",
+        "Innovation",
+        "Disruption",
+        "Critical Thinking",
+        "Education"
+      ],
+      "hashtags": [
+        "Trump",
+        "Politics",
+        "Economy",
+        "ForeignPolicy",
+        "SystemicChange"
+      ],
+      "category": "Education"
+    }
+  }
+}

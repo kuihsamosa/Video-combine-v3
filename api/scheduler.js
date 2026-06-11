@@ -743,7 +743,13 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
         const targetDur = job.duration_minutes * 60;
         if (targetDur > 5 && actualDur > 0) {
           const ratio = actualDur / targetDur;
-          if (ratio < 0.65 || ratio > 1.35) {
+          if (ratio < 0.4) {
+            // Script is less than 40% of target duration — speed alone can't fix this.
+            // OmniVoice speed range (0.6-1.4) shifts duration by at most ~35%, so a ratio
+            // below 0.4 means the script itself is too short. Skip retune to avoid an
+            // unnaturally slow voice that still doesn't reach the target.
+            log(`⏱️  Voice speed auto-tune skipped: actual ${actualDur.toFixed(1)}s is only ${(ratio*100).toFixed(0)}% of ${targetDur.toFixed(0)}s target — script needs more content, not a speed change`);
+          } else if (ratio < 0.65 || ratio > 1.35) {
             const currentSpeed = job.speed || 1.0;
             const newSpeed     = Math.min(1.4, Math.max(0.6, Math.round((currentSpeed * ratio) * 100) / 100));
             log(`⏱️  Voice speed auto-tune: actual ${actualDur.toFixed(1)}s, target ${targetDur.toFixed(1)}s (ratio ${ratio.toFixed(2)}) → adjusting speed ${currentSpeed} → ${newSpeed}`);
@@ -1041,22 +1047,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           const sizeMB = (fs.statSync(muxOutPath).size / 1048576).toFixed(1);
           log(`✅ Final video: ${muxOutPath} (${sizeMB} MB)`);
 
-          // ── Audio loudness normalisation → -14 LUFS (YouTube standard) ───
-          try {
-            const normPath = path.join(OUTPUTS_DIR, `${outBase}_norm.mp4`);
-            log(`🔊 Normalising audio to -14 LUFS…`);
-            await runFfmpeg([
-              '-y', '-i', muxOutPath,
-              '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11',
-              '-c:v', 'copy',
-              '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2', '-async', '1',
-              normPath,
-            ], { logger: { log, error: log } });
-            fs.renameSync(normPath, muxOutPath);
-            log(`✅ Audio normalised to -14 LUFS`);
-          } catch (normErr) {
-            log(`   ⚠️  Loudness normalisation failed (non-fatal): ${normErr.message}`);
-          }
+          // loudnorm already applied inside filter_complex above — no second pass needed
 
           // ── #2 Intro / Outro clips ────────────────────────────────────────
           const hasIntro = job.intro_clip && fs.existsSync(job.intro_clip);

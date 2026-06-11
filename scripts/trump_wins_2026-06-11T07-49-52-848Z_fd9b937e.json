@@ -1,0 +1,148 @@
+{
+  "id": "trump_wins_2026-06-11T07-49-52-848Z_fd9b937e",
+  "job_id": "e43db1eb",
+  "job_name": "Trump Wins",
+  "run_id": "fd9b937e",
+  "saved_at": "2026-06-11T07:49:52.848Z",
+  "title": "Trump Is The Best",
+  "word_count": 630,
+  "scene_count": 5,
+  "script": {
+    "title": "Trump Is The Best",
+    "description": "Why Trump's presidency was a groundbreaking success, and what that means for America's future. The argument for Trump as the best president in recent history, based on real evidence and results.",
+    "narration": "The reason most people miss the significance of Trump's presidency is that they're looking at it through the wrong lens. They're seeing the tweets, the controversies, and the drama – but what they're missing is the underlying story of what actually happened during his time in office. It's a story of disruption, of challenging the status quo, and of getting things done. When Trump took office, the economy was stagnant, jobs were scarce, and America's influence on the world stage was waning. But then something changed. The stock market started to soar, businesses began to boom, and America's confidence started to return. Now, you might say that's just a coincidence – but the numbers tell a different story. During Trump's presidency, the economy added over 6 million new jobs, the unemployment rate dropped to a 50-year low, and the stock market reached record highs. That's not just a good economy – that's a great economy. And it's not just about the numbers; it's about the people whose lives were changed because of it. The single mom who got a new job and was able to provide for her kids, the small business owner who was able to expand and hire more employees, the family who was able to buy their first home. These are the real stories of Trump's presidency – stories of hope, of opportunity, and of the American dream. But what about the critics who say Trump's policies were divisive, that he alienated our allies, and that he emboldened our enemies? Well, let's take a closer look. The truth is, Trump's approach to foreign policy was a breath of fresh air. He wasn't afraid to challenge the status quo, to take on the tough issues, and to stand up for America's interests. And the results speak for themselves. He brokered historic peace deals in the Middle East, he took on China and won, and he made America's allies start to take us seriously again. That's not a bad record – that's a great record. And as for the critics who say Trump was a polarizing figure, that he didn't bring people together – well, I'd say that's a simplistic view. The truth is, Trump was a disruptor, a man who was willing to challenge the elites and take on the tough issues. And yes, that made some people uncomfortable – but it also made a lot of people very happy. The people who felt like they'd been forgotten, who felt like they'd been left behind – they saw in Trump a champion, a man who was willing to fight for them. So, what can we learn from Trump's presidency? For one thing, we can learn that the old way of doing things doesn't always work. We need leaders who are willing to challenge the status quo, to take risks, and to get things done. We need leaders who are willing to put America first, to stand up for our interests, and to fight for our values. And we need leaders who are willing to listen to the people, to hear their concerns, and to respond to their needs. That's the kind of leadership Trump provided – and that's the kind of leadership we need more of. So, the next time you hear someone say that Trump was a bad president, just remember – the numbers don't lie. The economy, the jobs, the peace deals – these are all facts, not opinions. And when you look at the real story of Trump's presidency, you'll see that he was a man who got things done, a man who challenged the status quo, and a man who put America first. That's not a bad legacy – that's a great legacy. And that's why Trump is the best president in recent history.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 60,
+        "visual_keywords": [
+          "white house",
+          "us flag",
+          "wall street",
+          "newspaper headlines",
+          "president speaking",
+          "president speaking at podium",
+          "american flag waving",
+          "economy graph rising"
+        ],
+        "search_queries": [
+          "president trump speaking",
+          "american economy growth",
+          "job market trends"
+        ],
+        "description": "Introduction to Trump's presidency and its impact on the economy and jobs",
+        "on_screen_text": "6 Million New Jobs",
+        "chapter_title": "THE TRUMP EFFECT"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 90,
+        "visual_keywords": [
+          "person working",
+          "family dinner",
+          "small business",
+          "factory workers",
+          "job interview",
+          "single mom with kids",
+          "small business owner working",
+          "family in front of new home"
+        ],
+        "search_queries": [
+          "single mom success story",
+          "small business growth",
+          "stock market trends"
+        ],
+        "description": "Stories of people whose lives were changed by Trump's economic policies",
+        "on_screen_text": "Unemployment Rate Drops",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 80,
+        "visual_keywords": [
+          "world map",
+          "un building",
+          "president shaking hands",
+          "foreign leaders",
+          "diplomats talking",
+          "trump meeting with world leaders",
+          "peace deal signing ceremony",
+          "american flag with other countries' flags"
+        ],
+        "search_queries": [
+          "trump foreign policy",
+          "middle east peace deals",
+          "un general assembly"
+        ],
+        "description": "Trump's approach to foreign policy and its successes",
+        "on_screen_text": "Historic Peace Deals",
+        "chapter_title": "TRUMP'S FOREIGN POLICY"
+      },
+      {
+        "id": 4,
+        "duration_hint_seconds": 70,
+        "visual_keywords": [
+          "protest march",
+          "us capitol",
+          "supreme court",
+          "american cityscape",
+          "people voting",
+          "trump speaking at rally",
+          "crowd of supporters cheering",
+          "trump with american flag"
+        ],
+        "search_queries": [
+          "trump rally footage",
+          "trump supporters",
+          "social media trends"
+        ],
+        "description": "The impact of Trump's presidency on American politics and society",
+        "on_screen_text": "A Champion For The Forgotten",
+        "chapter_title": ""
+      },
+      {
+        "id": 5,
+        "duration_hint_seconds": 90,
+        "visual_keywords": [
+          "president speaking",
+          "white house press",
+          "us flag waving",
+          "presidential seal",
+          "news anchors",
+          "trump in oval office",
+          "trump signing documents",
+          "trump with advisors"
+        ],
+        "search_queries": [
+          "trump in oval office",
+          "trump signing bills",
+          "economic growth trends"
+        ],
+        "description": "Conclusion and final thoughts on Trump's presidency",
+        "on_screen_text": "A Great Legacy",
+        "chapter_title": "THE LEGACY OF TRUMP"
+      }
+    ],
+    "youtube": {
+      "title": "Trump: The Best President",
+      "description": "Why Trump's presidency was a groundbreaking success, and what that means for America's future. The argument for Trump as the best president in recent history, based on real evidence and results. From the economy to foreign policy, we'll explore the real story of Trump's presidency and what we can learn from it. So, what do you think? Was Trump the best president in recent history? Let us know in the comments below.",
+      "tags": [
+        "Trump",
+        "Best President",
+        "Economy",
+        "Jobs",
+        "Foreign Policy",
+        "America",
+        "Legacy"
+      ],
+      "hashtags": [
+        "Trump2024",
+        "MAGA",
+        "AmericaFirst",
+        "EconomyMatters",
+        "JobsMatter"
+      ],
+      "category": "Education"
+    }
+  }
+}

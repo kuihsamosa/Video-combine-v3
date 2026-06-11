@@ -6625,12 +6625,9 @@ async function plannerSendToScheduler(ideaId, brainstormId) {
         const d = await r.json();
         if (!d.ok) throw new Error(d.error || 'Failed to create job');
 
-        // Auto-run immediately — no manual trigger needed
-        await fetch(`/api/scheduler/jobs/${d.job.id}/run`, { method: 'POST' });
-
-        // Remove from planner queue — it's now in the Scheduler and running
+        // Remove from planner queue — it's now idle in the Scheduler
         plannerRemoveFromQueue(ideaId, brainstormId);
-        addLog(`✅ "${topic}" queued and running in Scheduler`);
+        addLog(`✅ "${topic}" added to Scheduler (idle — auto-run or Run Now to start)`);
 
         // Add to the session sent-log so it's visible on the Planner page
         plannerAddToSentLog(topic, channelNiche, payload.style, d.job.id);

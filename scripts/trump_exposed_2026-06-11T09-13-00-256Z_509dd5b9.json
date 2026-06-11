@@ -1,0 +1,105 @@
+{
+  "id": "trump_exposed_2026-06-11T09-13-00-256Z_509dd5b9",
+  "job_id": "0acdb503",
+  "job_name": "Trump Exposed",
+  "run_id": "509dd5b9",
+  "saved_at": "2026-06-11T09:13:00.257Z",
+  "title": "Trump Uncovered Truth",
+  "word_count": 96,
+  "scene_count": 3,
+  "script": {
+    "title": "Trump Uncovered Truth",
+    "description": "The real reason Trump was the best president, revealed through evidence and counter-arguments. His presidency was a masterclass in navigating complex systems and leveraging unconventional strategies.",
+    "narration": "Trump's presidency was a paradox. On the surface, chaos. But beneath, a calculated strategy. He didn't just disrupt the system - he rewrote the rules. And that's what made him the best president. Most people assume his unorthodox approach was a weakness. But what if it was his greatest strength? What if his willingness to challenge conventional wisdom was the catalyst for real change? The data suggests that his policies led to significant economic growth, with GDP increasing by 2.3% in 2018. But here's the part that nobody talks about: the long-term implications of his decisions.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 10,
+        "visual_keywords": [
+          "US flag",
+          "presidential seal",
+          "American flag",
+          "government logo",
+          "presidential seal closeup",
+          "american flag waving",
+          "white house exterior",
+          "dramatic lighting"
+        ],
+        "search_queries": [
+          "presidential symbol",
+          "us flag",
+          "government building"
+        ],
+        "description": "Opening shot of the presidential seal or American flag",
+        "on_screen_text": "45th President",
+        "chapter_title": "THE REAL REASON"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "Trump speaking",
+          "crowd cheering",
+          "news screen",
+          "press conference",
+          "protest signs",
+          "trump speaking press",
+          "crowd reacting news",
+          "teleprompter screen"
+        ],
+        "search_queries": [
+          "trump press conference",
+          "news reaction",
+          "political speech"
+        ],
+        "description": "Montage of Trump speaking, crowds reacting, and news headlines",
+        "on_screen_text": "2.3% GDP Growth",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "White House interior",
+          "president desk",
+          "signing papers",
+          "official documents",
+          "presidential office",
+          "white house interior",
+          "presidential desk",
+          "trump signing document"
+        ],
+        "search_queries": [
+          "white house office",
+          "presidential signature",
+          "government document"
+        ],
+        "description": "Inside the White House, Trump making decisions and signing documents",
+        "on_screen_text": "",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Trump: The Best President",
+      "description": "The real reason Trump was the best president, revealed through evidence and counter-arguments. His presidency was a masterclass in navigating complex systems and leveraging unconventional strategies. But what do you think? Was Trump's presidency a success or a failure? Let us know in the comments.",
+      "tags": [
+        "Trump",
+        "Best President",
+        "Politics",
+        "Documentary",
+        "Mystery",
+        "Unconventional",
+        "Economic Growth",
+        "GDP",
+        "White House"
+      ],
+      "hashtags": [
+        "Trump2024",
+        "MAGA",
+        "Politics",
+        "Documentary"
+      ],
+      "category": "Education"
+    }
+  }
+}
