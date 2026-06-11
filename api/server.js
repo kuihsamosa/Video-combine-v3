@@ -1511,20 +1511,28 @@ function _chunkTTS_UNUSED(text, maxChars = 500) {
 
 // ── OmniVoice voice presets — mapped to named character voices ────────────────
 const VOICE_PRESETS = {
-  'narrator_warm':      'nova',    // female, warm american
-  'narrator_confident': 'cedar',   // male, steady american
-  'narrator_calm':      'marin',   // female, soft canadian
-  'narrator_energetic': 'verse',   // male, upbeat british
-  'narrator_deep':      'onyx',    // male, deep british
-  'narrator_crisp':     'fable',   // female, crisp british
-  'narrator_young_m':   'ash',     // male, young american
-  'narrator_young_f':   'shimmer', // female, bright american
-  'podcast_host':       'echo',    // male, conversational canadian
-  'podcast_guest':      'alloy',   // female, clear american
+  'narrator_warm':      'nova',
+  'narrator_confident': 'cedar',
+  'narrator_calm':      'marin',
+  'narrator_energetic': 'verse',
+  'narrator_deep':      'onyx',
+  'narrator_crisp':     'fable',
+  'narrator_young_m':   'ash',
+  'narrator_young_f':   'shimmer',
+  'podcast_host':       'echo',
+  'podcast_guest':      'alloy',
 };
 
+const _OMNIVOICE_PROFILE_DIR = path.join(os.homedir(), 'Library/Application Support/omnivoice/profiles');
+
+// Returns clone:<name> when ref_audio.wav exists (consistent voice), else design preset name.
 function resolveVoice(input) {
-  return VOICE_PRESETS[input] || input || 'nova';
+  const voiceName = VOICE_PRESETS[input] || input || 'nova';
+  const refAudio = path.join(_OMNIVOICE_PROFILE_DIR, voiceName, 'ref_audio.wav');
+  try {
+    if (fs.existsSync(refAudio) && fs.statSync(refAudio).size > 10_000) return `clone:${voiceName}`;
+  } catch (_) {}
+  return voiceName;
 }
 
 // List OmniVoice voice presets
@@ -1571,18 +1579,48 @@ app.post('/api/tts', async (req, res) => {
 
     const stitched = stitchWavBuffers(wavChunks);
 
+    // 2-pass loudnorm: measure then apply linear gain for consistent -14 LUFS output
+    const { execFile } = require('child_process');
+    async function twoPassLoudnorm(buf) {
+      const id = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+      const tmpIn  = path.join(os.tmpdir(), `tts_ln_in_${id}.wav`);
+      const tmpOut = path.join(os.tmpdir(), `tts_ln_out_${id}.wav`);
+      fs.writeFileSync(tmpIn, buf);
+      try {
+        const stats = await new Promise((resolve) => {
+          execFile('ffmpeg', ['-i', tmpIn, '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'],
+            (_err, _stdout, stderr) => {
+              const m = (stderr || '').match(/\{[\s\S]+?\}/);
+              try { resolve(m ? JSON.parse(m[0]) : null); } catch { resolve(null); }
+            });
+        });
+        const filter = stats
+          ? `loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=${stats.input_i}:measured_LRA=${stats.input_lra}:measured_TP=${stats.input_tp}:measured_thresh=${stats.input_thresh}:linear=true`
+          : 'loudnorm=I=-14:TP=-1.5:LRA=11';
+        await new Promise((resolve, reject) => {
+          execFile('ffmpeg', ['-y', '-i', tmpIn, '-af', filter, '-ar', '24000', '-c:a', 'pcm_s16le', tmpOut],
+            (err) => err ? reject(err) : resolve());
+        });
+        return fs.readFileSync(tmpOut);
+      } finally {
+        fs.unlink(tmpIn, () => {}); fs.unlink(tmpOut, () => {});
+      }
+    }
+
+    let normalized = stitched;
+    try { normalized = await twoPassLoudnorm(stitched); } catch (_) {}
+
     if (format !== 'mp3') {
       res.set('Content-Type', 'audio/wav');
       res.set('Content-Disposition', 'attachment; filename="tts.wav"');
-      res.set('Content-Length', stitched.length);
-      return res.send(stitched);
+      res.set('Content-Length', normalized.length);
+      return res.send(normalized);
     }
 
-    // Convert WAV → MP3 via ffmpeg so the output is a real MP3, not raw WAV bytes
-    const { execFile } = require('child_process');
+    // Convert loudnorm-applied WAV → MP3 via ffmpeg
     const tmpWav = path.join(os.tmpdir(), `tts_${Date.now()}.wav`);
     const tmpMp3 = tmpWav.replace('.wav', '.mp3');
-    fs.writeFileSync(tmpWav, stitched);
+    fs.writeFileSync(tmpWav, normalized);
     await new Promise((resolve, reject) => {
       execFile('ffmpeg', [
         '-y', '-i', tmpWav,

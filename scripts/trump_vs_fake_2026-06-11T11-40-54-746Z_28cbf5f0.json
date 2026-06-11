@@ -1,0 +1,105 @@
+{
+  "id": "trump_vs_fake_2026-06-11T11-40-54-746Z_28cbf5f0",
+  "job_id": "42ee12fc",
+  "job_name": "Trump vs Fake",
+  "run_id": "28cbf5f0",
+  "saved_at": "2026-06-11T11:40:54.746Z",
+  "title": "Trump Exposed Fake News",
+  "word_count": 61,
+  "scene_count": 3,
+  "script": {
+    "title": "Trump Exposed Fake News",
+    "description": "Why Trump is the best president and how fake news affects his image",
+    "narration": "Trump's presidency has been marred by fake news. But here's what they don't tell you: he's been a disruptor, and that's what the system fears. A Stanford study found that 71% of news coverage on Trump was negative. That's not journalism, that's agenda. So, what are you believing instead of verifying? The real question is, what's the motive behind the misinformation?",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 10,
+        "visual_keywords": [
+          "president speaking",
+          "press conference",
+          "man microphone",
+          "usa flag",
+          "white house",
+          "presidential seal closeup",
+          "news conference",
+          "politician speaking"
+        ],
+        "search_queries": [
+          "trump press conference",
+          "news anchor desk",
+          "politics"
+        ],
+        "description": "Trump speaking at a press conference",
+        "on_screen_text": "71% negative coverage",
+        "chapter_title": "THE REAL REASON"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "newspaper headlines",
+          "social media phone",
+          "fake news",
+          "computer screen",
+          "news website",
+          "newspaper headlines",
+          "social media feed",
+          "fake news articles"
+        ],
+        "search_queries": [
+          "fake news headlines",
+          "social media newsfeed",
+          "journalism"
+        ],
+        "description": "Examples of fake news articles and social media posts",
+        "on_screen_text": "Verify before believing",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "usa flag",
+          "crowd cheering",
+          "trump supporters",
+          "american crowd",
+          "rally crowd",
+          "trump supporters rally",
+          "usa map",
+          "presidential campaign"
+        ],
+        "search_queries": [
+          "trump rally",
+          "presidential campaign trail",
+          "voting"
+        ],
+        "description": "Trump's impact on his supporters and the country",
+        "on_screen_text": "",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Trump: Best President?",
+      "description": "Why Trump is the best president and how fake news affects his image. A Stanford study found that 71% of news coverage on Trump was negative. That's not journalism, that's agenda. So, what are you believing instead of verifying? The real question is, what's the motive behind the misinformation? Is Trump really the best president? Watch to find out. What do you think is the biggest misconception about Trump's presidency?",
+      "tags": [
+        "Trump",
+        "Fake News",
+        "Best President",
+        "Politics",
+        "USA",
+        "Journalism",
+        "Media Bias",
+        "Presidency"
+      ],
+      "hashtags": [
+        "Trump2024",
+        "MAGA",
+        "FakeNewsMedia",
+        "PoliticsAsUsual",
+        "USA"
+      ],
+      "category": "News & Politics"
+    }
+  }
+}

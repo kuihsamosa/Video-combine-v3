@@ -319,21 +319,35 @@ function finaliseRun(runId, status, output) {
   setTimeout(() => { delete runLogs[runId]; delete runEmitters[runId]; }, logRetentionMs);
 }
 
-// ── OmniVoice voice presets: text descriptions for voice design ───────────────
+// ── OmniVoice voice presets: maps friendly names to OmniVoice preset IDs ─────
 const OMNIVOICE_PRESETS = {
-  'narrator_warm':      'nova',    // female, warm american
-  'narrator_confident': 'cedar',   // male, steady american
-  'narrator_calm':      'marin',   // female, soft canadian
-  'narrator_energetic': 'verse',   // male, upbeat british
+  'narrator_warm':      'nova',    // female, young american
+  'narrator_confident': 'cedar',   // male, american
+  'narrator_calm':      'marin',   // female, canadian
+  'narrator_energetic': 'verse',   // male, british
   'narrator_deep':      'onyx',    // male, deep british
-  'narrator_crisp':     'fable',   // female, crisp british
+  'narrator_crisp':     'fable',   // female, british
   'narrator_young_m':   'ash',     // male, young american
-  'narrator_young_f':   'shimmer', // female, bright american
-  'podcast_host':       'echo',    // male, conversational canadian
-  'podcast_guest':      'alloy',   // female, clear american
+  'narrator_young_f':   'shimmer', // female, american
+  'podcast_host':       'echo',    // male, canadian
+  'podcast_guest':      'alloy',   // female, american
 };
 
 const OMNIVOICE_URL = process.env.OMNIVOICE_URL || 'http://localhost:8881';
+const OMNIVOICE_PROFILE_DIR = path.join(os.homedir(), 'Library/Application Support/omnivoice/profiles');
+
+// Resolve a voice preset key → OmniVoice voice string.
+// Prefers clone:<name> (consistent voice) when ref_audio.wav exists; falls back to design preset.
+function resolveOmniVoice(presetKey) {
+  const voiceName = OMNIVOICE_PRESETS[presetKey] || presetKey || 'nova';
+  const refAudio = path.join(OMNIVOICE_PROFILE_DIR, voiceName, 'ref_audio.wav');
+  try {
+    if (fs.existsSync(refAudio) && fs.statSync(refAudio).size > 10_000) {
+      return `clone:${voiceName}`;
+    }
+  } catch (_) {}
+  return voiceName; // design/preset mode
+}
 
 async function checkOmniVoiceHealth() {
   try {
@@ -344,19 +358,59 @@ async function checkOmniVoiceHealth() {
   }
 }
 
-// ── TTS helper: OmniVoice only, returns WAV Buffer ────────────────────────────
-// quiet=true suppresses per-chunk logs (used when many turns run in parallel)
+// Two-pass EBU R128 loudnorm: pass 1 measures, pass 2 applies linear gain.
+// Single-pass dynamic mode can crush or expand audio unpredictably; two-pass is deterministic.
+async function twoPassLoudnorm(wavBuf) {
+  const { execFile } = require('child_process');
+  const id = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const tmpIn  = path.join(os.tmpdir(), `tts_ln_in_${id}.wav`);
+  const tmpOut = path.join(os.tmpdir(), `tts_ln_out_${id}.wav`);
+  fs.writeFileSync(tmpIn, wavBuf);
+  try {
+    // Pass 1: measure integrated loudness, true peak, LRA
+    const stats = await new Promise((resolve) => {
+      execFile('ffmpeg', [
+        '-i', tmpIn,
+        '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json',
+        '-f', 'null', '-',
+      ], (_err, _stdout, stderr) => {
+        const m = (stderr || '').match(/\{[\s\S]+?\}/);
+        if (!m) return resolve(null);
+        try { resolve(JSON.parse(m[0])); } catch { resolve(null); }
+      });
+    });
+
+    const filter = stats
+      ? `loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=${stats.input_i}:measured_LRA=${stats.input_lra}:measured_TP=${stats.input_tp}:measured_thresh=${stats.input_thresh}:linear=true`
+      : 'loudnorm=I=-14:TP=-1.5:LRA=11';
+
+    // Pass 2: apply with linear gain; pin to 24kHz to prevent loudnorm from upsampling
+    await new Promise((resolve, reject) => {
+      execFile('ffmpeg', ['-y', '-i', tmpIn, '-af', filter, '-ar', '24000', '-c:a', 'pcm_s16le', tmpOut],
+        (err) => err ? reject(new Error(`loudnorm pass 2: ${err.message}`)) : resolve());
+    });
+    return fs.readFileSync(tmpOut);
+  } finally {
+    fs.unlink(tmpIn,  () => {});
+    fs.unlink(tmpOut, () => {});
+  }
+}
+
+// ── TTS helper: OmniVoice only, returns loudnorm-applied WAV Buffer ───────────
+// Uses clone mode (ref_audio.wav) for consistent voice when profile exists.
+// quiet=true suppresses per-chunk logs (used when many turns run in parallel).
 async function generateTTS(text, voice = 'narrator_warm', speed = 1.0, logger, quiet = false) {
-  const description = OMNIVOICE_PRESETS[voice] || voice || 'nova';
-  const cleaned     = preprocessTTS(text);
-  const chunks      = chunkTTS(cleaned, 250);
-  if (!quiet) logger(`🎙️  OmniVoice TTS: ${chunks.length} chunk(s), voice="${description}"`);
+  const omniVoice = resolveOmniVoice(voice);
+  const mode      = omniVoice.startsWith('clone:') ? 'CLONE' : 'DESIGN';
+  const cleaned   = preprocessTTS(text);
+  const chunks    = chunkTTS(cleaned, 500);
+  if (!quiet) logger(`🎙️  OmniVoice TTS [${mode}]: ${chunks.length} chunk(s), voice="${omniVoice}"`);
 
   if (!await checkOmniVoiceHealth()) {
     throw new Error(`OmniVoice TTS server is not responding at ${OMNIVOICE_URL} — please start it and retry`);
   }
 
-  const TTS_CHUNK_TIMEOUT = 300_000; // 5 min per chunk — OmniVoice can be slow on long text
+  const TTS_CHUNK_TIMEOUT = 300_000;
   const TTS_CHUNK_RETRIES = 2;
 
   const wavChunks = [];
@@ -365,10 +419,13 @@ async function generateTTS(text, voice = 'narrator_warm', speed = 1.0, logger, q
     let lastErr;
     for (let attempt = 1; attempt <= TTS_CHUNK_RETRIES; attempt++) {
       try {
+        const body = { model: 'omnivoice', input: chunkText, voice: omniVoice, speed, response_format: 'wav' };
+        // seed only meaningful for design mode; clone mode is deterministic via ref_audio
+        if (mode === 'DESIGN') body.seed = 42;
         const r = await fetch(`${OMNIVOICE_URL}/v1/audio/speech`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'audio/wav' },
-          body:    JSON.stringify({ model: 'omnivoice', input: chunkText, voice: description, speed, response_format: 'wav', seed: 42 }),
+          body:    JSON.stringify(body),
           signal:  AbortSignal.timeout(TTS_CHUNK_TIMEOUT),
         });
         if (!r.ok) {
@@ -390,7 +447,16 @@ async function generateTTS(text, voice = 'narrator_warm', speed = 1.0, logger, q
     }
     if (lastErr) throw lastErr;
   }
-  return stitchWavBuffers(wavChunks);
+
+  const stitched = stitchWavBuffers(wavChunks);
+  // Apply 2-pass loudnorm so the WAV is at -14 LUFS before the mux.
+  // This makes the mux loudnorm a safe linear pass rather than dynamic compression.
+  try {
+    return await twoPassLoudnorm(stitched);
+  } catch (err) {
+    if (!quiet) logger(`   ⚠️  loudnorm pass failed (non-fatal): ${err.message}`);
+    return stitched;
+  }
 }
 
 // ── Concurrency-aware public entry point ──────────────────────────────────────
