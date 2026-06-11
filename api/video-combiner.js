@@ -152,7 +152,8 @@ async function extractSegment({ inputPath, startTime, durationSeconds, outputPat
     '-map', audioExists ? '0:a:0' : '1:a:0',
     '-c:a', 'aac',
     '-b:a', preset.audioBitrate,
-    '-ar', String(targetSampleRate), // Ensure consistent sample rate
+    '-ar', String(targetSampleRate),
+    '-ac', '2', '-async', '1',
     '-avoid_negative_ts', '1',
     '-movflags', '+faststart',
     outputPath
@@ -215,8 +216,9 @@ async function combineVideos({ segmentPaths, listPath, outputPath, preset, logge
     const args = [
       '-y', '-f', 'concat', '-safe', '0',
       '-i', listPath, '-fflags', '+genpts',
-      '-c:v', 'libx264', '-preset', preset.preset, '-crf', String(preset.crf),
+      '-c:v', 'libx264', '-preset', preset.preset, '-crf', String(preset.crf), '-r', '25',
       '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', preset.audioBitrate,
+      '-ar', '48000', '-ac', '2', '-async', '1',
     ];
     if (outputFormat === 'mp4' || outputFormat === 'mov') args.push('-movflags', '+faststart');
     args.push(outputPath);
@@ -267,9 +269,9 @@ async function combineVideos({ segmentPaths, listPath, outputPath, preset, logge
     ...inputs,
     '-filter_complex', filterComplex,
     '-map', '[vout]', '-map', '[aout]',
-    '-c:v', 'libx264', '-preset', preset.preset, '-crf', String(preset.crf),
+    '-c:v', 'libx264', '-preset', preset.preset, '-crf', String(preset.crf), '-r', '25',
     '-pix_fmt', 'yuv420p',
-    '-c:a', 'aac', '-b:a', preset.audioBitrate,
+    '-c:a', 'aac', '-b:a', preset.audioBitrate, '-ar', '48000', '-ac', '2', '-async', '1',
   ];
   if (outputFormat === 'mp4' || outputFormat === 'mov') args.push('-movflags', '+faststart');
   args.push(outputPath);
@@ -288,8 +290,9 @@ async function combineVideos({ segmentPaths, listPath, outputPath, preset, logge
     const concatArgs = [
       '-y', '-f', 'concat', '-safe', '0',
       '-i', listPath, '-fflags', '+genpts',
-      '-c:v', 'libx264', '-preset', preset.preset, '-crf', String(preset.crf),
+      '-c:v', 'libx264', '-preset', preset.preset, '-crf', String(preset.crf), '-r', '25',
       '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', preset.audioBitrate,
+      '-ar', '48000', '-ac', '2', '-async', '1',
     ];
     if (outputFormat === 'mp4' || outputFormat === 'mov') concatArgs.push('-movflags', '+faststart');
     concatArgs.push(outputPath);

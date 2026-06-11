@@ -1,0 +1,100 @@
+{
+  "id": "morning_routine_2026-06-11T05-26-05-121Z_475ba597",
+  "job_id": "b581e936",
+  "job_name": "Morning Routine",
+  "run_id": "475ba597",
+  "saved_at": "2026-06-11T05:26:05.121Z",
+  "title": "Rethink Your Morning Routine",
+  "word_count": 88,
+  "scene_count": 3,
+  "script": {
+    "title": "Rethink Your Morning Routine",
+    "description": "A morning routine that sets you up for failure, and how to fix it for achieving monthly goals",
+    "narration": "You're not lazy, you're just setting yourself up to fail. Most morning routines are designed to make you feel productive, not actually achieve your monthly goals. Think about it, if you're spending two hours every morning on yoga and journaling, that's two hours you're not spending on what actually matters. So, what if you flipped it on its head? What if your morning routine was designed to get you straight into the work that moves the needle? It's not about being more disciplined, it's about being more intentional.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 10,
+        "visual_keywords": [
+          "cluttered desk",
+          "laptop screen",
+          "morning light",
+          "person waking",
+          "coffee cup",
+          "woman waking up",
+          "morning light",
+          "productivity apps"
+        ],
+        "search_queries": [
+          "morning routine inspiration",
+          "productivity hacks",
+          "goal setting"
+        ],
+        "description": "A person waking up to a cluttered desk with productivity apps open",
+        "on_screen_text": "2 hours wasted",
+        "chapter_title": "THE REAL REASON"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "laptop coffee shop",
+          "person working",
+          "coffee cup",
+          "busy cafe",
+          "focused face",
+          "person working on laptop",
+          "coffee shop atmosphere",
+          "focused work"
+        ],
+        "search_queries": [
+          "focused work environment",
+          "monthly goal setting",
+          "morning routine"
+        ],
+        "description": "A person working on their laptop in a coffee shop, focused on their monthly goals",
+        "on_screen_text": "Get straight to work",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "planner pages",
+          "pen writing",
+          "calendar view",
+          "person planning",
+          "desk organizer",
+          "calendar planning",
+          "monthly goals",
+          "intentional work"
+        ],
+        "search_queries": [
+          "intentional morning routine",
+          "monthly goal achievement",
+          "productivity"
+        ],
+        "description": "A person planning out their month, setting intentional goals",
+        "on_screen_text": "Be intentional",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Fix Your Morning Routine",
+      "description": "Most morning routines are designed to make you feel productive, not actually achieve your monthly goals. What if you flipped it on its head? What if your morning routine was designed to get you straight into the work that moves the needle? It's not about being more disciplined, it's about being more intentional. So, what's the one thing you can change today to start achieving your monthly goals? What if the answer was simpler than you thought?",
+      "tags": [
+        "morning routine",
+        "monthly goals",
+        "productivity",
+        "intentional work",
+        "goal setting"
+      ],
+      "hashtags": [
+        "#productivityhacks",
+        "#monthlygoals",
+        "#intentionalwork"
+      ],
+      "category": "Education"
+    }
+  }
+}

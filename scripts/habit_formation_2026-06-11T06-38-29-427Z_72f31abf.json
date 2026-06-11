@@ -1,0 +1,106 @@
+{
+  "id": "habit_formation_2026-06-11T06-38-29-427Z_72f31abf",
+  "job_id": "c8d1dbdc",
+  "job_name": "Habit Formation",
+  "run_id": "72f31abf",
+  "saved_at": "2026-06-11T06:38:29.427Z",
+  "title": "Habits That Last",
+  "word_count": 87,
+  "scene_count": 3,
+  "script": {
+    "title": "Habits That Last",
+    "description": "Forming habits is key to achieving monthly goals, but most people go about it the wrong way. Here's why traditional habit formation methods fail and what you can do instead.",
+    "narration": "Most people try to form habits by focusing on the end result. But that's backwards. You're not going to stick to a habit just because you want the outcome. You need to focus on the process. That's where monthly goals come in. By setting specific, achievable goals for each month, you can create a system that helps you build lasting habits. It's not about being perfect, it's about being consistent. So, what are the key habits to focus on? Setting clear goals, tracking progress, and creating accountability.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 10,
+        "visual_keywords": [
+          "person writing planner",
+          "hand holding pen",
+          "desk calendar",
+          "office notebook",
+          "morning routine",
+          "person writing goals",
+          "monthly planner",
+          "goal setting"
+        ],
+        "search_queries": [
+          "writing down goals",
+          "monthly goal setting",
+          "planner"
+        ],
+        "description": "Someone writing down their monthly goals in a planner",
+        "on_screen_text": "Set Clear Goals",
+        "chapter_title": "THE FOUNDATION"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "person wearing tracker",
+          "fitness tracker screen",
+          "smartwatch display",
+          "hand holding phone",
+          "gym equipment",
+          "fitness tracker",
+          "workout routine",
+          "habit tracker"
+        ],
+        "search_queries": [
+          "tracking progress",
+          "fitness routine",
+          "habit tracker"
+        ],
+        "description": "A person tracking their progress on a fitness tracker or habit tracker",
+        "on_screen_text": "Track Progress",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "group of friends",
+          "people high fiving",
+          "team meeting room",
+          "supportive colleagues",
+          "happy team",
+          "accountability partner",
+          "support group",
+          "community"
+        ],
+        "search_queries": [
+          "accountability partner",
+          "support group",
+          "community"
+        ],
+        "description": "A group of people supporting each other in achieving their goals",
+        "on_screen_text": "Create Accountability",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Habits That Last: Monthly Goals",
+      "description": "Forming habits is key to achieving monthly goals, but most people go about it the wrong way. Here's why traditional habit formation methods fail and what you can do instead. By setting specific, achievable goals for each month, you can create a system that helps you build lasting habits. What are the key habits to focus on? Setting clear goals, tracking progress, and creating accountability. Can you achieve your monthly goals by focusing on these habits?",
+      "tags": [
+        "habit formation",
+        "monthly goals",
+        "goal setting",
+        "productivity",
+        "self improvement",
+        "motivation",
+        "discipline",
+        "accountability",
+        "tracking progress"
+      ],
+      "hashtags": [
+        "HabitsThatLast",
+        "MonthlyGoals",
+        "GoalSetting",
+        "ProductivityHacks",
+        "SelfImprovement"
+      ],
+      "category": "Education"
+    }
+  }
+}

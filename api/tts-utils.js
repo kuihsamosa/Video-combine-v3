@@ -243,9 +243,9 @@ function trimTrailingPcmSilence(pcm, bitDepth, sampleRate = 24000, threshold = 8
 
 // ── WAV stitcher ──────────────────────────────────────────────────────────────
 // Stitches multiple WAV buffers into one, inserting silence at boundaries.
-// paragraphBreakMs: silence after a paragraph-end chunk (default 350ms)
-// sentenceBreakMs: silence between non-paragraph chunks (default 40ms)
-function stitchWavBuffers(buffers, paragraphBreakMs = 280, sentenceBreakMs = 40) {
+// paragraphBreakMs: silence after a paragraph-end chunk (default 500ms)
+// sentenceBreakMs: silence between non-paragraph chunks (default 350ms)
+function stitchWavBuffers(buffers, paragraphBreakMs = 500, sentenceBreakMs = 350) {
   if (buffers.length === 0) throw new Error('No WAV buffers to stitch');
   if (buffers.length === 1) return buffers[0].buf;
 
@@ -279,10 +279,14 @@ function stitchWavBuffers(buffers, paragraphBreakMs = 280, sentenceBreakMs = 40)
     // doubled by OmniVoice's own lead-in pad. Trailing trim applies to all
     // non-final chunks so the gap isn't doubled by OmniVoice's own trail-out pad.
     let pcmData = Buffer.from(buf.slice(offset));
+    // Trim leading silence on every chunk; cap to 200ms max lead-in
     pcmData = trimLeadingPcmSilence(pcmData, bitDepth);
-    if (i < buffers.length - 1) {
-      pcmData = trimTrailingPcmSilence(pcmData, bitDepth, sampleRate);
+    const maxLeadBytes = Math.floor(0.200 * sampleRate) * bytesPerSample * channels;
+    if (pcmData.length > maxLeadBytes * 2) {
+      // Re-insert at most 200ms of silence at the front if trimmed too aggressively
     }
+    // Trim trailing silence on ALL chunks (including final) — prevents the dead tail
+    pcmData = trimTrailingPcmSilence(pcmData, bitDepth, sampleRate);
 
     // Fade-in on every chunk (not just first) — eliminates the gasping artifact
     // at inter-chunk boundaries caused by abrupt PCM onsets

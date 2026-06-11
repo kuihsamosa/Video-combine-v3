@@ -346,32 +346,49 @@ async function checkOmniVoiceHealth() {
 
 // ── TTS helper: OmniVoice only, returns WAV Buffer ────────────────────────────
 // quiet=true suppresses per-chunk logs (used when many turns run in parallel)
-async function generateTTS(text, voice = 'narrator_warm', speed = 0.88, logger, quiet = false) {
+async function generateTTS(text, voice = 'narrator_warm', speed = 1.0, logger, quiet = false) {
   const description = OMNIVOICE_PRESETS[voice] || voice || 'nova';
   const cleaned     = preprocessTTS(text);
-  const chunks      = chunkTTS(cleaned, 500);
+  const chunks      = chunkTTS(cleaned, 250);
   if (!quiet) logger(`🎙️  OmniVoice TTS: ${chunks.length} chunk(s), voice="${description}"`);
 
   if (!await checkOmniVoiceHealth()) {
     throw new Error(`OmniVoice TTS server is not responding at ${OMNIVOICE_URL} — please start it and retry`);
   }
 
+  const TTS_CHUNK_TIMEOUT = 300_000; // 5 min per chunk — OmniVoice can be slow on long text
+  const TTS_CHUNK_RETRIES = 2;
+
   const wavChunks = [];
   for (let i = 0; i < chunks.length; i++) {
     const { text: chunkText, paragraphEnd } = chunks[i];
-    const r = await fetch(`${OMNIVOICE_URL}/v1/audio/speech`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'audio/wav' },
-      body:    JSON.stringify({ model: 'omnivoice', input: chunkText, voice: description, speed, response_format: 'wav', seed: 42 }),
-      signal:  AbortSignal.timeout(120_000),
-    });
-    if (!r.ok) {
-      const detail = await r.text().catch(() => '');
-      throw new Error(`OmniVoice ${r.status} chunk ${i+1}: ${detail.slice(0, 120)}`);
+    let lastErr;
+    for (let attempt = 1; attempt <= TTS_CHUNK_RETRIES; attempt++) {
+      try {
+        const r = await fetch(`${OMNIVOICE_URL}/v1/audio/speech`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'audio/wav' },
+          body:    JSON.stringify({ model: 'omnivoice', input: chunkText, voice: description, speed, response_format: 'wav', seed: 42 }),
+          signal:  AbortSignal.timeout(TTS_CHUNK_TIMEOUT),
+        });
+        if (!r.ok) {
+          const detail = await r.text().catch(() => '');
+          throw new Error(`OmniVoice ${r.status} chunk ${i+1}: ${detail.slice(0, 120)}`);
+        }
+        const buf = Buffer.from(await r.arrayBuffer());
+        wavChunks.push({ buf, paragraphEnd });
+        if (!quiet) logger(`   ✅ Chunk ${i+1}/${chunks.length} — ${(buf.length/1024).toFixed(0)} KB`);
+        lastErr = null;
+        break;
+      } catch (err) {
+        lastErr = err;
+        if (attempt < TTS_CHUNK_RETRIES) {
+          if (!quiet) logger(`   ⚠️  Chunk ${i+1} attempt ${attempt} failed (${err.message}) — retrying…`);
+          await new Promise(r => setTimeout(r, 3_000));
+        }
+      }
     }
-    const buf = Buffer.from(await r.arrayBuffer());
-    wavChunks.push({ buf, paragraphEnd });
-    if (!quiet) logger(`   ✅ Chunk ${i+1}/${chunks.length} — ${(buf.length/1024).toFixed(0)} KB`);
+    if (lastErr) throw lastErr;
   }
   return stitchWavBuffers(wavChunks);
 }
@@ -644,7 +661,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
         if (turns.length < 2) {
           log(`   ℹ️  No speaker structure found — falling back to single voice`);
           const cleanNarration = narration.replace(labelRx, '');
-          const wavBuf = await generateTTS(cleanNarration, hostVoice, job.speed || 0.90, log);
+          const wavBuf = await generateTTS(cleanNarration, hostVoice, job.speed || 1.0, log);
           const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
           fs.writeFileSync(audioPath, wavBuf);
           output.audio_path = audioPath;
@@ -671,7 +688,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
             const voice = turn.speaker === 'HOST' ? hostVoice : guestVoice;
             const name  = turn.speaker === 'HOST' ? hostName  : guestName;
             try {
-              const turnWav = await generateTTS(turn.text, voice, job.speed || 0.90, log, true);
+              const turnWav = await generateTTS(turn.text, voice, job.speed || 1.0, log, true);
               wavChunks[idx] = { buf: turnWav, paragraphEnd: true };
               log(`   ✅ Group ${idx + 1}/${mergedTurns.length} [${name}] — ${(turnWav.length / 1024).toFixed(0)} KB`);
             } catch (e) {
@@ -695,7 +712,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
         const podcastNarration = output.script.narration
           .replace(/^HOST:\s*/gim, '')   // strip any stray labels
           .replace(/^GUEST:\s*/gim, '');
-        const wavBuf = await generateTTS(podcastNarration, job.voice || 'narrator_warm', job.speed || 0.86, log);
+        const wavBuf = await generateTTS(podcastNarration, job.voice || 'narrator_warm', job.speed || 1.0, log);
         const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
         fs.writeFileSync(audioPath, wavBuf);
         output.audio_path = audioPath;
@@ -706,7 +723,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
         const wavBuf = await generateTTS(
           output.script.narration,
           job.voice || 'narrator_warm',
-          job.speed || 0.92,
+          job.speed || 1.0,
           log,
         );
         const audioPath = path.join(os.tmpdir(), `sched_${runId}.wav`);
@@ -717,30 +734,28 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
     }
 
     // ── #23 Voice Speed Auto-Tune ─────────────────────────────────────────────
-    // Moved here to complete before footage prefetch starts
-    if (output.audio_path && output.script) {
+    // Only runs when job has an explicit duration_minutes target AND the audio
+    // is more than 35% off that target. The video mux trims to audio length so
+    // there is no need to chase a WPM estimate — only a fixed-length target matters.
+    if (output.audio_path && output.script && job.duration_minutes) {
       try {
-        const actualDur   = await runFfprobeDurationSeconds(output.audio_path, {}).catch(() => 0);
-        const targetWords = (output.script.narration || '').split(/\s+/).filter(Boolean).length;
-        const WPM         = 140; // average spoken words-per-minute
-        const targetDur   = (targetWords / WPM) * 60;
+        const actualDur = await runFfprobeDurationSeconds(output.audio_path, {}).catch(() => 0);
+        const targetDur = job.duration_minutes * 60;
         if (targetDur > 5 && actualDur > 0) {
           const ratio = actualDur / targetDur;
-          if (ratio < 0.8 || ratio > 1.25) {
-            // Re-synthesise at corrected speed — clamp to [0.6, 1.4]
-            const currentSpeed = job.speed || 0.92;
+          if (ratio < 0.65 || ratio > 1.35) {
+            const currentSpeed = job.speed || 1.0;
             const newSpeed     = Math.min(1.4, Math.max(0.6, Math.round((currentSpeed * ratio) * 100) / 100));
-            log(`⏱️  Voice speed auto-tune: actual ${actualDur.toFixed(1)}s, target ~${targetDur.toFixed(1)}s (ratio ${ratio.toFixed(2)}) → adjusting speed ${currentSpeed} → ${newSpeed}`);
-            const narration   = output.script.narration;
-            const voice       = job.style === 'podcast_dual' ? (job.podcast_host_voice || 'echo') : (job.voice || 'narrator_warm');
-            const tunedBuf    = await generateTTS(narration, voice, newSpeed, log);
-            
-            // Write to temporary file first, then rename to avoid corruption
-            const tempAudioPath = output.audio_path + '.tuning';
-            fs.writeFileSync(tempAudioPath, tunedBuf);
-            fs.renameSync(tempAudioPath, output.audio_path);
-            
+            log(`⏱️  Voice speed auto-tune: actual ${actualDur.toFixed(1)}s, target ${targetDur.toFixed(1)}s (ratio ${ratio.toFixed(2)}) → adjusting speed ${currentSpeed} → ${newSpeed}`);
+            const narration = output.script.narration;
+            const voice     = job.style === 'podcast_dual' ? (job.podcast_host_voice || 'echo') : (job.voice || 'narrator_warm');
+            const tunedBuf  = await generateTTS(narration, voice, newSpeed, log);
+            const tempPath  = output.audio_path + '.tuning';
+            fs.writeFileSync(tempPath, tunedBuf);
+            fs.renameSync(tempPath, output.audio_path);
             log(`✅ Voice speed tuned — new audio: ${(tunedBuf.length / 1048576).toFixed(1)} MB`);
+          } else {
+            log(`⏱️  Voice speed OK: actual ${actualDur.toFixed(1)}s vs target ${targetDur.toFixed(1)}s (ratio ${ratio.toFixed(2)}) — no retune needed`);
           }
         }
       } catch (tuneErr) {
@@ -935,8 +950,17 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
           }
         };
 
+        // ── Deduplicate clips by localPath before the loop ───────────────────────
+        const seenPaths  = new Set();
+        const uniqueClips = baseClips.filter(c => {
+          if (seenPaths.has(c.localPath)) return false;
+          seenPaths.add(c.localPath); return true;
+        });
+        if (uniqueClips.length < baseClips.length)
+          log(`🗑️  Removed ${baseClips.length - uniqueClips.length} duplicate clip(s) — ${uniqueClips.length} unique`);
+
         // ── Single round-robin loop: keep pulling cuts until coverage is met ─────
-        const availableClips = [...baseClips];
+        const availableClips = [...uniqueClips];
         const exhaustedClips = new Set();
         let clipIdx = 0;
         log(`✂️  Extracting ${CUT_SECS}s cuts — need ${needed.toFixed(1)}s total…`);
@@ -1002,12 +1026,14 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
             '-f', 'concat', '-safe', '0', '-i', listPath,
             '-i', output.audio_path,
             '-filter_complex', [
-              `[0:v]trim=duration=${audioDur.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p,fade=t=out:st=${fadeStart.toFixed(3)}:d=2:color=black[vout]`,
-              `[1:a]asetpts=PTS-STARTPTS,apad=whole_dur=${audioDur.toFixed(3)},atrim=0:${audioDur.toFixed(3)},afade=t=out:st=${fadeStart.toFixed(3)}:d=2[aout]`,
+              // Fade-in 0.5s + fade-out 2s; force constant 25fps; trim to audio length
+              `[0:v]trim=duration=${audioDur.toFixed(3)},setpts=PTS-STARTPTS,fps=fps=25,format=yuv420p,fade=t=in:st=0:d=0.5:color=black,fade=t=out:st=${fadeStart.toFixed(3)}:d=2:color=black[vout]`,
+              // Upmix mono → stereo, gentle 3:1 compression, loudnorm, pad + trim, fade out
+              `[1:a]asetpts=PTS-STARTPTS,pan=stereo|c0=c0|c1=c0,acompressor=threshold=-18dB:ratio=3:attack=10:release=200:makeup=2dB,loudnorm=I=-14:TP=-1.5:LRA=11,apad=whole_dur=${audioDur.toFixed(3)},atrim=0:${audioDur.toFixed(3)},afade=t=out:st=${fadeStart.toFixed(3)}:d=2[aout]`,
             ].join(';'),
             '-map', '[vout]', '-map', '[aout]',
-            '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-            '-c:a', 'aac', '-b:a', '192k',
+            '-c:v', 'libx264', '-preset', 'fast', '-crf', '23', '-r', '25',
+            '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2', '-async', '1',
             muxOutPath,
           ], { logger: { log, error: log } });
 
@@ -1023,7 +1049,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
               '-y', '-i', muxOutPath,
               '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11',
               '-c:v', 'copy',
-              '-c:a', 'aac', '-b:a', '192k',
+              '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2', '-async', '1',
               normPath,
             ], { logger: { log, error: log } });
             fs.renameSync(normPath, muxOutPath);
@@ -1049,7 +1075,7 @@ Write ONE alternative punchy opening hook (1-2 sentences max). Make it more curi
                   '-y', '-i', src,
                   '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2',
                   '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-                  '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2',
+                  '-r', '25', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2', '-async', '1',
                   dst,
                 ], { logger: { log, error: log } });
                 return dst;

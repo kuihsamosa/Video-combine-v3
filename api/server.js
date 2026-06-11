@@ -1544,10 +1544,10 @@ app.post('/api/tts', async (req, res) => {
     return res.status(400).json({ error: 'text too long (max 50000 chars)' });
   }
 
-  const cleaned       = preprocessTTS(text.trim());
-  const chunks        = chunkTTS(cleaned, 500);
-  const description   = resolveVoice(voice);
-  const effectiveSpeed = speed === 1.0 ? 0.92 : speed;
+  const cleaned      = preprocessTTS(text.trim());
+  const chunks       = chunkTTS(cleaned, 250);
+  const description  = resolveVoice(voice);
+  const effectiveSpeed = Math.min(1.05, Math.max(1.0, speed));
 
   try {
     const wavChunks = [];
