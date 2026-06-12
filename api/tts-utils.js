@@ -205,44 +205,42 @@ function silenceWav(durationMs, sampleRate = 24000, channels = 1, bitDepth = 16)
 }
 
 // ── Internal silence compressor ───────────────────────────────────────────────
-// OmniVoice DESIGN mode inserts 500-950ms pauses after every sentence-ending
-// punctuation within a single chunk. This scan-and-replace compresses any
-// contiguous run of near-silence > maxSilenceMs down to maxSilenceMs, preserving
-// natural breath pauses while removing the dead air.
-function compressInternalSilence(pcm, bitDepth, sampleRate, maxSilenceMs = 150, threshold = 800) {
-  const bytesPerSample = bitDepth / 8;
-  const maxSilenceSamples = Math.floor(sampleRate * maxSilenceMs / 1000);
-  const n = pcm.length / bytesPerSample;
-
-  const parts = [];
-  let silenceStart = -1;
-  let silenceCount = 0;
-
-  for (let i = 0; i < n; i++) {
-    const s = Math.abs(pcm.readInt16LE(i * bytesPerSample));
-    const isSilent = s < threshold;
-
-    if (isSilent) {
-      if (silenceStart < 0) silenceStart = i;
-      silenceCount++;
-    } else {
-      if (silenceStart >= 0) {
-        // Flush the silence run
-        const keep = Math.min(silenceCount, maxSilenceSamples);
-        parts.push(pcm.slice(silenceStart * bytesPerSample, (silenceStart + keep) * bytesPerSample));
-        silenceStart = -1;
-        silenceCount = 0;
+// Compresses any contiguous run of near-silence > maxSilenceMs down to maxSilenceMs.
+// Two-level: pass 1 at threshold=600 catches OmniVoice design-mode's loud pauses;
+// pass 2 at threshold=150 catches clone-mode's quieter ambient-noise-floor pauses.
+function compressInternalSilence(pcm, bitDepth, sampleRate, maxSilenceMs = 100) {
+  function onePass(input, threshold) {
+    const bytesPerSample = bitDepth / 8;
+    const maxSilenceSamples = Math.floor(sampleRate * maxSilenceMs / 1000);
+    const n = input.length / bytesPerSample;
+    const parts = [];
+    let silenceStart = -1;
+    let silenceCount = 0;
+    for (let i = 0; i < n; i++) {
+      const s = Math.abs(input.readInt16LE(i * bytesPerSample));
+      if (s < threshold) {
+        if (silenceStart < 0) silenceStart = i;
+        silenceCount++;
+      } else {
+        if (silenceStart >= 0) {
+          const keep = Math.min(silenceCount, maxSilenceSamples);
+          parts.push(input.slice(silenceStart * bytesPerSample, (silenceStart + keep) * bytesPerSample));
+          silenceStart = -1; silenceCount = 0;
+        }
+        parts.push(input.slice(i * bytesPerSample, (i + 1) * bytesPerSample));
       }
-      parts.push(pcm.slice(i * bytesPerSample, (i + 1) * bytesPerSample));
     }
+    if (silenceStart >= 0) {
+      const keep = Math.min(silenceCount, maxSilenceSamples);
+      parts.push(input.slice(silenceStart * bytesPerSample, (silenceStart + keep) * bytesPerSample));
+    }
+    return Buffer.concat(parts);
   }
-  // Flush trailing silence (keep up to maxSilenceSamples)
-  if (silenceStart >= 0) {
-    const keep = Math.min(silenceCount, maxSilenceSamples);
-    parts.push(pcm.slice(silenceStart * bytesPerSample, (silenceStart + keep) * bytesPerSample));
-  }
-
-  return Buffer.concat(parts);
+  // Pass 1: catch OmniVoice design-mode loud pauses (>600 treated as non-silent speech)
+  let out = onePass(pcm, 600);
+  // Pass 2: catch clone-mode's quieter ambient-noise pauses (>150 treated as non-silent)
+  out = onePass(out, 150);
+  return out;
 }
 
 // ── Per-chunk RMS normalisation ───────────────────────────────────────────────

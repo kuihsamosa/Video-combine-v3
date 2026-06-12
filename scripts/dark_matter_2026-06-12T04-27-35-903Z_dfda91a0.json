@@ -1,0 +1,107 @@
+{
+  "id": "dark_matter_2026-06-12T04-27-35-903Z_dfda91a0",
+  "job_id": "613b0c74",
+  "job_name": "Dark Matter",
+  "run_id": "dfda91a0",
+  "saved_at": "2026-06-12T04:27:35.903Z",
+  "title": "Dark Matter's Hidden Presence",
+  "word_count": 85,
+  "scene_count": 3,
+  "script": {
+    "title": "Dark Matter's Hidden Presence",
+    "description": "Dark matter's existence is a mysterious truth, making up most of the universe's mass-energy budget. Its presence is felt but not seen, leaving us wondering what it is.",
+    "narration": "You're surrounded by something you can't see. It's not air, it's not light, it's not even empty space. It's dark matter, the invisible force that shapes the universe. Most of the universe's mass is made up of this mysterious substance, yet it's completely invisible to our eyes. Scientists have been trying to understand dark matter for decades, but it remains one of the greatest mysteries of our time. So, what is dark matter? The truth is, we still don't know, but its presence is undeniable.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 10,
+        "visual_keywords": [
+          "galaxy night",
+          "dark space",
+          "starfield",
+          "cosmic clouds",
+          "astronomy",
+          "space debris floating",
+          "galaxy formation",
+          "darkness in space"
+        ],
+        "search_queries": [
+          "deep space mystery",
+          "galaxy formation",
+          "space darkness"
+        ],
+        "description": "A shot of the galaxy with an ominous, dark atmosphere",
+        "on_screen_text": "27% of universe",
+        "chapter_title": "THE INVISIBLE FORCE"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "lab scientists",
+          "people studying",
+          "laptop screen",
+          "data analysis",
+          "researchers",
+          "scientist studying data",
+          "complex mathematical equations",
+          "telescope observations"
+        ],
+        "search_queries": [
+          "scientist researching",
+          "space data analysis",
+          "cosmic events"
+        ],
+        "description": "A shot of scientists studying data, looking puzzled and intrigued",
+        "on_screen_text": "",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "nebula clouds",
+          "space dust",
+          "galaxy stars",
+          "dark matter",
+          "cosmic gas",
+          "nebula formations",
+          "space exploration",
+          "dark matter visualizations"
+        ],
+        "search_queries": [
+          "nebula formations",
+          "space exploration",
+          "dark matter"
+        ],
+        "description": "A shot of a nebula, with dark matter visualizations overlaid",
+        "on_screen_text": "",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "What is Dark Matter?",
+      "description": "Dark matter is the invisible force that shapes the universe. Making up most of the universe's mass, it's a mysterious substance that remains unseen. Scientists have been trying to understand dark matter for decades, but it remains one of the greatest mysteries of our time. What is dark matter and how does it affect the universe? Join us as we delve into the unknown and explore the truth about dark matter. What do you think dark matter is? Share your thoughts in the comments below.",
+      "tags": [
+        "dark matter",
+        "space mystery",
+        "universe secrets",
+        "cosmic events",
+        "science",
+        "mystery",
+        "space",
+        "universe",
+        "galaxy",
+        "nebula"
+      ],
+      "hashtags": [
+        "#DarkMatter",
+        "#SpaceMystery",
+        "#UniverseSecrets",
+        "#CosmicEvents",
+        "#Science"
+      ],
+      "category": "Education"
+    }
+  }
+}

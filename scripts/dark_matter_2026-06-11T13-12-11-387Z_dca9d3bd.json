@@ -1,0 +1,106 @@
+{
+  "id": "dark_matter_2026-06-11T13-12-11-387Z_dca9d3bd",
+  "job_id": "613b0c74",
+  "job_name": "Dark Matter",
+  "run_id": "dca9d3bd",
+  "saved_at": "2026-06-11T13:12:11.387Z",
+  "title": "Dark Matter's Hidden Truth",
+  "word_count": 101,
+  "scene_count": 3,
+  "script": {
+    "title": "Dark Matter's Hidden Truth",
+    "description": "Uncovering the mysterious presence of dark matter in our universe, and what it means for our understanding of reality",
+    "narration": "Imagine a universe where most of what exists is invisible. That's the reality we live in, thanks to dark matter. It's the unseen force that shapes galaxies, yet remains a mystery. Scientists have been searching for answers, but the more they learn, the more questions they have. What if dark matter isn't just a type of matter, but a glimpse into a hidden world? One that's been lurking beside us, yet beyond our grasp. The truth is, we're not even sure what we're looking for. But one thing is certain: dark matter is the key to understanding the cosmos, and ourselves.",
+    "scenes": [
+      {
+        "id": 1,
+        "duration_hint_seconds": 10,
+        "visual_keywords": [
+          "galaxy stars",
+          "space nebula",
+          "cosmic dust",
+          "starfield night",
+          "planets align",
+          "galaxy formation",
+          "cosmic landscape",
+          "mysterious universe"
+        ],
+        "search_queries": [
+          "dark matter galaxy",
+          "cosmic mystery",
+          "space"
+        ],
+        "description": "A galaxy with a mysterious, unseen force at work",
+        "on_screen_text": "27% of universe",
+        "chapter_title": "THE INVISIBLE FORCE"
+      },
+      {
+        "id": 2,
+        "duration_hint_seconds": 20,
+        "visual_keywords": [
+          "scientist lab",
+          "laptop screen",
+          "space telescope",
+          "lab equipment",
+          "microscope slide",
+          "scientist researching",
+          "space data analysis",
+          "cosmic puzzle"
+        ],
+        "search_queries": [
+          "dark matter research",
+          "space scientist",
+          "cosmic puzzle"
+        ],
+        "description": "A scientist searching for answers about dark matter",
+        "on_screen_text": "Still unknown",
+        "chapter_title": ""
+      },
+      {
+        "id": 3,
+        "duration_hint_seconds": 30,
+        "visual_keywords": [
+          "space clouds",
+          "dark universe",
+          "galaxy night",
+          "starlight glow",
+          "nebula gas",
+          "cosmic landscape",
+          "mysterious universe",
+          "unseen worlds"
+        ],
+        "search_queries": [
+          "dark matter universe",
+          "cosmic mystery",
+          "hidden worlds"
+        ],
+        "description": "A glimpse into the hidden world of dark matter",
+        "on_screen_text": "",
+        "chapter_title": ""
+      }
+    ],
+    "youtube": {
+      "title": "Dark Matter's Secret",
+      "description": "Explore the mysterious world of dark matter and what it means for our understanding of the universe. From galaxy formation to the search for answers, we delve into the unknown. What if dark matter is more than just a type of matter, but a glimpse into a hidden world? Join us as we uncover the truth about dark matter and its role in the cosmos. What do you think dark matter is? Share your thoughts in the comments below.",
+      "tags": [
+        "dark matter",
+        "cosmos",
+        "universe",
+        "mystery",
+        "space",
+        "science",
+        "galaxy",
+        "research",
+        "hidden world"
+      ],
+      "hashtags": [
+        "#DarkMatter",
+        "#Space",
+        "#Universe",
+        "#Mystery",
+        "#Science"
+      ],
+      "category": "Education"
+    }
+  }
+}

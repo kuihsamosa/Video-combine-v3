@@ -1565,7 +1565,7 @@ app.post('/api/tts', async (req, res) => {
       const r = await fetch(`${OMNIVOICE_URL}/v1/audio/speech`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ model: 'omnivoice', input: chunkText, voice: description, speed: effectiveSpeed, response_format: 'wav', seed: 42 }),
+        body:    JSON.stringify({ model: 'omnivoice', input: chunkText, voice: description, speed: effectiveSpeed, response_format: 'wav', request_timeout_s: 300, seed: 42 }),
         signal:  AbortSignal.timeout(120_000),
       });
       if (!r.ok) {
@@ -1594,9 +1594,10 @@ app.post('/api/tts', async (req, res) => {
               try { resolve(m ? JSON.parse(m[0]) : null); } catch { resolve(null); }
             });
         });
-        const filter = stats
+        const loudnorm = stats
           ? `loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=${stats.input_i}:measured_LRA=${stats.input_lra}:measured_TP=${stats.input_tp}:measured_thresh=${stats.input_thresh}:linear=true`
           : 'loudnorm=I=-14:TP=-1.5:LRA=11';
+        const filter = `${loudnorm},areverse,silenceremove=start_periods=1:start_duration=0.05:start_threshold=-50dB,areverse`;
         await new Promise((resolve, reject) => {
           execFile('ffmpeg', ['-y', '-i', tmpIn, '-af', filter, '-ar', '24000', '-c:a', 'pcm_s16le', tmpOut],
             (err) => err ? reject(err) : resolve());

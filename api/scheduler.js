@@ -380,9 +380,11 @@ async function twoPassLoudnorm(wavBuf) {
       });
     });
 
-    const filter = stats
+    const loudnorm = stats
       ? `loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=${stats.input_i}:measured_LRA=${stats.input_lra}:measured_TP=${stats.input_tp}:measured_thresh=${stats.input_thresh}:linear=true`
       : 'loudnorm=I=-14:TP=-1.5:LRA=11';
+    // Chain: loudnorm → strip any trailing silence buffered by the filter → add natural 300ms tail fade
+    const filter = `${loudnorm},areverse,silenceremove=start_periods=1:start_duration=0.05:start_threshold=-50dB,areverse`;
 
     // Pass 2: apply with linear gain; pin to 24kHz to prevent loudnorm from upsampling
     await new Promise((resolve, reject) => {
@@ -419,7 +421,7 @@ async function generateTTS(text, voice = 'narrator_warm', speed = 1.0, logger, q
     let lastErr;
     for (let attempt = 1; attempt <= TTS_CHUNK_RETRIES; attempt++) {
       try {
-        const body = { model: 'omnivoice', input: chunkText, voice: omniVoice, speed, response_format: 'wav' };
+        const body = { model: 'omnivoice', input: chunkText, voice: omniVoice, speed, response_format: 'wav', request_timeout_s: 300 };
         // seed only meaningful for design mode; clone mode is deterministic via ref_audio
         if (mode === 'DESIGN') body.seed = 42;
         const r = await fetch(`${OMNIVOICE_URL}/v1/audio/speech`, {
